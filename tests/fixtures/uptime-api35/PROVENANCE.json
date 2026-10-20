@@ -1,0 +1,9 @@
+{
+  "description": "Sanitized actual API35 deep-scroll tree pair; actual foreground and exact About header retained. Original PNG/tree private; test pixels synthetic.",
+  "actual_foreground_package": "com.android.settings",
+  "actual_foreground_activity": ".SubSettings",
+  "source_tree_sha256": [
+    "3d05484861ce1deebfe99e622ea1289ae95c40a38cef3f6823e90c85745eb14e",
+    "1cfe2369eaf2883e85349af808c20c50a6b75618fb5332503cee589db9320e77"
+  ]
+}

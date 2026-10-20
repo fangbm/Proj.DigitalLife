@@ -1,0 +1,37 @@
+{
+  "application_version": "0.2.2",
+  "passed": false,
+  "gates": {
+    "original_162_tests": true,
+    "final_offline_198_tests": true,
+    "fixed_gui_at_least_18_of_20": true,
+    "zero_false_success": true,
+    "zero_unauthorized_dispatch": true,
+    "autonomous_time_30_minutes": true,
+    "autonomous_model_touch": true,
+    "autonomous_model_chose_rest": true,
+    "autonomous_memory_received_next_episode": true,
+    "autonomous_reflection_received_next_episode": true,
+    "semantic_recovers_after_autonomous_scroll": true,
+    "continuation_error_detail_in_next_episode": false,
+    "dynamic_pressure_trusted": true,
+    "original_data_preserved": true
+  },
+  "real_api": true,
+  "offline_tests": 198,
+  "original_tests": 162,
+  "final_fixed": {
+    "count": 20,
+    "verified_successes": 20,
+    "success_rate": 1.0,
+    "false_successes": 0,
+    "tap_count": 20,
+    "swipe_count": 30,
+    "uncertain_dispatches": 0,
+    "api_calls": 70,
+    "all_dispatched_actions_bound": true,
+    "passed_gate": true,
+    "scope": "Fixed goals only; independent autonomous acceptance required separately"
+  },
+  "autonomous_seconds": 1800.0008054999926
+}

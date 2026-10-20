@@ -1,0 +1,189 @@
+{
+  "public_schema": "evidence/1",
+  "task_run_id": "34746e06-4039-4797-98de-4bf1da8bcd12",
+  "status": "failed",
+  "elapsed_ns": 107679147700,
+  "run_kind": "benchmark",
+  "goal_sha256": "be8abba8f2658fac8431e77ed2f840631722eb6b4967576220004202782225b7",
+  "final_observation_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+  "independently_verified": false,
+  "attempts": [
+    {
+      "step_index": 1,
+      "generation_attempt": 1,
+      "response_sha256": "2395dcb3cf764141dfb163ae4d9b571466cc214785291a24be6563805ca605b3",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "053945a3b8725f8db4046ed2cb38e5db96a4aa34c278dbb5fa49b5d4f8c4dc56",
+      "fresh_screenshot_sha256": "320ddcd29f43d1cec9ee86fe40da15d896affeaffa6a1b62b2d44a8ed4b21892",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1196,
+        "x2": 360,
+        "y2": 772,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 2,
+      "generation_attempt": 1,
+      "response_sha256": "7c3ed06d9ac9ac64e8984ab9f9a5c0488705bc2ef905a60a66e1f5f255a98dea",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "442a5017d82104a822ba0f9d9a533c88be441002e85da09a86eec8764c4640e0",
+      "fresh_screenshot_sha256": "442a5017d82104a822ba0f9d9a533c88be441002e85da09a86eec8764c4640e0",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 561,
+        "x2": 360,
+        "y2": 1125,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 3,
+      "generation_attempt": 1,
+      "response_sha256": "f92cf10dbab83af65085e33395beef6b4a050df094a8bbfc56fe25952bdd0f41",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "eb0909368b17a98ccccf47984b9e5f72770df36c1b31fe07fcdca984e31a7ee4",
+      "fresh_screenshot_sha256": "eb0909368b17a98ccccf47984b9e5f72770df36c1b31fe07fcdca984e31a7ee4",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1196,
+        "x2": 360,
+        "y2": 772,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 4,
+      "generation_attempt": 1,
+      "response_sha256": "55a08df047dd4cc79e49dfd2aea300bdb5e6967c114174b076a7ef83fe5f3689",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "593a488738a083bafc49922ef12eb08be38d9612324e872c9c72b0b3e2195fd0",
+      "fresh_screenshot_sha256": "593a488738a083bafc49922ef12eb08be38d9612324e872c9c72b0b3e2195fd0",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 561,
+        "x2": 360,
+        "y2": 1125,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 5,
+      "generation_attempt": 1,
+      "response_sha256": "c34edb71986606ba53108aa48dfa4fedd2dc454ac10beebe1c9f69a92f51c856",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "85b3a8241a801c445bbf827474a59e069e16d4b502f48147ff5651164813d2cc",
+      "fresh_screenshot_sha256": "85b3a8241a801c445bbf827474a59e069e16d4b502f48147ff5651164813d2cc",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 772,
+        "x2": 360,
+        "y2": 1196,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 6,
+      "generation_attempt": 1,
+      "response_sha256": "56d067d7c15bbf2872f3e5160e7654061c3323ff43a684b40c0fe642bece3f4b",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "85b3a8241a801c445bbf827474a59e069e16d4b502f48147ff5651164813d2cc",
+      "fresh_screenshot_sha256": "85b3a8241a801c445bbf827474a59e069e16d4b502f48147ff5651164813d2cc",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1196,
+        "x2": 360,
+        "y2": 772,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 7,
+      "generation_attempt": 1,
+      "response_sha256": "980713018216e1b1680cd8a46939ffcd4ff98194407a3da6df28af7f2a5f7c22",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "cbf933aedb8b2663283872d63e911e461b61194d8690ed376425b006c7f57840",
+      "fresh_screenshot_sha256": "cbf933aedb8b2663283872d63e911e461b61194d8690ed376425b006c7f57840",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 561,
+        "x2": 360,
+        "y2": 1125,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 8,
+      "generation_attempt": 1,
+      "response_sha256": "ac41fe8f50f596abdad9e71fcb1cb9162d89a2e585203472a3ead6838b37a60b",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "fresh_screenshot_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 772,
+        "x2": 360,
+        "y2": 1196,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 9,
+      "generation_attempt": 1,
+      "response_sha256": "2da088ba6a036a9f65a60a897755d4cd10a0c06eb2b276755f0f005c9394fbde",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "fresh_screenshot_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 772,
+        "x2": 360,
+        "y2": 1196,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 10,
+      "generation_attempt": 1,
+      "response_sha256": "32f59a2e327c8f2285c85a517176d0c5bd0d9f8bba8b0365bfefcbbbf4b8fbbf",
+      "executed": false,
+      "outcome_unknown": false,
+      "observation_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "fresh_screenshot_sha256": "c2d0644ca2b42435df95366a6445e67b01348f4fc5a148e4dc05495f08950491",
+      "binding_checked": true,
+      "action": {
+        "type": "swipe"
+      }
+    }
+  ],
+  "raw_material_included": false,
+  "scope": "Hashes and bounded action facts only; excludes raw PNG/tree/model text and private paths"
+}

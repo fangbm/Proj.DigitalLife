@@ -1,0 +1,10 @@
+{
+  "observed": true,
+  "source_task_run": "0d012adc-d18b-40f0-b0fb-1f6c2da13ceb",
+  "following_task_run": "155f0ef0-c5f2-4f61-891d-31240c205e41",
+  "source_fields": ["life_cycles.reflection.next_adjustment", "life_cycles.context.recent_episodes", "events.life_decision_rejected.audit.proposed_decision.reason"],
+  "following_proposal": "allowlisted battery percentage fact",
+  "following_proposal_executed": false,
+  "following_rejections": 2,
+  "report_note": "真实记忆影响可追溯：首轮反思建议在 GUI 格式失败后改用公共只读事实；第二轮主脑的两次原始提案均明确引用这一调整，改选电量事实。该轮仍输出 kind=continue 且 continuation_of=null，两次结构化修复未成功，因此被拒绝、没有执行，也没有偷偷转换为新任务。这里证明的是实际模型候选受经历影响，不是第二轮目标已完成或反思内容已变成已验证事实。"
+}

@@ -1,0 +1,2 @@
+# Preserve frozen evidence/source bytes on Windows and Unix checkouts.
+* -text

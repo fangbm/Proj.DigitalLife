@@ -1,0 +1,12 @@
+{
+  "final_check": {
+    "status": "rested",
+    "summary": "Original development helper preserved; no GUI input",
+    "steps": 0,
+    "asset_sha256": "35aecc04fc12fecee5c9fc6602f973626802d028f53121e5cfe205bd44c289e2",
+    "api_calls": 0,
+    "gui_inputs": 0,
+    "device_state": "device"
+  },
+  "active_device_leases": 0
+}

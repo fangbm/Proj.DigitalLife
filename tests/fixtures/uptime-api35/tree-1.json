@@ -1,0 +1,2022 @@
+{
+  "schema": "shell-ui-snapshot/1",
+  "rotation": 0,
+  "width": 720,
+  "height": 1600,
+  "windows": [
+    {
+      "id": 24319,
+      "type": 3,
+      "layer": 1,
+      "active": false,
+      "focused": false,
+      "title": "",
+      "bounds": [
+        0,
+        0,
+        720,
+        132
+      ],
+      "root": {
+        "path": "w24319",
+        "bounds": [
+          0,
+          0,
+          720,
+          132
+        ],
+        "text": "",
+        "content_description": "",
+        "class_name": "android.widget.FrameLayout",
+        "resource_id": "",
+        "package": "com.android.systemui",
+        "clickable": false,
+        "scrollable": false,
+        "enabled": true,
+        "checkable": false,
+        "editable": false,
+        "visible": true,
+        "password": false,
+        "long_clickable": false,
+        "children": [
+          {
+            "path": "w24319/0",
+            "bounds": [
+              0,
+              0,
+              720,
+              132
+            ],
+            "text": "",
+            "content_description": "",
+            "class_name": "android.widget.FrameLayout",
+            "resource_id": "com.android.systemui:id/status_bar_launch_animation_container",
+            "package": "com.android.systemui",
+            "clickable": false,
+            "scrollable": false,
+            "enabled": true,
+            "checkable": false,
+            "editable": false,
+            "visible": true,
+            "password": false,
+            "long_clickable": false,
+            "children": []
+          },
+          {
+            "path": "w24319/1",
+            "bounds": [
+              0,
+              0,
+              720,
+              132
+            ],
+            "text": "",
+            "content_description": "",
+            "class_name": "android.widget.FrameLayout",
+            "resource_id": "com.android.systemui:id/status_bar_container",
+            "package": "com.android.systemui",
+            "clickable": false,
+            "scrollable": false,
+            "enabled": true,
+            "checkable": false,
+            "editable": false,
+            "visible": true,
+            "password": false,
+            "long_clickable": false,
+            "children": [
+              {
+                "path": "w24319/1/0",
+                "bounds": [
+                  0,
+                  0,
+                  720,
+                  132
+                ],
+                "text": "",
+                "content_description": "",
+                "class_name": "android.widget.FrameLayout",
+                "resource_id": "com.android.systemui:id/status_bar",
+                "package": "com.android.systemui",
+                "clickable": false,
+                "scrollable": false,
+                "enabled": true,
+                "checkable": false,
+                "editable": false,
+                "visible": true,
+                "password": false,
+                "long_clickable": false,
+                "children": [
+                  {
+                    "path": "w24319/1/0/0",
+                    "bounds": [
+                      47,
+                      0,
+                      673,
+                      132
+                    ],
+                    "text": "",
+                    "content_description": "",
+                    "class_name": "android.widget.LinearLayout",
+                    "resource_id": "com.android.systemui:id/status_bar_contents",
+                    "package": "com.android.systemui",
+                    "clickable": false,
+                    "scrollable": false,
+                    "enabled": true,
+                    "checkable": false,
+                    "editable": false,
+                    "visible": true,
+                    "password": false,
+                    "long_clickable": false,
+                    "children": [
+                      {
+                        "path": "w24319/1/0/0/0",
+                        "bounds": [
+                          47,
+                          1,
+                          284,
+                          132
+                        ],
+                        "text": "",
+                        "content_description": "",
+                        "class_name": "android.widget.FrameLayout",
+                        "resource_id": "com.android.systemui:id/status_bar_start_side_container",
+                        "package": "com.android.systemui",
+                        "clickable": false,
+                        "scrollable": false,
+                        "enabled": true,
+                        "checkable": false,
+                        "editable": false,
+                        "visible": true,
+                        "password": false,
+                        "long_clickable": false,
+                        "children": [
+                          {
+                            "path": "w24319/1/0/0/0/0",
+                            "bounds": [
+                              47,
+                              1,
+                              194,
+                              132
+                            ],
+                            "text": "",
+                            "content_description": "",
+                            "class_name": "android.widget.FrameLayout",
+                            "resource_id": "com.android.systemui:id/status_bar_start_side_content",
+                            "package": "com.android.systemui",
+                            "clickable": false,
+                            "scrollable": false,
+                            "enabled": true,
+                            "checkable": false,
+                            "editable": false,
+                            "visible": true,
+                            "password": false,
+                            "long_clickable": false,
+                            "children": [
+                              {
+                                "path": "w24319/1/0/0/0/0/0",
+                                "bounds": [
+                                  47,
+                                  1,
+                                  194,
+                                  132
+                                ],
+                                "text": "",
+                                "content_description": "",
+                                "class_name": "android.widget.LinearLayout",
+                                "resource_id": "com.android.systemui:id/status_bar_start_side_except_heads_up",
+                                "package": "com.android.systemui",
+                                "clickable": false,
+                                "scrollable": false,
+                                "enabled": true,
+                                "checkable": false,
+                                "editable": false,
+                                "visible": true,
+                                "password": false,
+                                "long_clickable": false,
+                                "children": [
+                                  {
+                                    "path": "w24319/1/0/0/0/0/0/0",
+                                    "bounds": [
+                                      47,
+                                      52,
+                                      116,
+                                      81
+                                    ],
+                                    "text": "fixture label",
+                                    "content_description": "fixture description",
+                                    "class_name": "android.widget.TextView",
+                                    "resource_id": "com.android.systemui:id/clock",
+                                    "package": "com.android.systemui",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": []
+                                  },
+                                  {
+                                    "path": "w24319/1/0/0/0/0/0/1",
+                                    "bounds": [
+                                      116,
+                                      1,
+                                      194,
+                                      132
+                                    ],
+                                    "text": "",
+                                    "content_description": "",
+                                    "class_name": "android.widget.FrameLayout",
+                                    "resource_id": "com.android.systemui:id/notification_icon_area",
+                                    "package": "com.android.systemui",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": [
+                                      {
+                                        "path": "w24319/1/0/0/0/0/0/1/0",
+                                        "bounds": [
+                                          116,
+                                          1,
+                                          194,
+                                          132
+                                        ],
+                                        "text": "",
+                                        "content_description": "",
+                                        "class_name": "android.view.ViewGroup",
+                                        "resource_id": "com.android.systemui:id/notificationIcons",
+                                        "package": "com.android.systemui",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": true,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": [
+                                          {
+                                            "path": "w24319/1/0/0/0/0/0/1/0/0",
+                                            "bounds": [
+                                              116,
+                                              1,
+                                              155,
+                                              132
+                                            ],
+                                            "text": "",
+                                            "content_description": "fixture description",
+                                            "class_name": "android.widget.ImageView",
+                                            "resource_id": "",
+                                            "package": "com.android.systemui",
+                                            "clickable": false,
+                                            "scrollable": false,
+                                            "enabled": true,
+                                            "checkable": false,
+                                            "editable": false,
+                                            "visible": true,
+                                            "password": false,
+                                            "long_clickable": false,
+                                            "children": []
+                                          },
+                                          {
+                                            "path": "w24319/1/0/0/0/0/0/1/0/1",
+                                            "bounds": [
+                                              155,
+                                              1,
+                                              194,
+                                              132
+                                            ],
+                                            "text": "",
+                                            "content_description": "fixture description",
+                                            "class_name": "android.widget.ImageView",
+                                            "resource_id": "",
+                                            "package": "com.android.systemui",
+                                            "clickable": false,
+                                            "scrollable": false,
+                                            "enabled": true,
+                                            "checkable": false,
+                                            "editable": false,
+                                            "visible": true,
+                                            "password": false,
+                                            "long_clickable": false,
+                                            "children": []
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "path": "w24319/1/0/0/1",
+                        "bounds": [
+                          284,
+                          1,
+                          429,
+                          132
+                        ],
+                        "text": "",
+                        "content_description": "",
+                        "class_name": "android.view.View",
+                        "resource_id": "com.android.systemui:id/cutout_space_view",
+                        "package": "com.android.systemui",
+                        "clickable": false,
+                        "scrollable": false,
+                        "enabled": true,
+                        "checkable": false,
+                        "editable": false,
+                        "visible": true,
+                        "password": false,
+                        "long_clickable": false,
+                        "children": []
+                      },
+                      {
+                        "path": "w24319/1/0/0/2",
+                        "bounds": [
+                          429,
+                          1,
+                          666,
+                          132
+                        ],
+                        "text": "",
+                        "content_description": "",
+                        "class_name": "android.widget.FrameLayout",
+                        "resource_id": "com.android.systemui:id/status_bar_end_side_container",
+                        "package": "com.android.systemui",
+                        "clickable": false,
+                        "scrollable": false,
+                        "enabled": true,
+                        "checkable": false,
+                        "editable": false,
+                        "visible": true,
+                        "password": false,
+                        "long_clickable": false,
+                        "children": [
+                          {
+                            "path": "w24319/1/0/0/2/0",
+                            "bounds": [
+                              573,
+                              1,
+                              666,
+                              132
+                            ],
+                            "text": "",
+                            "content_description": "",
+                            "class_name": "android.widget.LinearLayout",
+                            "resource_id": "com.android.systemui:id/status_bar_end_side_content",
+                            "package": "com.android.systemui",
+                            "clickable": false,
+                            "scrollable": false,
+                            "enabled": true,
+                            "checkable": false,
+                            "editable": false,
+                            "visible": true,
+                            "password": false,
+                            "long_clickable": false,
+                            "children": [
+                              {
+                                "path": "w24319/1/0/0/2/0/0",
+                                "bounds": [
+                                  573,
+                                  47,
+                                  666,
+                                  86
+                                ],
+                                "text": "",
+                                "content_description": "",
+                                "class_name": "android.widget.LinearLayout",
+                                "resource_id": "com.android.systemui:id/system_icons",
+                                "package": "com.android.systemui",
+                                "clickable": false,
+                                "scrollable": false,
+                                "enabled": true,
+                                "checkable": false,
+                                "editable": false,
+                                "visible": true,
+                                "password": false,
+                                "long_clickable": false,
+                                "children": [
+                                  {
+                                    "path": "w24319/1/0/0/2/0/0/0",
+                                    "bounds": [
+                                      578,
+                                      47,
+                                      645,
+                                      86
+                                    ],
+                                    "text": "",
+                                    "content_description": "",
+                                    "class_name": "android.widget.LinearLayout",
+                                    "resource_id": "com.android.systemui:id/statusIcons",
+                                    "package": "com.android.systemui",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": [
+                                      {
+                                        "path": "w24319/1/0/0/2/0/0/0/0",
+                                        "bounds": [
+                                          578,
+                                          47,
+                                          608,
+                                          86
+                                        ],
+                                        "text": "",
+                                        "content_description": "",
+                                        "class_name": "android.widget.FrameLayout",
+                                        "resource_id": "com.android.systemui:id/wifi_combo",
+                                        "package": "com.android.systemui",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": true,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": [
+                                          {
+                                            "path": "w24319/1/0/0/2/0/0/0/0/0",
+                                            "bounds": [
+                                              582,
+                                              47,
+                                              608,
+                                              86
+                                            ],
+                                            "text": "",
+                                            "content_description": "",
+                                            "class_name": "android.widget.LinearLayout",
+                                            "resource_id": "com.android.systemui:id/wifi_group",
+                                            "package": "com.android.systemui",
+                                            "clickable": false,
+                                            "scrollable": false,
+                                            "enabled": true,
+                                            "checkable": false,
+                                            "editable": false,
+                                            "visible": true,
+                                            "password": false,
+                                            "long_clickable": false,
+                                            "children": [
+                                              {
+                                                "path": "w24319/1/0/0/2/0/0/0/0/0/0",
+                                                "bounds": [
+                                                  582,
+                                                  53,
+                                                  608,
+                                                  79
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.FrameLayout",
+                                                "resource_id": "com.android.systemui:id/wifi_combo",
+                                                "package": "com.android.systemui",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24319/1/0/0/2/0/0/0/0/0/0/0",
+                                                    "bounds": [
+                                                      582,
+                                                      53,
+                                                      608,
+                                                      79
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "fixture description",
+                                                    "class_name": "android.widget.ImageView",
+                                                    "resource_id": "com.android.systemui:id/wifi_signal",
+                                                    "package": "com.android.systemui",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": []
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "path": "w24319/1/0/0/2/0/0/0/1",
+                                        "bounds": [
+                                          578,
+                                          66,
+                                          578,
+                                          66
+                                        ],
+                                        "text": "",
+                                        "content_description": "",
+                                        "class_name": "android.widget.FrameLayout",
+                                        "resource_id": "",
+                                        "package": "com.android.systemui",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": false,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": []
+                                      },
+                                      {
+                                        "path": "w24319/1/0/0/2/0/0/0/2",
+                                        "bounds": [
+                                          608,
+                                          47,
+                                          634,
+                                          86
+                                        ],
+                                        "text": "",
+                                        "content_description": "fixture description",
+                                        "class_name": "android.widget.FrameLayout",
+                                        "resource_id": "com.android.systemui:id/mobile_combo",
+                                        "package": "com.android.systemui",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": true,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": [
+                                          {
+                                            "path": "w24319/1/0/0/2/0/0/0/2/0",
+                                            "bounds": [
+                                              608,
+                                              47,
+                                              634,
+                                              86
+                                            ],
+                                            "text": "",
+                                            "content_description": "",
+                                            "class_name": "android.widget.LinearLayout",
+                                            "resource_id": "com.android.systemui:id/mobile_group",
+                                            "package": "com.android.systemui",
+                                            "clickable": false,
+                                            "scrollable": false,
+                                            "enabled": true,
+                                            "checkable": false,
+                                            "editable": false,
+                                            "visible": true,
+                                            "password": false,
+                                            "long_clickable": false,
+                                            "children": [
+                                              {
+                                                "path": "w24319/1/0/0/2/0/0/0/2/0/0",
+                                                "bounds": [
+                                                  608,
+                                                  53,
+                                                  634,
+                                                  79
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.FrameLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.systemui",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24319/1/0/0/2/0/0/0/2/0/0/0",
+                                                    "bounds": [
+                                                      608,
+                                                      53,
+                                                      634,
+                                                      79
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.ImageView",
+                                                    "resource_id": "com.android.systemui:id/mobile_signal",
+                                                    "package": "com.android.systemui",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": []
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "path": "w24319/1/0/0/2/0/0/1",
+                                    "bounds": [
+                                      645,
+                                      55,
+                                      659,
+                                      78
+                                    ],
+                                    "text": "",
+                                    "content_description": "fixture description",
+                                    "class_name": "android.widget.LinearLayout",
+                                    "resource_id": "com.android.systemui:id/battery",
+                                    "package": "com.android.systemui",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": [
+                                      {
+                                        "path": "w24319/1/0/0/2/0/0/1/0",
+                                        "bounds": [
+                                          645,
+                                          55,
+                                          659,
+                                          78
+                                        ],
+                                        "text": "",
+                                        "content_description": "",
+                                        "class_name": "android.widget.ImageView",
+                                        "resource_id": "",
+                                        "package": "com.android.systemui",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": true,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": []
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 24311,
+      "type": 1,
+      "layer": 0,
+      "active": true,
+      "focused": true,
+      "title": "About emulated device",
+      "bounds": [
+        0,
+        0,
+        720,
+        1600
+      ],
+      "root": {
+        "path": "w24311",
+        "bounds": [
+          0,
+          0,
+          720,
+          1600
+        ],
+        "text": "",
+        "content_description": "",
+        "class_name": "android.widget.FrameLayout",
+        "resource_id": "",
+        "package": "com.android.settings",
+        "clickable": false,
+        "scrollable": false,
+        "enabled": true,
+        "checkable": false,
+        "editable": false,
+        "visible": true,
+        "password": false,
+        "long_clickable": false,
+        "children": [
+          {
+            "path": "w24311/0",
+            "bounds": [
+              0,
+              0,
+              720,
+              1600
+            ],
+            "text": "",
+            "content_description": "",
+            "class_name": "android.widget.LinearLayout",
+            "resource_id": "",
+            "package": "com.android.settings",
+            "clickable": false,
+            "scrollable": false,
+            "enabled": true,
+            "checkable": false,
+            "editable": false,
+            "visible": true,
+            "password": false,
+            "long_clickable": false,
+            "children": [
+              {
+                "path": "w24311/0/0",
+                "bounds": [
+                  0,
+                  0,
+                  720,
+                  1600
+                ],
+                "text": "",
+                "content_description": "",
+                "class_name": "android.widget.FrameLayout",
+                "resource_id": "android:id/content",
+                "package": "com.android.settings",
+                "clickable": false,
+                "scrollable": false,
+                "enabled": true,
+                "checkable": false,
+                "editable": false,
+                "visible": true,
+                "password": false,
+                "long_clickable": false,
+                "children": [
+                  {
+                    "path": "w24311/0/0/0",
+                    "bounds": [
+                      0,
+                      132,
+                      720,
+                      1558
+                    ],
+                    "text": "",
+                    "content_description": "",
+                    "class_name": "android.widget.ScrollView",
+                    "resource_id": "com.android.settings:id/content_parent",
+                    "package": "com.android.settings",
+                    "clickable": false,
+                    "scrollable": true,
+                    "enabled": true,
+                    "checkable": false,
+                    "editable": false,
+                    "visible": true,
+                    "password": false,
+                    "long_clickable": false,
+                    "children": [
+                      {
+                        "path": "w24311/0/0/0/0",
+                        "bounds": [
+                          0,
+                          132,
+                          720,
+                          230
+                        ],
+                        "text": "",
+                        "content_description": "",
+                        "class_name": "android.widget.LinearLayout",
+                        "resource_id": "com.android.settings:id/app_bar",
+                        "package": "com.android.settings",
+                        "clickable": false,
+                        "scrollable": false,
+                        "enabled": true,
+                        "checkable": false,
+                        "editable": false,
+                        "visible": true,
+                        "password": false,
+                        "long_clickable": false,
+                        "children": [
+                          {
+                            "path": "w24311/0/0/0/0/0",
+                            "bounds": [
+                              0,
+                              132,
+                              720,
+                              230
+                            ],
+                            "text": "",
+                            "content_description": "About emulated device",
+                            "class_name": "android.widget.FrameLayout",
+                            "resource_id": "com.android.settings:id/collapsing_toolbar",
+                            "package": "com.android.settings",
+                            "clickable": false,
+                            "scrollable": false,
+                            "enabled": true,
+                            "checkable": false,
+                            "editable": false,
+                            "visible": true,
+                            "password": false,
+                            "long_clickable": false,
+                            "children": [
+                              {
+                                "path": "w24311/0/0/0/0/0/0",
+                                "bounds": [
+                                  0,
+                                  132,
+                                  720,
+                                  230
+                                ],
+                                "text": "",
+                                "content_description": "",
+                                "class_name": "android.view.ViewGroup",
+                                "resource_id": "com.android.settings:id/action_bar",
+                                "package": "com.android.settings",
+                                "clickable": false,
+                                "scrollable": false,
+                                "enabled": true,
+                                "checkable": false,
+                                "editable": false,
+                                "visible": true,
+                                "password": false,
+                                "long_clickable": false,
+                                "children": [
+                                  {
+                                    "path": "w24311/0/0/0/0/0/0/0",
+                                    "bounds": [
+                                      0,
+                                      132,
+                                      98,
+                                      230
+                                    ],
+                                    "text": "",
+                                    "content_description": "fixture description",
+                                    "class_name": "android.widget.ImageButton",
+                                    "resource_id": "",
+                                    "package": "com.android.settings",
+                                    "clickable": true,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": []
+                                  },
+                                  {
+                                    "path": "w24311/0/0/0/0/0/0/1",
+                                    "bounds": [
+                                      126,
+                                      132,
+                                      720,
+                                      230
+                                    ],
+                                    "text": "",
+                                    "content_description": "",
+                                    "class_name": "android.view.View",
+                                    "resource_id": "",
+                                    "package": "com.android.settings",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": []
+                                  },
+                                  {
+                                    "path": "w24311/0/0/0/0/0/0/2",
+                                    "bounds": [
+                                      126,
+                                      157,
+                                      126,
+                                      204
+                                    ],
+                                    "text": "fixture label",
+                                    "content_description": "",
+                                    "class_name": "android.widget.TextView",
+                                    "resource_id": "",
+                                    "package": "com.android.settings",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": false,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": []
+                                  },
+                                  {
+                                    "path": "w24311/0/0/0/0/0/0/3",
+                                    "bounds": [
+                                      720,
+                                      132,
+                                      720,
+                                      230
+                                    ],
+                                    "text": "",
+                                    "content_description": "",
+                                    "class_name": "android.widget.LinearLayout",
+                                    "resource_id": "",
+                                    "package": "com.android.settings",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": false,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": []
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "path": "w24311/0/0/0/1",
+                        "bounds": [
+                          0,
+                          230,
+                          720,
+                          1558
+                        ],
+                        "text": "",
+                        "content_description": "",
+                        "class_name": "android.widget.FrameLayout",
+                        "resource_id": "com.android.settings:id/content_frame",
+                        "package": "com.android.settings",
+                        "clickable": false,
+                        "scrollable": false,
+                        "enabled": true,
+                        "checkable": false,
+                        "editable": false,
+                        "visible": true,
+                        "password": false,
+                        "long_clickable": false,
+                        "children": [
+                          {
+                            "path": "w24311/0/0/0/1/0",
+                            "bounds": [
+                              0,
+                              230,
+                              720,
+                              1558
+                            ],
+                            "text": "",
+                            "content_description": "",
+                            "class_name": "android.widget.LinearLayout",
+                            "resource_id": "",
+                            "package": "com.android.settings",
+                            "clickable": false,
+                            "scrollable": false,
+                            "enabled": true,
+                            "checkable": false,
+                            "editable": false,
+                            "visible": true,
+                            "password": false,
+                            "long_clickable": false,
+                            "children": [
+                              {
+                                "path": "w24311/0/0/0/1/0/0",
+                                "bounds": [
+                                  0,
+                                  230,
+                                  720,
+                                  1558
+                                ],
+                                "text": "",
+                                "content_description": "",
+                                "class_name": "android.widget.FrameLayout",
+                                "resource_id": "com.android.settings:id/main_content",
+                                "package": "com.android.settings",
+                                "clickable": false,
+                                "scrollable": false,
+                                "enabled": true,
+                                "checkable": false,
+                                "editable": false,
+                                "visible": true,
+                                "password": false,
+                                "long_clickable": false,
+                                "children": [
+                                  {
+                                    "path": "w24311/0/0/0/1/0/0/0",
+                                    "bounds": [
+                                      0,
+                                      230,
+                                      720,
+                                      1558
+                                    ],
+                                    "text": "",
+                                    "content_description": "",
+                                    "class_name": "android.widget.LinearLayout",
+                                    "resource_id": "com.android.settings:id/container_material",
+                                    "package": "com.android.settings",
+                                    "clickable": false,
+                                    "scrollable": false,
+                                    "enabled": true,
+                                    "checkable": false,
+                                    "editable": false,
+                                    "visible": true,
+                                    "password": false,
+                                    "long_clickable": false,
+                                    "children": [
+                                      {
+                                        "path": "w24311/0/0/0/1/0/0/0/0",
+                                        "bounds": [
+                                          0,
+                                          230,
+                                          720,
+                                          1558
+                                        ],
+                                        "text": "",
+                                        "content_description": "",
+                                        "class_name": "android.widget.FrameLayout",
+                                        "resource_id": "android:id/list_container",
+                                        "package": "com.android.settings",
+                                        "clickable": false,
+                                        "scrollable": false,
+                                        "enabled": true,
+                                        "checkable": false,
+                                        "editable": false,
+                                        "visible": true,
+                                        "password": false,
+                                        "long_clickable": false,
+                                        "children": [
+                                          {
+                                            "path": "w24311/0/0/0/1/0/0/0/0/0",
+                                            "bounds": [
+                                              0,
+                                              230,
+                                              720,
+                                              1558
+                                            ],
+                                            "text": "",
+                                            "content_description": "",
+                                            "class_name": "androidx.recyclerview.widget.RecyclerView",
+                                            "resource_id": "com.android.settings:id/recycler_view",
+                                            "package": "com.android.settings",
+                                            "clickable": false,
+                                            "scrollable": true,
+                                            "enabled": true,
+                                            "checkable": false,
+                                            "editable": false,
+                                            "visible": true,
+                                            "password": false,
+                                            "long_clickable": false,
+                                            "children": [
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/0",
+                                                "bounds": [
+                                                  0,
+                                                  230,
+                                                  720,
+                                                  290
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": true,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": true,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/0/0",
+                                                    "bounds": [
+                                                      42,
+                                                      230,
+                                                      692,
+                                                      290
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/0/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          230,
+                                                          113,
+                                                          228
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": false,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/0/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          230,
+                                                          252,
+                                                          262
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/1",
+                                                "bounds": [
+                                                  0,
+                                                  290,
+                                                  720,
+                                                  427
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": true,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/1/0",
+                                                    "bounds": [
+                                                      42,
+                                                      290,
+                                                      692,
+                                                      427
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/1/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          318,
+                                                          288,
+                                                          365
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/1/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          365,
+                                                          70,
+                                                          399
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/2",
+                                                "bounds": [
+                                                  0,
+                                                  455,
+                                                  720,
+                                                  517
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/2/0",
+                                                    "bounds": [
+                                                      42,
+                                                      455,
+                                                      692,
+                                                      517
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/2/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          469,
+                                                          692,
+                                                          503
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/3",
+                                                "bounds": [
+                                                  0,
+                                                  517,
+                                                  720,
+                                                  741
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": true,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/3/0",
+                                                    "bounds": [
+                                                      42,
+                                                      517,
+                                                      692,
+                                                      741
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/3/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          545,
+                                                          209,
+                                                          592
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/3/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          592,
+                                                          345,
+                                                          713
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/4",
+                                                "bounds": [
+                                                  0,
+                                                  741,
+                                                  720,
+                                                  878
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": true,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/4/0",
+                                                    "bounds": [
+                                                      42,
+                                                      741,
+                                                      692,
+                                                      878
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/4/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          769,
+                                                          341,
+                                                          816
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/4/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          816,
+                                                          383,
+                                                          850
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/5",
+                                                "bounds": [
+                                                  0,
+                                                  878,
+                                                  720,
+                                                  1015
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": true,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/5/0",
+                                                    "bounds": [
+                                                      42,
+                                                      878,
+                                                      692,
+                                                      1015
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/5/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          906,
+                                                          455,
+                                                          953
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/5/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          953,
+                                                          238,
+                                                          987
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/6",
+                                                "bounds": [
+                                                  0,
+                                                  1015,
+                                                  720,
+                                                  1152
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": true,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/6/0",
+                                                    "bounds": [
+                                                      42,
+                                                      1015,
+                                                      692,
+                                                      1152
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/6/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          1043,
+                                                          327,
+                                                          1090
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/6/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          1090,
+                                                          171,
+                                                          1124
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/7",
+                                                "bounds": [
+                                                  0,
+                                                  1152,
+                                                  720,
+                                                  1289
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": false,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/7/0",
+                                                    "bounds": [
+                                                      42,
+                                                      1152,
+                                                      692,
+                                                      1289
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/7/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          1180,
+                                                          155,
+                                                          1227
+                                                        ],
+                                                        "text": "Uptime",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/7/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          1227,
+                                                          138,
+                                                          1261
+                                                        ],
+                                                        "text": "12:41:50",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/8",
+                                                "bounds": [
+                                                  0,
+                                                  1289,
+                                                  720,
+                                                  1392
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": true,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": false,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/8/0",
+                                                    "bounds": [
+                                                      42,
+                                                      1289,
+                                                      692,
+                                                      1392
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/8/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          1317,
+                                                          550,
+                                                          1364
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "path": "w24311/0/0/0/1/0/0/0/0/0/9",
+                                                "bounds": [
+                                                  0,
+                                                  1392,
+                                                  720,
+                                                  1558
+                                                ],
+                                                "text": "",
+                                                "content_description": "",
+                                                "class_name": "android.widget.LinearLayout",
+                                                "resource_id": "",
+                                                "package": "com.android.settings",
+                                                "clickable": true,
+                                                "scrollable": false,
+                                                "enabled": true,
+                                                "checkable": false,
+                                                "editable": false,
+                                                "visible": true,
+                                                "password": false,
+                                                "long_clickable": true,
+                                                "children": [
+                                                  {
+                                                    "path": "w24311/0/0/0/1/0/0/0/0/0/9/0",
+                                                    "bounds": [
+                                                      42,
+                                                      1392,
+                                                      692,
+                                                      1558
+                                                    ],
+                                                    "text": "",
+                                                    "content_description": "",
+                                                    "class_name": "android.widget.RelativeLayout",
+                                                    "resource_id": "",
+                                                    "package": "com.android.settings",
+                                                    "clickable": false,
+                                                    "scrollable": false,
+                                                    "enabled": true,
+                                                    "checkable": false,
+                                                    "editable": false,
+                                                    "visible": true,
+                                                    "password": false,
+                                                    "long_clickable": false,
+                                                    "children": [
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/9/0/0",
+                                                        "bounds": [
+                                                          42,
+                                                          1420,
+                                                          250,
+                                                          1467
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/title",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      },
+                                                      {
+                                                        "path": "w24311/0/0/0/1/0/0/0/0/0/9/0/1",
+                                                        "bounds": [
+                                                          42,
+                                                          1467,
+                                                          692,
+                                                          1530
+                                                        ],
+                                                        "text": "fixture label",
+                                                        "content_description": "",
+                                                        "class_name": "android.widget.TextView",
+                                                        "resource_id": "android:id/summary",
+                                                        "package": "com.android.settings",
+                                                        "clickable": false,
+                                                        "scrollable": false,
+                                                        "enabled": true,
+                                                        "checkable": false,
+                                                        "editable": false,
+                                                        "visible": true,
+                                                        "password": false,
+                                                        "long_clickable": false,
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "node_count": 84
+}

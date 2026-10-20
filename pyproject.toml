@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Proj.DigitalLife"
+version = "0.2.3"
+description = "Proj.DigitalLife / 数字生命计划: a persistent autonomous phone-agent prototype"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["Pillow>=11.3,<13"]
+
+[project.scripts]
+proj-digitallife = "phonelife.cli:main"
+phone-life = "phonelife.cli:main"
+proj-digitallife-soak = "phonelife.longrun:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+phonelife = ["assets/*.jar"]

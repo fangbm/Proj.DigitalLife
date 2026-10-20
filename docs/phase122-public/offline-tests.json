@@ -1,0 +1,998 @@
+{
+  "count": 198,
+  "original": 162,
+  "new": 36,
+  "all_passed": true,
+  "tests": [
+    {
+      "name": "test_real_adapter_repairs_at_most_twice_and_carries_memories_as_user_data",
+      "class": "test_autonomy.APISchemaTests.test_real_adapter_repairs_at_most_twice_and_carries_memories_as_user_data",
+      "status": "PASS"
+    },
+    {
+      "name": "test_actual_processes_cannot_double_spend_one_request_quota",
+      "class": "test_autonomy.BudgetTests.test_actual_processes_cannot_double_spend_one_request_quota",
+      "status": "PASS"
+    },
+    {
+      "name": "test_day_and_per_goal_limits_are_separate",
+      "class": "test_autonomy.BudgetTests.test_day_and_per_goal_limits_are_separate",
+      "status": "PASS"
+    },
+    {
+      "name": "test_hour_limit_is_durable_and_counts_failed_requests",
+      "class": "test_autonomy.BudgetTests.test_hour_limit_is_durable_and_counts_failed_requests",
+      "status": "PASS"
+    },
+    {
+      "name": "test_invalid_or_unbounded_limits_are_rejected",
+      "class": "test_autonomy.BudgetTests.test_invalid_or_unbounded_limits_are_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_quota_rest_avoids_brain_and_gui_requests",
+      "class": "test_autonomy.BudgetTests.test_quota_rest_avoids_brain_and_gui_requests",
+      "status": "PASS"
+    },
+    {
+      "name": "test_request_failure_is_counted_without_automatic_retry",
+      "class": "test_autonomy.BudgetTests.test_request_failure_is_counted_without_automatic_retry",
+      "status": "PASS"
+    },
+    {
+      "name": "test_allowed_label_does_not_override_toggle_or_foreign_overlay",
+      "class": "test_autonomy.CapabilityTests.test_allowed_label_does_not_override_toggle_or_foreign_overlay",
+      "status": "PASS"
+    },
+    {
+      "name": "test_known_readonly_route_allowed_but_unknown_and_sensitive_controls_blocked",
+      "class": "test_autonomy.CapabilityTests.test_known_readonly_route_allowed_but_unknown_and_sensitive_controls_blocked",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_ui_identity_fails_closed",
+      "class": "test_autonomy.CapabilityTests.test_missing_ui_identity_fails_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_no_free_text_or_unapproved_app_even_on_mock",
+      "class": "test_autonomy.CapabilityTests.test_no_free_text_or_unapproved_app_even_on_mock",
+      "status": "PASS"
+    },
+    {
+      "name": "test_swipe_requires_real_scrollable_list_and_vertical_motion",
+      "class": "test_autonomy.CapabilityTests.test_swipe_requires_real_scrollable_list_and_vertical_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "test_experience_changes_interest_and_next_goal_without_user_target",
+      "class": "test_autonomy.CausalLoopTests.test_experience_changes_interest_and_next_goal_without_user_target",
+      "status": "PASS"
+    },
+    {
+      "name": "test_failure_threshold_causes_rest_and_does_not_repeat_model_requests",
+      "class": "test_autonomy.CausalLoopTests.test_failure_threshold_causes_rest_and_does_not_repeat_model_requests",
+      "status": "PASS"
+    },
+    {
+      "name": "test_finalize_transaction_failure_keeps_recoverable_task_and_releases",
+      "class": "test_autonomy.CausalLoopTests.test_finalize_transaction_failure_keeps_recoverable_task_and_releases",
+      "status": "PASS"
+    },
+    {
+      "name": "test_high_goal_is_blocked_before_gui_even_with_harmless_verification",
+      "class": "test_autonomy.CausalLoopTests.test_high_goal_is_blocked_before_gui_even_with_harmless_verification",
+      "status": "PASS"
+    },
+    {
+      "name": "test_invalid_new_brain_output_has_two_request_bound_and_audited_rejections",
+      "class": "test_autonomy.CausalLoopTests.test_invalid_new_brain_output_has_two_request_bound_and_audited_rejections",
+      "status": "PASS"
+    },
+    {
+      "name": "test_low_energy_forces_real_rest_without_brain_request",
+      "class": "test_autonomy.CausalLoopTests.test_low_energy_forces_real_rest_without_brain_request",
+      "status": "PASS"
+    },
+    {
+      "name": "test_model_local_candidate_ids_can_repeat_across_cycles_without_collision",
+      "class": "test_autonomy.CausalLoopTests.test_model_local_candidate_ids_can_repeat_across_cycles_without_collision",
+      "status": "PASS"
+    },
+    {
+      "name": "test_model_rest_and_reflect_decisions_do_not_call_gui",
+      "class": "test_autonomy.CausalLoopTests.test_model_rest_and_reflect_decisions_do_not_call_gui",
+      "status": "PASS"
+    },
+    {
+      "name": "test_new_brain_api_fault_is_metered_and_backs_off_without_gui",
+      "class": "test_autonomy.CausalLoopTests.test_new_brain_api_fault_is_metered_and_backs_off_without_gui",
+      "status": "PASS"
+    },
+    {
+      "name": "test_new_state_memory_and_schedule_survive_reopen",
+      "class": "test_autonomy.CausalLoopTests.test_new_state_memory_and_schedule_survive_reopen",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reflection_success_claim_cannot_promote_open_observation",
+      "class": "test_autonomy.CausalLoopTests.test_reflection_success_claim_cannot_promote_open_observation",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reflection_timeout_does_not_destroy_verified_result",
+      "class": "test_autonomy.CausalLoopTests.test_reflection_timeout_does_not_destroy_verified_result",
+      "status": "PASS"
+    },
+    {
+      "name": "test_repeat_goal_is_cooled_down_without_increasing_action_threshold",
+      "class": "test_autonomy.CausalLoopTests.test_repeat_goal_is_cooled_down_without_increasing_action_threshold",
+      "status": "PASS"
+    },
+    {
+      "name": "test_stale_or_other_device_continuation_is_denied",
+      "class": "test_autonomy.CausalLoopTests.test_stale_or_other_device_continuation_is_denied",
+      "status": "PASS"
+    },
+    {
+      "name": "test_working_memory_records_current_screen_and_final_intent",
+      "class": "test_autonomy.CausalLoopTests.test_working_memory_records_current_screen_and_final_intent",
+      "status": "PASS"
+    },
+    {
+      "name": "test_energy_recovers_only_with_actual_elapsed_rest_time",
+      "class": "test_autonomy.ContractTests.test_energy_recovers_only_with_actual_elapsed_rest_time",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reflection_cannot_assign_numeric_state_or_safety",
+      "class": "test_autonomy.ContractTests.test_reflection_cannot_assign_numeric_state_or_safety",
+      "status": "PASS"
+    },
+    {
+      "name": "test_scores_and_unknown_fields_and_duplicate_ids_are_rejected",
+      "class": "test_autonomy.ContractTests.test_scores_and_unknown_fields_and_duplicate_ids_are_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_selection_must_reference_candidate_and_rest_selects_none",
+      "class": "test_autonomy.ContractTests.test_selection_must_reference_candidate_and_rest_selects_none",
+      "status": "PASS"
+    },
+    {
+      "name": "test_state_changes_are_bounded_and_causal",
+      "class": "test_autonomy.ContractTests.test_state_changes_are_bounded_and_causal",
+      "status": "PASS"
+    },
+    {
+      "name": "test_verifier_spec_rejects_arbitrary_shell_and_recursive_composition",
+      "class": "test_autonomy.ContractTests.test_verifier_spec_rejects_arbitrary_shell_and_recursive_composition",
+      "status": "PASS"
+    },
+    {
+      "name": "test_benchmark_manual_legacy_and_mock_memories_cannot_enter_life",
+      "class": "test_autonomy.MemoryTests.test_benchmark_manual_legacy_and_mock_memories_cannot_enter_life",
+      "status": "PASS"
+    },
+    {
+      "name": "test_dedup_retains_multiple_provenance_links_and_relevance",
+      "class": "test_autonomy.MemoryTests.test_dedup_retains_multiple_provenance_links_and_relevance",
+      "status": "PASS"
+    },
+    {
+      "name": "test_explicit_legacy_autonomous_memory_is_retrieved_without_reclassification",
+      "class": "test_autonomy.MemoryTests.test_explicit_legacy_autonomous_memory_is_retrieved_without_reclassification",
+      "status": "PASS"
+    },
+    {
+      "name": "test_preferences_are_small_and_provenance_is_preserved",
+      "class": "test_autonomy.MemoryTests.test_preferences_are_small_and_provenance_is_preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "test_stale_marking_is_bounded_and_preserves_rows",
+      "class": "test_autonomy.MemoryTests.test_stale_marking_is_bounded_and_preserves_rows",
+      "status": "PASS"
+    },
+    {
+      "name": "test_all_four_interruption_states_are_distinct_and_old_actions_never_replay",
+      "class": "test_autonomy.RecoveryAndControlTests.test_all_four_interruption_states_are_distinct_and_old_actions_never_replay",
+      "status": "PASS"
+    },
+    {
+      "name": "test_benchmark_lease_blocks_autonomous_even_with_force",
+      "class": "test_autonomy.RecoveryAndControlTests.test_benchmark_lease_blocks_autonomous_even_with_force",
+      "status": "PASS"
+    },
+    {
+      "name": "test_cancel_during_dispatch_is_needs_review_and_never_blindly_retried",
+      "class": "test_autonomy.RecoveryAndControlTests.test_cancel_during_dispatch_is_needs_review_and_never_blindly_retried",
+      "status": "PASS"
+    },
+    {
+      "name": "test_feature_migration_and_repeat_open_preserve_original_rows",
+      "class": "test_autonomy.RecoveryAndControlTests.test_feature_migration_and_repeat_open_preserve_original_rows",
+      "status": "PASS"
+    },
+    {
+      "name": "test_manual_task_on_same_executor_does_not_update_life_state_or_interests",
+      "class": "test_autonomy.RecoveryAndControlTests.test_manual_task_on_same_executor_does_not_update_life_state_or_interests",
+      "status": "PASS"
+    },
+    {
+      "name": "test_pause_and_emergency_stop_cancel_blocked_brain_and_release",
+      "class": "test_autonomy.RecoveryAndControlTests.test_pause_and_emergency_stop_cancel_blocked_brain_and_release",
+      "status": "PASS"
+    },
+    {
+      "name": "test_real_process_crash_keeps_unknown_dispatch_and_recovers_after_ttl",
+      "class": "test_autonomy.RecoveryAndControlTests.test_real_process_crash_keeps_unknown_dispatch_and_recovers_after_ttl",
+      "status": "PASS"
+    },
+    {
+      "name": "test_resident_entry_honors_sleep_and_reports_actual_short_duration",
+      "class": "test_autonomy.RecoveryAndControlTests.test_resident_entry_honors_sleep_and_reports_actual_short_duration",
+      "status": "PASS"
+    },
+    {
+      "name": "test_separate_task_databases_share_one_device_coordinator",
+      "class": "test_autonomy.RecoveryAndControlTests.test_separate_task_databases_share_one_device_coordinator",
+      "status": "PASS"
+    },
+    {
+      "name": "test_startup_reviews_orphan_before_a_future_wake_without_gui_replay",
+      "class": "test_autonomy.RecoveryAndControlTests.test_startup_reviews_orphan_before_a_future_wake_without_gui_replay",
+      "status": "PASS"
+    },
+    {
+      "name": "test_status_and_replay_of_life_database_are_file_readonly",
+      "class": "test_autonomy.RecoveryAndControlTests.test_status_and_replay_of_life_database_are_file_readonly",
+      "status": "PASS"
+    },
+    {
+      "name": "test_composite_cannot_succeed_when_only_one_rule_met",
+      "class": "test_autonomy.VerificationTests.test_composite_cannot_succeed_when_only_one_rule_met",
+      "status": "PASS"
+    },
+    {
+      "name": "test_foreground_checks_actual_package_not_finish_claim",
+      "class": "test_autonomy.VerificationTests.test_foreground_checks_actual_package_not_finish_claim",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_page_evidence_is_uncertain",
+      "class": "test_autonomy.VerificationTests.test_missing_page_evidence_is_uncertain",
+      "status": "PASS"
+    },
+    {
+      "name": "test_open_exploration_is_observed_not_success",
+      "class": "test_autonomy.VerificationTests.test_open_exploration_is_observed_not_success",
+      "status": "PASS"
+    },
+    {
+      "name": "test_readonly_facts_are_independently_measured",
+      "class": "test_autonomy.VerificationTests.test_readonly_facts_are_independently_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "test_independent_samples_are_immutable_hash_linked_and_context_is_reset",
+      "class": "test_closure.CollectionJournalTests.test_independent_samples_are_immutable_hash_linked_and_context_is_reset",
+      "status": "PASS"
+    },
+    {
+      "name": "test_journal_io_failure_never_falls_back_to_another_backend",
+      "class": "test_closure.CollectionJournalTests.test_journal_io_failure_never_falls_back_to_another_backend",
+      "status": "PASS"
+    },
+    {
+      "name": "test_post_audit_outage_is_recorded_under_lease_then_released",
+      "class": "test_closure.CollectionJournalTests.test_post_audit_outage_is_recorded_under_lease_then_released",
+      "status": "PASS"
+    },
+    {
+      "name": "test_activity_change_between_two_valid_about_entrypoints_still_blocks",
+      "class": "test_closure.DynamicTests.test_activity_change_between_two_valid_about_entrypoints_still_blocks",
+      "status": "PASS"
+    },
+    {
+      "name": "test_activity_switch_blocks_even_dynamic_page",
+      "class": "test_closure.DynamicTests.test_activity_switch_blocks_even_dynamic_page",
+      "status": "PASS"
+    },
+    {
+      "name": "test_clickable_parent_has_no_mask",
+      "class": "test_closure.DynamicTests.test_clickable_parent_has_no_mask",
+      "status": "PASS"
+    },
+    {
+      "name": "test_cooldown_honored_then_recovery_after_expiry",
+      "class": "test_closure.DynamicTests.test_cooldown_honored_then_recovery_after_expiry",
+      "status": "PASS"
+    },
+    {
+      "name": "test_dynamic_bounds_change_blocks",
+      "class": "test_closure.DynamicTests.test_dynamic_bounds_change_blocks",
+      "status": "PASS"
+    },
+    {
+      "name": "test_every_dynamic_safety_attribute_change_blocks",
+      "class": "test_closure.DynamicTests.test_every_dynamic_safety_attribute_change_blocks",
+      "status": "PASS"
+    },
+    {
+      "name": "test_noninteractive_unknown_text_change_blocks",
+      "class": "test_closure.DynamicTests.test_noninteractive_unknown_text_change_blocks",
+      "status": "PASS"
+    },
+    {
+      "name": "test_outside_mask_pixel_change_blocks",
+      "class": "test_closure.DynamicTests.test_outside_mask_pixel_change_blocks",
+      "status": "PASS"
+    },
+    {
+      "name": "test_overlay_and_window_bounds_changes_block",
+      "class": "test_closure.DynamicTests.test_overlay_and_window_bounds_changes_block",
+      "status": "PASS"
+    },
+    {
+      "name": "test_paired_dynamic_text_and_pixels_are_trusted_with_audit",
+      "class": "test_closure.DynamicTests.test_paired_dynamic_text_and_pixels_are_trusted_with_audit",
+      "status": "PASS"
+    },
+    {
+      "name": "test_real_activity_and_known_entrypoints_require_about_header",
+      "class": "test_closure.DynamicTests.test_real_activity_and_known_entrypoints_require_about_header",
+      "status": "PASS"
+    },
+    {
+      "name": "test_real_shape_reproduces_old_tree_and_body_failure",
+      "class": "test_closure.DynamicTests.test_real_shape_reproduces_old_tree_and_body_failure",
+      "status": "PASS"
+    },
+    {
+      "name": "test_rotation_and_screen_resize_block",
+      "class": "test_closure.DynamicTests.test_rotation_and_screen_resize_block",
+      "status": "PASS"
+    },
+    {
+      "name": "test_stable_scroll_control_remains_bound_with_dynamic_text",
+      "class": "test_closure.DynamicTests.test_stable_scroll_control_remains_bound_with_dynamic_text",
+      "status": "PASS"
+    },
+    {
+      "name": "test_subsettings_without_exact_safe_about_header_is_not_dynamic",
+      "class": "test_closure.DynamicTests.test_subsettings_without_exact_safe_about_header_is_not_dynamic",
+      "status": "PASS"
+    },
+    {
+      "name": "test_target_moves_disappears_or_identity_changes_block",
+      "class": "test_closure.DynamicTests.test_target_moves_disappears_or_identity_changes_block",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unknown_dynamic_attribute_is_not_coerced",
+      "class": "test_closure.DynamicTests.test_unknown_dynamic_attribute_is_not_coerced",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unrecognized_timer_title_has_no_mask",
+      "class": "test_closure.DynamicTests.test_unrecognized_timer_title_has_no_mask",
+      "status": "PASS"
+    },
+    {
+      "name": "test_uptime_is_not_semantic_progress",
+      "class": "test_closure.DynamicTests.test_uptime_is_not_semantic_progress",
+      "status": "PASS"
+    },
+    {
+      "name": "test_known_overlay_stops_recovery_without_launch",
+      "class": "test_closure.RecoveryTests.test_known_overlay_stops_recovery_without_launch",
+      "status": "PASS"
+    },
+    {
+      "name": "test_recovery_launch_separately_counted_and_old_reference_refused",
+      "class": "test_closure.RecoveryTests.test_recovery_launch_separately_counted_and_old_reference_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "test_recovery_requires_live_lease",
+      "class": "test_closure.RecoveryTests.test_recovery_requires_live_lease",
+      "status": "PASS"
+    },
+    {
+      "name": "test_uncertain_launch_never_retries_and_lease_released",
+      "class": "test_closure.RecoveryTests.test_uncertain_launch_never_retries_and_lease_released",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reference_error_codes_are_distinct_and_no_silent_repair",
+      "class": "test_closure.RejectionTests.test_reference_error_codes_are_distinct_and_no_silent_repair",
+      "status": "PASS"
+    },
+    {
+      "name": "test_repaired_candidate_refusal_and_sent_context_are_auditable",
+      "class": "test_closure.RejectionTests.test_repaired_candidate_refusal_and_sent_context_are_auditable",
+      "status": "PASS"
+    },
+    {
+      "name": "test_two_failures_persist_and_next_new_brain_receives_specific_error",
+      "class": "test_closure.RejectionTests.test_two_failures_persist_and_next_new_brain_receives_specific_error",
+      "status": "PASS"
+    },
+    {
+      "name": "test_actual_secrets_and_personal_identifiers_remain_masked",
+      "class": "test_closure.TypedAuditTests.test_actual_secrets_and_personal_identifiers_remain_masked",
+      "status": "PASS"
+    },
+    {
+      "name": "test_free_text_network_identifiers_mask_without_corrupting_timers",
+      "class": "test_closure.TypedAuditTests.test_free_text_network_identifiers_mask_without_corrupting_timers",
+      "status": "PASS"
+    },
+    {
+      "name": "test_malformed_identifier_is_never_repaired",
+      "class": "test_closure.TypedAuditTests.test_malformed_identifier_is_never_repaired",
+      "status": "PASS"
+    },
+    {
+      "name": "test_public_export_drops_model_text_and_raw_evidence",
+      "class": "test_closure.TypedAuditTests.test_public_export_drops_model_text_and_raw_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "test_safety_boolean_and_null_types_survive_storage",
+      "class": "test_closure.TypedAuditTests.test_safety_boolean_and_null_types_survive_storage",
+      "status": "PASS"
+    },
+    {
+      "name": "test_secrets_in_dictionary_keys_are_redacted",
+      "class": "test_closure.TypedAuditTests.test_secrets_in_dictionary_keys_are_redacted",
+      "status": "PASS"
+    },
+    {
+      "name": "test_sha_uuid_with_phone_digit_sequences_remain_exact",
+      "class": "test_closure.TypedAuditTests.test_sha_uuid_with_phone_digit_sequences_remain_exact",
+      "status": "PASS"
+    },
+    {
+      "name": "test_action_rejects_unknown_type",
+      "class": "test_core.DataValidationTests.test_action_rejects_unknown_type",
+      "status": "PASS"
+    },
+    {
+      "name": "test_json_parsing",
+      "class": "test_core.DataValidationTests.test_json_parsing",
+      "status": "PASS"
+    },
+    {
+      "name": "test_plan_is_bounded",
+      "class": "test_core.DataValidationTests.test_plan_is_bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "test_lease_blocks_second_owner",
+      "class": "test_core.PersistenceAndLoopTests.test_lease_blocks_second_owner",
+      "status": "PASS"
+    },
+    {
+      "name": "test_mock_autonomy_and_persistence",
+      "class": "test_core.PersistenceAndLoopTests.test_mock_autonomy_and_persistence",
+      "status": "PASS"
+    },
+    {
+      "name": "test_denies_unlisted_app",
+      "class": "test_core.PolicyTests.test_denies_unlisted_app",
+      "status": "PASS"
+    },
+    {
+      "name": "test_emulator_permits_bounded_tap",
+      "class": "test_core.PolicyTests.test_emulator_permits_bounded_tap",
+      "status": "PASS"
+    },
+    {
+      "name": "test_real_denies_tap",
+      "class": "test_core.PolicyTests.test_real_denies_tap",
+      "status": "PASS"
+    },
+    {
+      "name": "test_sensitive_text",
+      "class": "test_core.PolicyTests.test_sensitive_text",
+      "status": "PASS"
+    },
+    {
+      "name": "test_shell_metacharacter_rejected",
+      "class": "test_core.PolicyTests.test_shell_metacharacter_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_api_timeout_releases_and_backs_off_in_own_namespace",
+      "class": "test_hardening.ManagedTests.test_audit_api_timeout_releases_and_backs_off_in_own_namespace",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_blocks_an_actual_second_process",
+      "class": "test_hardening.ManagedTests.test_audit_blocks_an_actual_second_process",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_cannot_attach_a_different_observation",
+      "class": "test_hardening.ManagedTests.test_audit_cannot_attach_a_different_observation",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_exception_releases_and_persists_failure",
+      "class": "test_hardening.ManagedTests.test_audit_exception_releases_and_persists_failure",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_holds_lease_renews_and_releases",
+      "class": "test_hardening.ManagedTests.test_audit_holds_lease_renews_and_releases",
+      "status": "PASS"
+    },
+    {
+      "name": "test_audit_observation_and_result_are_linked",
+      "class": "test_hardening.ManagedTests.test_audit_observation_and_result_are_linked",
+      "status": "PASS"
+    },
+    {
+      "name": "test_autonomous_agent_cannot_cross_control_during_benchmark_audit",
+      "class": "test_hardening.ManagedTests.test_autonomous_agent_cannot_cross_control_during_benchmark_audit",
+      "status": "PASS"
+    },
+    {
+      "name": "test_autonomous_planner_only_receives_autonomous_namespace",
+      "class": "test_hardening.ManagedTests.test_autonomous_planner_only_receives_autonomous_namespace",
+      "status": "PASS"
+    },
+    {
+      "name": "test_benchmark_and_manual_do_not_pollute_life_memory_or_schedule",
+      "class": "test_hardening.ManagedTests.test_benchmark_and_manual_do_not_pollute_life_memory_or_schedule",
+      "status": "PASS"
+    },
+    {
+      "name": "test_cancel_during_audit_releases_lease",
+      "class": "test_hardening.ManagedTests.test_cancel_during_audit_releases_lease",
+      "status": "PASS"
+    },
+    {
+      "name": "test_crashed_process_lease_expires_and_new_executor_acquires",
+      "class": "test_hardening.ManagedTests.test_crashed_process_lease_expires_and_new_executor_acquires",
+      "status": "PASS"
+    },
+    {
+      "name": "test_expired_owner_cannot_renew_or_release_new_owners_lease",
+      "class": "test_hardening.ManagedTests.test_expired_owner_cannot_renew_or_release_new_owners_lease",
+      "status": "PASS"
+    },
+    {
+      "name": "test_mock_test_has_separate_memory_and_wake",
+      "class": "test_hardening.ManagedTests.test_mock_test_has_separate_memory_and_wake",
+      "status": "PASS"
+    },
+    {
+      "name": "test_repeated_valid_swipes_execute_four_times",
+      "class": "test_hardening.ManagedTests.test_repeated_valid_swipes_execute_four_times",
+      "status": "PASS"
+    },
+    {
+      "name": "test_stagnant_candidate_never_dispatches_and_events_are_exact",
+      "class": "test_hardening.ManagedTests.test_stagnant_candidate_never_dispatches_and_events_are_exact",
+      "status": "PASS"
+    },
+    {
+      "name": "test_total_device_session_deadline_includes_audit",
+      "class": "test_hardening.ManagedTests.test_total_device_session_deadline_includes_audit",
+      "status": "PASS"
+    },
+    {
+      "name": "test_clock_notification_battery_and_nav_changes_are_excluded",
+      "class": "test_hardening.ProgressTests.test_clock_notification_battery_and_nav_changes_are_excluded",
+      "status": "PASS"
+    },
+    {
+      "name": "test_local_slow_animation_between_stable_samples_is_not_progress",
+      "class": "test_hardening.ProgressTests.test_local_slow_animation_between_stable_samples_is_not_progress",
+      "status": "PASS"
+    },
+    {
+      "name": "test_same_swipe_with_continued_body_scroll_is_progress",
+      "class": "test_hardening.ProgressTests.test_same_swipe_with_continued_body_scroll_is_progress",
+      "status": "PASS"
+    },
+    {
+      "name": "test_same_swipe_with_unchanged_body_stops_before_third_dispatch",
+      "class": "test_hardening.ProgressTests.test_same_swipe_with_unchanged_body_stops_before_third_dispatch",
+      "status": "PASS"
+    },
+    {
+      "name": "test_same_tap_to_different_pages_is_allowed",
+      "class": "test_hardening.ProgressTests.test_same_tap_to_different_pages_is_allowed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_same_tap_without_progress_is_bounded",
+      "class": "test_hardening.ProgressTests.test_same_tap_without_progress_is_bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "test_temporal_body_animation_does_not_count_as_progress",
+      "class": "test_hardening.ProgressTests.test_temporal_body_animation_does_not_count_as_progress",
+      "status": "PASS"
+    },
+    {
+      "name": "test_cli_replay_never_constructs_model_or_device_or_write_store",
+      "class": "test_hardening.ReadonlyMigrationTests.test_cli_replay_never_constructs_model_or_device_or_write_store",
+      "status": "PASS"
+    },
+    {
+      "name": "test_migration_keeps_legacy_rows_null_and_does_not_reclassify",
+      "class": "test_hardening.ReadonlyMigrationTests.test_migration_keeps_legacy_rows_null_and_does_not_reclassify",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_database_does_not_create_parent_or_file",
+      "class": "test_hardening.ReadonlyMigrationTests.test_missing_database_does_not_create_parent_or_file",
+      "status": "PASS"
+    },
+    {
+      "name": "test_real_replay_does_not_change_file_schema_or_logical_content",
+      "class": "test_hardening.ReadonlyMigrationTests.test_real_replay_does_not_change_file_schema_or_logical_content",
+      "status": "PASS"
+    },
+    {
+      "name": "test_wal_replay_reads_committed_wal_without_changing_database_or_wal",
+      "class": "test_hardening.ReadonlyMigrationTests.test_wal_replay_reads_committed_wal_without_changing_database_or_wal",
+      "status": "PASS"
+    },
+    {
+      "name": "test_emulator_label_cannot_expand_physical_phone_permissions",
+      "class": "test_phase11.ReliabilityTests.test_emulator_label_cannot_expand_physical_phone_permissions",
+      "status": "PASS"
+    },
+    {
+      "name": "test_identifier_redaction_preserves_sha256",
+      "class": "test_phase11.ReliabilityTests.test_identifier_redaction_preserves_sha256",
+      "status": "PASS"
+    },
+    {
+      "name": "test_independent_visual_fallback_separate_request",
+      "class": "test_phase11.ReliabilityTests.test_independent_visual_fallback_separate_request",
+      "status": "PASS"
+    },
+    {
+      "name": "test_json_mode_only_enabled_for_known_provider_or_explicit_selection",
+      "class": "test_phase11.ReliabilityTests.test_json_mode_only_enabled_for_known_provider_or_explicit_selection",
+      "status": "PASS"
+    },
+    {
+      "name": "test_no_fake_success_if_about_title_is_only_search_result",
+      "class": "test_phase11.ReliabilityTests.test_no_fake_success_if_about_title_is_only_search_result",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_01_single_action",
+      "class": "test_phase11.ReliabilityTests.test_p11_01_single_action",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_02_trailing_prose_never_executes",
+      "class": "test_phase11.ReliabilityTests.test_p11_02_trailing_prose_never_executes",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_03_multiple_objects_bounded",
+      "class": "test_phase11.ReliabilityTests.test_p11_03_multiple_objects_bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_04_arrays_and_wrong_types",
+      "class": "test_phase11.ReliabilityTests.test_p11_04_arrays_and_wrong_types",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_05_missing_swipe_field",
+      "class": "test_phase11.ReliabilityTests.test_p11_05_missing_swipe_field",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_06_actual_pixel_bounds_not_clamped",
+      "class": "test_phase11.ReliabilityTests.test_p11_06_actual_pixel_bounds_not_clamped",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_07_rotation_invalidates_pre_rotation_action",
+      "class": "test_phase11.ReliabilityTests.test_p11_07_rotation_invalidates_pre_rotation_action",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_08_format_repair_executes_once",
+      "class": "test_phase11.ReliabilityTests.test_p11_08_format_repair_executes_once",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_09_three_invalid_generations_fail_and_back_off",
+      "class": "test_phase11.ReliabilityTests.test_p11_09_three_invalid_generations_fail_and_back_off",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_10_uncertain_finish_is_never_success",
+      "class": "test_phase11.ReliabilityTests.test_p11_10_uncertain_finish_is_never_success",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_11_search_page_is_not_about_phone",
+      "class": "test_phase11.ReliabilityTests.test_p11_11_search_page_is_not_about_phone",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_12_independent_about_phone_evidence",
+      "class": "test_phase11.ReliabilityTests.test_p11_12_independent_about_phone_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_13_policy_denial_no_regeneration",
+      "class": "test_phase11.ReliabilityTests.test_p11_13_policy_denial_no_regeneration",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_14_transport_unknown_reobserves_without_resend",
+      "class": "test_phase11.ReliabilityTests.test_p11_14_transport_unknown_reobserves_without_resend",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_15_targeted_exception_persists_and_releases",
+      "class": "test_phase11.ReliabilityTests.test_p11_15_targeted_exception_persists_and_releases",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_16_legacy_database_rows_unchanged",
+      "class": "test_phase11.ReliabilityTests.test_p11_16_legacy_database_rows_unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_17_api_failure_categories_and_backoff",
+      "class": "test_phase11.ReliabilityTests.test_p11_17_api_failure_categories_and_backoff",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_18_audit_redacts_and_limits",
+      "class": "test_phase11.ReliabilityTests.test_p11_18_audit_redacts_and_limits",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_19_separate_process_and_force_cannot_take_lease",
+      "class": "test_phase11.ReliabilityTests.test_p11_19_separate_process_and_force_cannot_take_lease",
+      "status": "PASS"
+    },
+    {
+      "name": "test_p11_20_replay_is_always_offline",
+      "class": "test_phase11.ReliabilityTests.test_p11_20_replay_is_always_offline",
+      "status": "PASS"
+    },
+    {
+      "name": "test_png_header_and_bounds",
+      "class": "test_phase11.ReliabilityTests.test_png_header_and_bounds",
+      "status": "PASS"
+    },
+    {
+      "name": "test_rest_has_distinct_status_and_no_gui_calls",
+      "class": "test_phase11.ReliabilityTests.test_rest_has_distinct_status_and_no_gui_calls",
+      "status": "PASS"
+    },
+    {
+      "name": "test_step_budget_does_not_become_success",
+      "class": "test_phase11.ReliabilityTests.test_step_budget_does_not_become_success",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unknown_fields_and_coercions_rejected",
+      "class": "test_phase11.ReliabilityTests.test_unknown_fields_and_coercions_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_visual_claim_on_search_title_cannot_succeed",
+      "class": "test_phase11.ReliabilityTests.test_visual_claim_on_search_title_cannot_succeed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_visual_invalid_output_has_own_bounded_budget",
+      "class": "test_phase11.ReliabilityTests.test_visual_invalid_output_has_own_bounded_budget",
+      "status": "PASS"
+    },
+    {
+      "name": "test_forged_reference_exhausts_two_attempts",
+      "class": "test_semantics.ContinuationTests.test_forged_reference_exhausts_two_attempts",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_reference_gets_structured_repair_not_conversion",
+      "class": "test_semantics.ContinuationTests.test_missing_reference_gets_structured_repair_not_conversion",
+      "status": "PASS"
+    },
+    {
+      "name": "test_continuation_budget_is_cumulative_and_proposals_do_not_spend_other_goals_actions",
+      "class": "test_semantics.ExecutionTests.test_continuation_budget_is_cumulative_and_proposals_do_not_spend_other_goals_actions",
+      "status": "PASS"
+    },
+    {
+      "name": "test_non_string_action_kind_uses_original_bounded_format_repair",
+      "class": "test_semantics.ExecutionTests.test_non_string_action_kind_uses_original_bounded_format_repair",
+      "status": "PASS"
+    },
+    {
+      "name": "test_public_export_excludes_raw_identifiers_and_is_database_readonly",
+      "class": "test_semantics.ExecutionTests.test_public_export_excludes_raw_identifiers_and_is_database_readonly",
+      "status": "PASS"
+    },
+    {
+      "name": "test_recent_benchmark_pages_do_not_enter_autonomous_context",
+      "class": "test_semantics.ExecutionTests.test_recent_benchmark_pages_do_not_enter_autonomous_context",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reference_failure_feedback_reobserves_and_can_repair",
+      "class": "test_semantics.ExecutionTests.test_reference_failure_feedback_reobserves_and_can_repair",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reference_repairs_are_bounded_and_invalid_candidates_never_dispatch",
+      "class": "test_semantics.ExecutionTests.test_reference_repairs_are_bounded_and_invalid_candidates_never_dispatch",
+      "status": "PASS"
+    },
+    {
+      "name": "test_registry_usage_bound_is_enforced_before_input",
+      "class": "test_semantics.ExecutionTests.test_registry_usage_bound_is_enforced_before_input",
+      "status": "PASS"
+    },
+    {
+      "name": "test_schema_migration_reopen_preserves_original_rows",
+      "class": "test_semantics.ExecutionTests.test_schema_migration_reopen_preserves_original_rows",
+      "status": "PASS"
+    },
+    {
+      "name": "test_semantic_audit_remains_leased_and_releases_after_exception",
+      "class": "test_semantics.ExecutionTests.test_semantic_audit_remains_leased_and_releases_after_exception",
+      "status": "PASS"
+    },
+    {
+      "name": "test_transport_unknown_never_replays_semantic_action",
+      "class": "test_semantics.ExecutionTests.test_transport_unknown_never_replays_semantic_action",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unavailable_semantics_refuses_coordinate_action",
+      "class": "test_semantics.ExecutionTests.test_unavailable_semantics_refuses_coordinate_action",
+      "status": "PASS"
+    },
+    {
+      "name": "test_activity_changes_fail_closed",
+      "class": "test_semantics.SemanticTests.test_activity_changes_fail_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_advertised_schema_includes_strict_semantic_intents",
+      "class": "test_semantics.SemanticTests.test_advertised_schema_includes_strict_semantic_intents",
+      "status": "PASS"
+    },
+    {
+      "name": "test_changed_target_never_dispatches_before_fresh_reference",
+      "class": "test_semantics.SemanticTests.test_changed_target_never_dispatches_before_fresh_reference",
+      "status": "PASS"
+    },
+    {
+      "name": "test_connection_window_ids_do_not_mimic_page_changes",
+      "class": "test_semantics.SemanticTests.test_connection_window_ids_do_not_mimic_page_changes",
+      "status": "PASS"
+    },
+    {
+      "name": "test_each_backend_has_bounded_timeout_and_no_inputs",
+      "class": "test_semantics.SemanticTests.test_each_backend_has_bounded_timeout_and_no_inputs",
+      "status": "PASS"
+    },
+    {
+      "name": "test_foreign_overlay_and_expanded_system_panel_are_not_status_bars",
+      "class": "test_semantics.SemanticTests.test_foreign_overlay_and_expanded_system_panel_are_not_status_bars",
+      "status": "PASS"
+    },
+    {
+      "name": "test_forged_and_old_control_references_are_rejected",
+      "class": "test_semantics.SemanticTests.test_forged_and_old_control_references_are_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_identified_top_system_bar_is_excluded_from_content",
+      "class": "test_semantics.SemanticTests.test_identified_top_system_bar_is_excluded_from_content",
+      "status": "PASS"
+    },
+    {
+      "name": "test_idle_error_switches_once_to_alternative_without_input",
+      "class": "test_semantics.SemanticTests.test_idle_error_switches_once_to_alternative_without_input",
+      "status": "PASS"
+    },
+    {
+      "name": "test_known_navigation_computes_pixels_and_bound_evidence",
+      "class": "test_semantics.SemanticTests.test_known_navigation_computes_pixels_and_bound_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "test_legacy_invalid_pixels_and_duration_cannot_be_laundered_by_grounding",
+      "class": "test_semantics.SemanticTests.test_legacy_invalid_pixels_and_duration_cannot_be_laundered_by_grounding",
+      "status": "PASS"
+    },
+    {
+      "name": "test_list_row_title_is_not_proof_page_opened",
+      "class": "test_semantics.SemanticTests.test_list_row_title_is_not_proof_page_opened",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_attributes_stay_unknown_and_cannot_ground",
+      "class": "test_semantics.SemanticTests.test_missing_attributes_stay_unknown_and_cannot_ground",
+      "status": "PASS"
+    },
+    {
+      "name": "test_new_scroll_content_requires_new_visible_labels_not_just_pixels",
+      "class": "test_semantics.SemanticTests.test_new_scroll_content_requires_new_visible_labels_not_just_pixels",
+      "status": "PASS"
+    },
+    {
+      "name": "test_page_verifier_requires_header_and_matching_language_scope",
+      "class": "test_semantics.SemanticTests.test_page_verifier_requires_header_and_matching_language_scope",
+      "status": "PASS"
+    },
+    {
+      "name": "test_reading_android_version_cannot_prove_security_check",
+      "class": "test_semantics.SemanticTests.test_reading_android_version_cannot_prove_security_check",
+      "status": "PASS"
+    },
+    {
+      "name": "test_resized_screen_fails_closed",
+      "class": "test_semantics.SemanticTests.test_resized_screen_fails_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_rotation_changes_fail_closed",
+      "class": "test_semantics.SemanticTests.test_rotation_changes_fail_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_safe_scroll_uses_identified_list_not_arbitrary_coordinates",
+      "class": "test_semantics.SemanticTests.test_safe_scroll_uses_identified_list_not_arbitrary_coordinates",
+      "status": "PASS"
+    },
+    {
+      "name": "test_screen_changes_fail_closed",
+      "class": "test_semantics.SemanticTests.test_screen_changes_fail_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_scroll_endpoint_on_toggle_is_rejected",
+      "class": "test_semantics.SemanticTests.test_scroll_endpoint_on_toggle_is_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_semantic_progress_uses_visible_content_and_excludes_system_clock",
+      "class": "test_semantics.SemanticTests.test_semantic_progress_uses_visible_content_and_excludes_system_clock",
+      "status": "PASS"
+    },
+    {
+      "name": "test_target_move_disappear_properties_activity_rotation_block_freshness",
+      "class": "test_semantics.SemanticTests.test_target_move_disappear_properties_activity_rotation_block_freshness",
+      "status": "PASS"
+    },
+    {
+      "name": "test_toggle_editable_password_unknown_are_not_navigation",
+      "class": "test_semantics.SemanticTests.test_toggle_editable_password_unknown_are_not_navigation",
+      "status": "PASS"
+    },
+    {
+      "name": "test_tree_changes_even_without_pixel_changes_fail_closed",
+      "class": "test_semantics.SemanticTests.test_tree_changes_even_without_pixel_changes_fail_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unknown_and_high_risk_routes_do_not_grant_capabilities",
+      "class": "test_semantics.SemanticTests.test_unknown_and_high_risk_routes_do_not_grant_capabilities",
+      "status": "PASS"
+    }
+  ]
+}

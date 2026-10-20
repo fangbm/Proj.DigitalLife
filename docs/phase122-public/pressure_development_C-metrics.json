@@ -1,0 +1,352 @@
+{
+  "tasks": 4,
+  "statuses": {
+    "step_limit": 2,
+    "failed": 1,
+    "uncertain": 1
+  },
+  "confirmed_model_actions": {
+    "swipe": 10,
+    "tap": 2
+  },
+  "confirmed_program_manual_actions": {},
+  "unsafe_dispatches": 0,
+  "false_successes": 0,
+  "unverified_final_successes": 0,
+  "unconfirmed_primary_claims": 0,
+  "contradicted_primary_claims": 0,
+  "unknown_transports": 0,
+  "semantic_observations": 62,
+  "qualities": {
+    "trusted": 53,
+    "semantic_unavailable": 9
+  },
+  "additional_semantic_samples": 0,
+  "additional_qualities": {},
+  "dynamic_audits": 0,
+  "dynamic_text_changes": 0,
+  "recovery_successes": 2,
+  "recovery_failures": 0,
+  "confirmed_recovery_launches": 2,
+  "recovery_states": {
+    "recovered_after_launch": 2
+  },
+  "policy_denied_candidates": 0,
+  "causal_feedback": [],
+  "structured_rejection_episodes": 0,
+  "memory_feedback": [],
+  "deep_scroll_followups": [
+    {
+      "task_run_id": "2f50d716-3314-4e7f-84d8-d8f193d7141e",
+      "dispatch_monotonic_ns": 65971813292200,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "a0ffec28-ff17-45f1-87cc-258e11a0a79b",
+          "screenshot_sha256": "5c893de5460f2589d2afa01eb16f6eb930a9a313ab444f5fbf75c2fe52daccc7",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "278657c8-00bb-4cb5-812b-7bef14a54335",
+          "screenshot_sha256": "5c893de5460f2589d2afa01eb16f6eb930a9a313ab444f5fbf75c2fe52daccc7",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3b51b8cf-5279-4884-ad50-c57e70040614",
+          "screenshot_sha256": "5c893de5460f2589d2afa01eb16f6eb930a9a313ab444f5fbf75c2fe52daccc7",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "001d74a9-d44f-4547-bfc1-7c56472e307a",
+          "screenshot_sha256": "5c893de5460f2589d2afa01eb16f6eb930a9a313ab444f5fbf75c2fe52daccc7",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9a56a6c1-ec86-4435-b772-f22d839b613a",
+          "screenshot_sha256": "91fe82fde59fd1107d967677d2d7cf619d77b6054311cce8f6f1e7ba04646785",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "7440ea2b-755d-4e2d-bbcd-e8812fca45c5",
+          "screenshot_sha256": "fd5122431c26b2d9f8f445e9062149bf64d144d0d25666a18a89bd78485f1dac",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "1045d9b6-0e3f-44e6-bb30-a06081cd9ea3",
+          "screenshot_sha256": "80ad51df7e745677a860d1d122cf8793a8f41bca566e637f3ae2a7aac744a6be",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "cc26d6ef-4194-4f00-a925-3adb0f6bc394",
+          "screenshot_sha256": "80ad51df7e745677a860d1d122cf8793a8f41bca566e637f3ae2a7aac744a6be",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "46a6f4a7-452d-4487-8208-b9f740ab67ce",
+          "screenshot_sha256": "982219f12129b5a1662732ff2b6ee2689333f04e04404f3e0e5c7547e307176f",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9af5bdca-7807-4bd2-b8e3-e5a2f09ac174",
+          "screenshot_sha256": "982219f12129b5a1662732ff2b6ee2689333f04e04404f3e0e5c7547e307176f",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "37c5ef42-4f06-4d87-abfe-9aaba09aa4bb",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "c502d699-7cdc-49a6-b39b-8c481e284bba",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "5d6f0cac-1d09-4351-92da-3814945e09d9",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "d4b8d73e-052c-4cb3-af4e-8083ea9b37d0",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "76310210-5f56-4bab-af50-5a08dbce88f8",
+          "screenshot_sha256": "e433eb255bebb83f2980123dbcbb1def6df26931e9dfcd5b0c2ce63d4f3e6942",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "299aaded-43cf-4038-a61d-9eb9d3038fd3",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "c1ba56cc-3924-4677-927f-f7dcf543ddc0",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9290c0ea-7b7b-4f5a-a123-8ede7ab7db94",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4fc8445e-c5f5-4d3e-9319-bfd6335406bd",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "30eda396-511b-4b4f-a24b-efc971fac02e",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "032a7679-8056-4fad-9428-d08da74d3144",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "eac2cefa-4bcb-45bb-a0bf-aa6e67d7731d",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ef40ae99-f12b-4798-9b7e-d7d562660355",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "0be92089-ccc9-4505-91a4-8124d81bfa65",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "0fb2bfe4-39c5-42b3-a395-5a457c53504d",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        }
+      ]
+    },
+    {
+      "task_run_id": "2f50d716-3314-4e7f-84d8-d8f193d7141e",
+      "dispatch_monotonic_ns": 65986859491800,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "9a56a6c1-ec86-4435-b772-f22d839b613a",
+          "screenshot_sha256": "91fe82fde59fd1107d967677d2d7cf619d77b6054311cce8f6f1e7ba04646785",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "7440ea2b-755d-4e2d-bbcd-e8812fca45c5",
+          "screenshot_sha256": "fd5122431c26b2d9f8f445e9062149bf64d144d0d25666a18a89bd78485f1dac",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "1045d9b6-0e3f-44e6-bb30-a06081cd9ea3",
+          "screenshot_sha256": "80ad51df7e745677a860d1d122cf8793a8f41bca566e637f3ae2a7aac744a6be",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "cc26d6ef-4194-4f00-a925-3adb0f6bc394",
+          "screenshot_sha256": "80ad51df7e745677a860d1d122cf8793a8f41bca566e637f3ae2a7aac744a6be",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "46a6f4a7-452d-4487-8208-b9f740ab67ce",
+          "screenshot_sha256": "982219f12129b5a1662732ff2b6ee2689333f04e04404f3e0e5c7547e307176f",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9af5bdca-7807-4bd2-b8e3-e5a2f09ac174",
+          "screenshot_sha256": "982219f12129b5a1662732ff2b6ee2689333f04e04404f3e0e5c7547e307176f",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "37c5ef42-4f06-4d87-abfe-9aaba09aa4bb",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "c502d699-7cdc-49a6-b39b-8c481e284bba",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "5d6f0cac-1d09-4351-92da-3814945e09d9",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "d4b8d73e-052c-4cb3-af4e-8083ea9b37d0",
+          "screenshot_sha256": "5313f6388796fcc115ea5151c17d2f9008da3ab5d638b3fc713e8a17c82f8c2e",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "76310210-5f56-4bab-af50-5a08dbce88f8",
+          "screenshot_sha256": "e433eb255bebb83f2980123dbcbb1def6df26931e9dfcd5b0c2ce63d4f3e6942",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "299aaded-43cf-4038-a61d-9eb9d3038fd3",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "c1ba56cc-3924-4677-927f-f7dcf543ddc0",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9290c0ea-7b7b-4f5a-a123-8ede7ab7db94",
+          "screenshot_sha256": "318f966e4ae80fbea57237f614d1ee4576f7cc6e4aa6d6980165baee222811ae",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4fc8445e-c5f5-4d3e-9319-bfd6335406bd",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "30eda396-511b-4b4f-a24b-efc971fac02e",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "032a7679-8056-4fad-9428-d08da74d3144",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "eac2cefa-4bcb-45bb-a0bf-aa6e67d7731d",
+          "screenshot_sha256": "7981e2bd55ceee7977ca66fa43d11947bc3f7b70f3734aa777446b25739446b5",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ef40ae99-f12b-4798-9b7e-d7d562660355",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "0be92089-ccc9-4505-91a4-8124d81bfa65",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "0fb2bfe4-39c5-42b3-a395-5a457c53504d",
+          "screenshot_sha256": "b611720baff77b6f979f0a4963e3e382041e34ae19bc2ac8c2ed8b8d37f7a203",
+          "quality": "trusted"
+        }
+      ]
+    },
+    {
+      "task_run_id": "306ecc6f-a9b6-46bd-8282-c211f487fe76",
+      "dispatch_monotonic_ns": 66157226359100,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "a974d75a-0c11-4284-9092-6b5d0e2d4568",
+          "screenshot_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "f5a492c0-d7a4-45c0-b8b6-f6c39116de3a",
+          "screenshot_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ad5fcd28-ee80-4af0-a338-46d836d914cd",
+          "screenshot_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "959e626d-ba2b-4c71-960d-9aeb21a7589c",
+          "screenshot_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "c9b613d9-8028-4bc4-9922-8bc34db969a5",
+          "screenshot_sha256": "d32f34cadfd09ac29eb2507ba5563dab0182e74fa6863360af8d2ac651073eb1",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "35b88d7e-c7c8-4514-bc46-28e4b2f42618",
+          "screenshot_sha256": "b401d27b1374dc6a7001a48015a4ae4e9d43d81d9db7423ff4a479c06c8e7d28",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "c0a47c3a-5e1e-424a-af3c-63d6362d63a7",
+          "screenshot_sha256": "b401d27b1374dc6a7001a48015a4ae4e9d43d81d9db7423ff4a479c06c8e7d28",
+          "quality": "semantic_unavailable"
+        }
+      ]
+    },
+    {
+      "task_run_id": "306ecc6f-a9b6-46bd-8282-c211f487fe76",
+      "dispatch_monotonic_ns": 66172105606000,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": false,
+      "followup_observations": [
+        {
+          "observation_id": "c9b613d9-8028-4bc4-9922-8bc34db969a5",
+          "screenshot_sha256": "d32f34cadfd09ac29eb2507ba5563dab0182e74fa6863360af8d2ac651073eb1",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "35b88d7e-c7c8-4514-bc46-28e4b2f42618",
+          "screenshot_sha256": "b401d27b1374dc6a7001a48015a4ae4e9d43d81d9db7423ff4a479c06c8e7d28",
+          "quality": "semantic_unavailable"
+        },
+        {
+          "observation_id": "c0a47c3a-5e1e-424a-af3c-63d6362d63a7",
+          "screenshot_sha256": "b401d27b1374dc6a7001a48015a4ae4e9d43d81d9db7423ff4a479c06c8e7d28",
+          "quality": "semantic_unavailable"
+        }
+      ]
+    }
+  ]
+}

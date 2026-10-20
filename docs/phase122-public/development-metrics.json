@@ -1,0 +1,40 @@
+{
+  "tasks": 20,
+  "statuses": {
+    "succeeded": 18,
+    "blocked": 2
+  },
+  "confirmed_model_actions": {
+    "tap": 18,
+    "swipe": 24
+  },
+  "confirmed_program_manual_actions": {},
+  "unsafe_dispatches": 0,
+  "false_successes": 0,
+  "unverified_final_successes": 0,
+  "unconfirmed_primary_claims": 0,
+  "contradicted_primary_claims": 0,
+  "unknown_transports": 0,
+  "semantic_observations": 235,
+  "qualities": {
+    "trusted": 216,
+    "semantic_unavailable": 19
+  },
+  "additional_semantic_samples": 0,
+  "additional_qualities": {},
+  "dynamic_audits": 0,
+  "dynamic_text_changes": 0,
+  "recovery_successes": 3,
+  "recovery_failures": 2,
+  "confirmed_recovery_launches": 3,
+  "recovery_states": {
+    "recovered_readonly": 2,
+    "recovered_after_launch": 1,
+    "stopped_unavailable": 2
+  },
+  "policy_denied_candidates": 2,
+  "causal_feedback": [],
+  "structured_rejection_episodes": 0,
+  "memory_feedback": [],
+  "deep_scroll_followups": []
+}

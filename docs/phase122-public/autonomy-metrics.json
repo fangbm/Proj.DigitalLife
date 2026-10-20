@@ -1,0 +1,2842 @@
+{
+  "tasks": 12,
+  "statuses": {
+    "uncertain": 3,
+    "succeeded": 1,
+    "step_limit": 1,
+    "blocked": 1,
+    "rested": 6
+  },
+  "confirmed_model_actions": {
+    "tap": 1,
+    "back": 1,
+    "swipe": 16
+  },
+  "confirmed_program_manual_actions": {},
+  "unsafe_dispatches": 0,
+  "false_successes": 0,
+  "unverified_final_successes": 0,
+  "unconfirmed_primary_claims": 0,
+  "contradicted_primary_claims": 0,
+  "unknown_transports": 0,
+  "semantic_observations": 94,
+  "qualities": {
+    "trusted_dynamic_noninteractive": 68,
+    "trusted": 26
+  },
+  "additional_semantic_samples": 2,
+  "additional_qualities": {
+    "trusted": 1,
+    "trusted_dynamic_noninteractive": 1
+  },
+  "dynamic_audits": 68,
+  "dynamic_text_changes": 56,
+  "recovery_successes": 0,
+  "recovery_failures": 0,
+  "confirmed_recovery_launches": 0,
+  "recovery_states": {},
+  "policy_denied_candidates": 1,
+  "causal_feedback": [],
+  "structured_rejection_episodes": 0,
+  "memory_feedback": [
+    {
+      "task_run_id": "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+      "earlier_episode_sources": [
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+      "earlier_episode_sources": [
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "040ab27d-a831-4082-a326-0fba0e79f81d",
+      "earlier_episode_sources": [
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "f913a568-bacc-490e-a30e-77ab14551820",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "75b67d62-d541-41cf-8226-1c9b44af374d",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "75b67d62-d541-41cf-8226-1c9b44af374d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "5762879c-c732-4c56-b694-a148c57fa4b2",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+        "75b67d62-d541-41cf-8226-1c9b44af374d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "843359bc-b223-4147-a916-356ddaa19172",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+        "5762879c-c732-4c56-b694-a148c57fa4b2",
+        "75b67d62-d541-41cf-8226-1c9b44af374d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "4add916f-9521-4a7d-9c97-76381e8fd3b1",
+      "earlier_episode_sources": [
+        "040ab27d-a831-4082-a326-0fba0e79f81d",
+        "5762879c-c732-4c56-b694-a148c57fa4b2",
+        "75b67d62-d541-41cf-8226-1c9b44af374d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "843359bc-b223-4147-a916-356ddaa19172",
+        "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    },
+    {
+      "task_run_id": "8e53fc2d-f59e-4160-83f5-16734698d934",
+      "earlier_episode_sources": [
+        "4add916f-9521-4a7d-9c97-76381e8fd3b1",
+        "5762879c-c732-4c56-b694-a148c57fa4b2",
+        "75b67d62-d541-41cf-8226-1c9b44af374d",
+        "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+        "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+        "843359bc-b223-4147-a916-356ddaa19172",
+        "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+        "f913a568-bacc-490e-a30e-77ab14551820"
+      ],
+      "model_reflection_present": true,
+      "context_hash_matches_received_request": true
+    }
+  ],
+  "deep_scroll_followups": [
+    {
+      "task_run_id": "040ab27d-a831-4082-a326-0fba0e79f81d",
+      "dispatch_monotonic_ns": 72137727882900,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "97298196-510d-4b05-9b2a-f370c7f63754",
+          "screenshot_sha256": "62e3f6b7ed12f6c07a65435756095d3173bed2a37b0582a1fe705706633cd929",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "2aa5592f-ab29-4bf1-aa4e-55425aa4ee67",
+          "screenshot_sha256": "62e3f6b7ed12f6c07a65435756095d3173bed2a37b0582a1fe705706633cd929",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "55b0953d-e150-49a5-9063-b0d1389a21a3",
+          "screenshot_sha256": "62e3f6b7ed12f6c07a65435756095d3173bed2a37b0582a1fe705706633cd929",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "171aa09f-870a-4af7-b005-f86ea966e12e",
+          "screenshot_sha256": "d18266262b501413cb87d2550619559ca79b63603bd0a9d7aa462e2bbf5e760d",
+          "quality": "trusted"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72208235817500,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "33142314-fe9c-4d3c-b945-76da2cbf6176",
+          "screenshot_sha256": "a1966767e8ac3bab6739ff0bee01325a915ff1cb422bc72a33fceebf758fd560",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "a89d12b2-a76d-40d7-9fd9-19f79dce4185",
+          "screenshot_sha256": "f0eae210a4c3675746b3ad9ae1f510e0d9138335684c84353c45c1e6af81a073",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ca996d52-a282-49ac-be53-3bd2c241ca29",
+          "screenshot_sha256": "dc706461768cdceaa2c8e0c467fed913e195d0664fc394b86ac65458383f350e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "c6abb0d0-d20b-47de-832d-3c29c07eb41b",
+          "screenshot_sha256": "54a0d2bd9c1b6d70e4a0b35efeaeaaea92d3afd80095d793b5a635670eff0efc",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "43d42ec5-7ca3-43f2-ab18-b990b77dfaf8",
+          "screenshot_sha256": "331872930eef6e12a27d66c6956958069b93a5864205e674670813d1fe0abd48",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "299b42d2-5923-4913-a3ca-2d9b01c2f076",
+          "screenshot_sha256": "83e4bd9d32735bebb0c706ee65ede69ac69ffc8e5f96a758d72ccdb4cbb76760",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "72cc1830-d643-463e-aa9e-cc11b6111fec",
+          "screenshot_sha256": "672b7b16bc69b742c52dd227d14fb6694988d0fe92600e3854bd834c47d32c41",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "c1f41314-4ddc-452c-9bed-730f4b1a3f1c",
+          "screenshot_sha256": "a3f7e3c887299c1eb1fad0a67c6517ad8d5a1743cda4b0ef42ccbfd2c66433f4",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "459f2fcc-e21b-467f-985e-58ece3ac3a5a",
+          "screenshot_sha256": "179de098683ad2afc58ae76b2c47b9b5f3535afa7a8d6f814b075038d066c9b8",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef494fa0-18df-485b-bf14-8ca517a903db",
+          "screenshot_sha256": "28b25afe3b8cd8b50dbdc6dc4fae158987413ee62ec0d0cba459c21b925c9e9f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cfbee854-f541-432e-885d-fdd7adf7686b",
+          "screenshot_sha256": "c9fb80989948c0cd8bf5ee7d5989270a909418ec706af9cce71812b8f8834386",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0da0bd6d-7104-4854-aa7d-6701b63652ca",
+          "screenshot_sha256": "00ed7fdd407b7a5ca4131d451b8b8b183dc84d358306c191a9af0d737d3ffb1c",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "337e6dc9-792c-4581-9941-74fd90f583b5",
+          "screenshot_sha256": "224ded7285bf83878b12984c93943c3454bcc096b9657690370a4d127aa3f260",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d013a8f9-1d6b-42bc-83c1-f856a1b919c3",
+          "screenshot_sha256": "c14c9713faa57b1e8137e39ce0968deacb01713a3d2e6793eb0f7b997647ff83",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5f8eef39-7988-438c-9337-31026bd6892b",
+          "screenshot_sha256": "345a234903fa46d257d1edd66f8094084a29d562db758ed7bbfd996619510d1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "15fc2a4e-4f38-4dd0-a547-bb16d6920002",
+          "screenshot_sha256": "6dd6dff2cdd34e6b34ab47e2c09825825da5fc3ebc60959175beedccc338fec6",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "2ad006e6-8e08-47e8-b11c-e8de2bd28f4c",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "891b6429-c70f-4379-87c8-e21ca19b7d53",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "29011d53-2332-4376-bf77-02e6697387f1",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "94fd61da-0208-4794-adfa-2289bf37f121",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72233221289100,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "43d42ec5-7ca3-43f2-ab18-b990b77dfaf8",
+          "screenshot_sha256": "331872930eef6e12a27d66c6956958069b93a5864205e674670813d1fe0abd48",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "299b42d2-5923-4913-a3ca-2d9b01c2f076",
+          "screenshot_sha256": "83e4bd9d32735bebb0c706ee65ede69ac69ffc8e5f96a758d72ccdb4cbb76760",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "72cc1830-d643-463e-aa9e-cc11b6111fec",
+          "screenshot_sha256": "672b7b16bc69b742c52dd227d14fb6694988d0fe92600e3854bd834c47d32c41",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "c1f41314-4ddc-452c-9bed-730f4b1a3f1c",
+          "screenshot_sha256": "a3f7e3c887299c1eb1fad0a67c6517ad8d5a1743cda4b0ef42ccbfd2c66433f4",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "459f2fcc-e21b-467f-985e-58ece3ac3a5a",
+          "screenshot_sha256": "179de098683ad2afc58ae76b2c47b9b5f3535afa7a8d6f814b075038d066c9b8",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef494fa0-18df-485b-bf14-8ca517a903db",
+          "screenshot_sha256": "28b25afe3b8cd8b50dbdc6dc4fae158987413ee62ec0d0cba459c21b925c9e9f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cfbee854-f541-432e-885d-fdd7adf7686b",
+          "screenshot_sha256": "c9fb80989948c0cd8bf5ee7d5989270a909418ec706af9cce71812b8f8834386",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0da0bd6d-7104-4854-aa7d-6701b63652ca",
+          "screenshot_sha256": "00ed7fdd407b7a5ca4131d451b8b8b183dc84d358306c191a9af0d737d3ffb1c",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "337e6dc9-792c-4581-9941-74fd90f583b5",
+          "screenshot_sha256": "224ded7285bf83878b12984c93943c3454bcc096b9657690370a4d127aa3f260",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d013a8f9-1d6b-42bc-83c1-f856a1b919c3",
+          "screenshot_sha256": "c14c9713faa57b1e8137e39ce0968deacb01713a3d2e6793eb0f7b997647ff83",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5f8eef39-7988-438c-9337-31026bd6892b",
+          "screenshot_sha256": "345a234903fa46d257d1edd66f8094084a29d562db758ed7bbfd996619510d1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "15fc2a4e-4f38-4dd0-a547-bb16d6920002",
+          "screenshot_sha256": "6dd6dff2cdd34e6b34ab47e2c09825825da5fc3ebc60959175beedccc338fec6",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "2ad006e6-8e08-47e8-b11c-e8de2bd28f4c",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "891b6429-c70f-4379-87c8-e21ca19b7d53",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "29011d53-2332-4376-bf77-02e6697387f1",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "94fd61da-0208-4794-adfa-2289bf37f121",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72247580592400,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "459f2fcc-e21b-467f-985e-58ece3ac3a5a",
+          "screenshot_sha256": "179de098683ad2afc58ae76b2c47b9b5f3535afa7a8d6f814b075038d066c9b8",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef494fa0-18df-485b-bf14-8ca517a903db",
+          "screenshot_sha256": "28b25afe3b8cd8b50dbdc6dc4fae158987413ee62ec0d0cba459c21b925c9e9f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cfbee854-f541-432e-885d-fdd7adf7686b",
+          "screenshot_sha256": "c9fb80989948c0cd8bf5ee7d5989270a909418ec706af9cce71812b8f8834386",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0da0bd6d-7104-4854-aa7d-6701b63652ca",
+          "screenshot_sha256": "00ed7fdd407b7a5ca4131d451b8b8b183dc84d358306c191a9af0d737d3ffb1c",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "337e6dc9-792c-4581-9941-74fd90f583b5",
+          "screenshot_sha256": "224ded7285bf83878b12984c93943c3454bcc096b9657690370a4d127aa3f260",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d013a8f9-1d6b-42bc-83c1-f856a1b919c3",
+          "screenshot_sha256": "c14c9713faa57b1e8137e39ce0968deacb01713a3d2e6793eb0f7b997647ff83",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5f8eef39-7988-438c-9337-31026bd6892b",
+          "screenshot_sha256": "345a234903fa46d257d1edd66f8094084a29d562db758ed7bbfd996619510d1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "15fc2a4e-4f38-4dd0-a547-bb16d6920002",
+          "screenshot_sha256": "6dd6dff2cdd34e6b34ab47e2c09825825da5fc3ebc60959175beedccc338fec6",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "2ad006e6-8e08-47e8-b11c-e8de2bd28f4c",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "891b6429-c70f-4379-87c8-e21ca19b7d53",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "29011d53-2332-4376-bf77-02e6697387f1",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "94fd61da-0208-4794-adfa-2289bf37f121",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72260867352500,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "337e6dc9-792c-4581-9941-74fd90f583b5",
+          "screenshot_sha256": "224ded7285bf83878b12984c93943c3454bcc096b9657690370a4d127aa3f260",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d013a8f9-1d6b-42bc-83c1-f856a1b919c3",
+          "screenshot_sha256": "c14c9713faa57b1e8137e39ce0968deacb01713a3d2e6793eb0f7b997647ff83",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5f8eef39-7988-438c-9337-31026bd6892b",
+          "screenshot_sha256": "345a234903fa46d257d1edd66f8094084a29d562db758ed7bbfd996619510d1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "15fc2a4e-4f38-4dd0-a547-bb16d6920002",
+          "screenshot_sha256": "6dd6dff2cdd34e6b34ab47e2c09825825da5fc3ebc60959175beedccc338fec6",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "2ad006e6-8e08-47e8-b11c-e8de2bd28f4c",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "891b6429-c70f-4379-87c8-e21ca19b7d53",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "29011d53-2332-4376-bf77-02e6697387f1",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "94fd61da-0208-4794-adfa-2289bf37f121",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72275050031400,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "2ad006e6-8e08-47e8-b11c-e8de2bd28f4c",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "891b6429-c70f-4379-87c8-e21ca19b7d53",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "29011d53-2332-4376-bf77-02e6697387f1",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "94fd61da-0208-4794-adfa-2289bf37f121",
+          "screenshot_sha256": "2ebd3f7c923c7b3f3de8f89cae9f048fb25e3933f5a964ae86435a5175bd6462",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72289064267700,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "a942528d-bff2-4aa4-8461-6da5591e4600",
+          "screenshot_sha256": "97f829d1035aa722ee0c0de1306e4f742c033b6e522b27b9f51f4aec230deb4d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "60d593e6-a3bc-4455-a968-c6c69b10d0a7",
+          "screenshot_sha256": "2b06006137547e41741b88d581d8c9db6df1049ffc033ea7ebab1e6e3a80648d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d6634ec6-d433-4d70-9763-06e377a99691",
+          "screenshot_sha256": "23ea6f1483200aaa1f1de3045e8435f08b31af96dc11f1fa1ef545a5f03e2e53",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8ae43973-e512-4a0d-945d-4b1dc8e2274f",
+          "screenshot_sha256": "c0d061979156b0e07df91dff32d7ad11e816c1b34c56741d1c47f1197764be92",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72317636516400,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "db234ff4-f4ca-4a57-8513-fcddd8516603",
+          "screenshot_sha256": "6cbd77e095698bfeed4d47dc7113f322f6ab001fa90e5c903ce486e24d15e228",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ef37977e-c532-4d46-bcda-faf1c4f268eb",
+          "screenshot_sha256": "22286acb02560353f7cb704953ccc0603e050715643f33d2f27769ed493ecb80",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "afa94f2e-eae7-4282-82cf-cba74d75e7d1",
+          "screenshot_sha256": "79a1f0998a34b0316102392c61e1fe1371704fc817a41569ad8bc42f3f75fb18",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e98b57d4-5d5c-4d82-834e-3136c439cd6e",
+          "screenshot_sha256": "257110fc775c38d5a951a2edf3eaaeec7ec3d615c34c18abe4f050cbb467f49a",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72332102671100,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "b1da9aed-fc76-40a4-a63a-0bc0f65d778e",
+          "screenshot_sha256": "ccf4a6d8fb09f4793f258d2d20ab6c2e71aff5cc955ad93a48f2fc9dba0162f3",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "68e2d6b5-9c06-4e40-b827-58382bedce70",
+          "screenshot_sha256": "bf9cd0406c717edf636d2c823a97f1f15e0135bac898cdcfaff16b15f3ff13c1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5e106599-ae6f-438d-9340-72dc00d54bc8",
+          "screenshot_sha256": "7a6fbecb09a76dd43e94a358e84ac223e871aab65af6edf2682e77c2bcb23cc7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "d85e8ebd-c794-4706-92b1-34b766eceea5",
+          "screenshot_sha256": "325c257f9c1123b201c82b539eceaba738e79f3985073698081a1fdf59c9c7bf",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72347195157000,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "97d38d5a-8754-4c6f-ade5-885bb407f427",
+          "screenshot_sha256": "81de792f81caafa70c1c4e03c8a9ebf190b9f44925be73b458172718a67db080",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "df4b2261-9ab1-414c-8d78-18fc6d15a3a2",
+          "screenshot_sha256": "e46e71a95e6785ff7d73d470fbbf1997405e99e4ff17a448b98b485e74cadc86",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "492f7f9a-3365-437d-9901-5972eab8ecd6",
+          "screenshot_sha256": "45eb2a7a1777be01a7193509534bc77498967a2ad7fd0c7e74f1dbcbbebb77f9",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "e03e714e-64b9-4fd0-a237-bd9d7158268a",
+          "screenshot_sha256": "0e8dca30a1f05dfb037e58e42230d8f4e349e1b539be04d8c0aefbaeb991f158",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72363727871300,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "0a46824c-9336-442f-85cf-eb9aef879662",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "216922d7-02d0-4620-af7b-83e25b4fbbcd",
+          "screenshot_sha256": "f29df58149438be35392531b5f8624298a2612c2261905e0b81ba1baf5dc5e2c",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "4126ade3-4054-413a-b851-38342bbc9286",
+          "screenshot_sha256": "ccd5d3d21e45b30c0be01c844e9e01bcaa6dcfeac3f7be003c57b2ce0a975051",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "9d5d8afb-cb82-487c-b399-ed7fa161a4fb",
+          "screenshot_sha256": "a034fc01b33f65d04e1efa1b605097de8198ca7f40675fa35cfa40b7af27df8a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72390892962200,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "ac69b959-e995-4b66-8ef3-2ca817fd93f0",
+          "screenshot_sha256": "294cfb45617a7176dd5f733594edf19fac14c94c6055111d7bbd1ed6c7237037",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bf1a681f-44b1-4d7a-9771-d13e213ea6ef",
+          "screenshot_sha256": "821e506f58f562214caf2b6906f9c8c4feb4a1a9a8453f402a77686ab33ebcef",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "ea485447-29ac-43b1-965e-2162e704c2c2",
+          "screenshot_sha256": "2964ec9826c78e5fc149753cfa82ffc8aad6129905d152dac770e2dfb505efcb",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "f25d2fb7-59d7-40b9-8e88-06e9b353447e",
+          "screenshot_sha256": "4519fa395a18ddd165a88ee810e82e79c37ec992b0f5421bbdce7f18c0c0151d",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72407278894900,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "9026be99-41ea-4565-9271-8bd97b6e02cd",
+          "screenshot_sha256": "ccef05d29ea43edefac7e3e5741605cc185d6ee66d0888d82bffb4faf95bf284",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "bbbbd054-cfe7-4b40-984b-c83201e39341",
+          "screenshot_sha256": "dd42cbbdd4690fdeded471415f073d09ed11a43cbe2b7e1ec92461498a173e3f",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "8a4cb877-4b04-4958-b6cf-3b8155f9ac06",
+          "screenshot_sha256": "12e9d6b0dcfea109f9472e7a4df4f0e166cb669906c15adbb5ce79def2e316f7",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "3c9dfd38-aa23-4fb5-9eb5-5891e0816bb2",
+          "screenshot_sha256": "02b2a449b39ad5dc107b49347a1b6136e4ef1d1e3a095428135501e392a290a1",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72422394589900,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "319012a5-6e99-42e9-a3cc-a5d680e48712",
+          "screenshot_sha256": "5317c64309d65f099a5b3147903e8530ee43a5e5e66837dc0f4885caee8a9ae0",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1ca50547-11a2-479a-b4b7-16ec20baa04a",
+          "screenshot_sha256": "1764519cb0f3b44a86e06e4f0cd29afaedff32119a7142c788ad2ad13d3fd90e",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "1171a28c-af57-4765-a243-5dee288c437e",
+          "screenshot_sha256": "b7c7c6a60c3d35873829bae953c92811026f57554e9572983523812e2c3fdc89",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "cdb89f18-8c31-47af-a1ca-b1d52ed17a89",
+          "screenshot_sha256": "1b77c92a298c16528c9684c38ce7dec125fd8c3dbd5e19c83081116f58298c1b",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72438735964300,
+      "dynamic_about_before_dispatch": true,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "0064c99b-fe20-4f1c-9a36-9612dc2d1913",
+          "screenshot_sha256": "e724cc14bf79a8c382fc6ae6c9c24978a31180504034b23e3d82d36b4ec989ad",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "ac79c46e-2e2c-49c3-9525-89b4ce6cd13b",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "48d6b8c9-1439-472a-a209-e3c0b69f1aea",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "a236c088-5087-4236-8867-acb775ca3fba",
+          "screenshot_sha256": "91c12d968a021d83f34a6360b9a80c6df40c7e6de867c085b70db24a35f9f57a",
+          "quality": "trusted"
+        },
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "dispatch_monotonic_ns": 72463667661000,
+      "dynamic_about_before_dispatch": false,
+      "fresh_trusted_after_dispatch": true,
+      "followup_observations": [
+        {
+          "observation_id": "3dfcdccb-1b06-4975-bb70-4d703a4922a5",
+          "screenshot_sha256": "38ad1469d72e94aa01d2ac8d9b746d7d7c945e85a1ee96e4b6147be1f4239279",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "b54ce610-2227-46b9-a72d-ba6224732a9a",
+          "screenshot_sha256": "bc15fa6e2ac590cb59ffdcf0594245e5ff721e8536103d4ad8b01c71d1ab2337",
+          "quality": "trusted_dynamic_noninteractive"
+        },
+        {
+          "observation_id": "5fa7b0e8-8d37-482f-84e2-7147925b9d37",
+          "screenshot_sha256": "aa9ffd27eda5894ed372bbac72ac4999ec13b3b500bea494c336e4a776c77cd3",
+          "quality": "trusted_dynamic_noninteractive"
+        }
+      ]
+    }
+  ],
+  "cycle_metrics": [
+    {
+      "task_run_id": "4af93a3c-11bd-452d-97f3-e1ef80af2a2d",
+      "kind": "explore",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "uncertain",
+        "reason_code": "GOAL_NOT_VERIFIED",
+        "confirmed_actions": 0,
+        "api_calls": 3
+      },
+      "selected_verification_kind": "readonly_fact",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "83142f3f-ba5f-4bec-af12-b9ec2843e61e",
+      "kind": "explore",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "succeeded",
+        "reason_code": "GOAL_VERIFIED",
+        "confirmed_actions": 1,
+        "api_calls": 4
+      },
+      "selected_verification_kind": "page",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "3ebbf656-1ac0-4411-abb0-3a41c324eb2f",
+      "kind": "explore",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "uncertain",
+        "reason_code": "GOAL_NOT_VERIFIED",
+        "confirmed_actions": 1,
+        "api_calls": 4
+      },
+      "selected_verification_kind": "page",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "040ab27d-a831-4082-a326-0fba0e79f81d",
+      "kind": "explore",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "uncertain",
+        "reason_code": "GOAL_NOT_VERIFIED",
+        "confirmed_actions": 1,
+        "api_calls": 4
+      },
+      "selected_verification_kind": "readonly_fact",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "75d68738-ed2f-4069-a7b3-13b26791c4c4",
+      "kind": "switch_goal",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "step_limit",
+        "reason_code": "STEP_LIMIT",
+        "confirmed_actions": 15,
+        "api_calls": 17
+      },
+      "selected_verification_kind": "new_scroll_content",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "f913a568-bacc-490e-a30e-77ab14551820",
+      "kind": "explore",
+      "model_chose_rest": false,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "blocked",
+        "reason_code": "POLICY_DENIED",
+        "confirmed_actions": 0,
+        "api_calls": 3
+      },
+      "selected_verification_kind": "page",
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "75b67d62-d541-41cf-8226-1c9b44af374d",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "cdb4c785-d00f-4a85-9c0a-0b70e932a3c1",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "5762879c-c732-4c56-b694-a148c57fa4b2",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "843359bc-b223-4147-a916-356ddaa19172",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "4add916f-9521-4a7d-9c97-76381e8fd3b1",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    },
+    {
+      "task_run_id": "8e53fc2d-f59e-4160-83f5-16734698d934",
+      "kind": "rest",
+      "model_chose_rest": true,
+      "program_forced_rest": false,
+      "objective": {
+        "status": "rested",
+        "reason_code": "REST_DECISION",
+        "confirmed_actions": 0,
+        "api_calls": 1
+      },
+      "selected_verification_kind": null,
+      "rejection_codes": []
+    }
+  ],
+  "api_requests": [
+    {
+      "phase": "brain",
+      "status": "received",
+      "count": 12
+    },
+    {
+      "phase": "gui",
+      "status": "received",
+      "count": 23
+    },
+    {
+      "phase": "reflection",
+      "status": "received",
+      "count": 6
+    }
+  ]
+}

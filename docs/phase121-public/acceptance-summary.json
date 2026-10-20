@@ -1,0 +1,128 @@
+{
+  "version": "0.2.1",
+  "gates": {
+    "automated_tests": true,
+    "final_fixed_gui": true,
+    "autonomous_30_minutes": true,
+    "autonomous_confirmed_gui": true,
+    "semantic_recovers_after_autonomous_scroll": false,
+    "continuation_error_detail_in_next_episode": false,
+    "real_memory_feedback": true,
+    "no_observed_false_success": true,
+    "no_unauthorized_dispatch": true,
+    "historical_integrity": true,
+    "key_unchanged": true,
+    "runtime_frozen": true,
+    "raw_safety_attributes_verifiable": true
+  },
+  "passed_all_listed_gates": false,
+  "automated_tests": 162,
+  "fixed": {
+    "count": 20,
+    "verified_successes": 20,
+    "success_rate": 1.0,
+    "false_successes": 0,
+    "tap_count": 20,
+    "swipe_count": 30,
+    "uncertain_dispatches": 0,
+    "api_calls": 70,
+    "all_dispatched_actions_bound": true,
+    "passed_gate": true,
+    "scope": "Fixed goals only; independent autonomous acceptance required separately"
+  },
+  "autonomous_elapsed_seconds": 1800.0006697999997,
+  "autonomous_cycles": 3,
+  "autonomous_statuses": {
+    "failed": 3
+  },
+  "autonomous_confirmed_actions": {
+    "swipe": 2
+  },
+  "autonomous_effective_gui_actions": 1,
+  "autonomous_requests": {
+    "brain": 5,
+    "gui": 5,
+    "reflection": 1
+  },
+  "semantic_quality": {
+    "fixed-acceptance-01/state.sqlite3": [
+      {
+        "provider": "shell_ui_snapshot/1",
+        "evidence_quality": "trusted",
+        "observations": 479
+      }
+    ],
+    "fixed-final-02/state.sqlite3": [
+      {
+        "provider": "shell_ui_snapshot/1",
+        "evidence_quality": "trusted",
+        "observations": 260
+      }
+    ],
+    "fixed-final-03/state.sqlite3": [
+      {
+        "provider": "shell_ui_snapshot/1",
+        "evidence_quality": "trusted",
+        "observations": 260
+      }
+    ],
+    "phase121/autonomy-final.sqlite3": [
+      {
+        "provider": "none",
+        "evidence_quality": "semantic_unavailable",
+        "observations": 7
+      },
+      {
+        "provider": "shell_ui_snapshot/1",
+        "evidence_quality": "trusted",
+        "observations": 7
+      }
+    ]
+  },
+  "autonomous_cycle_quality": [
+    {
+      "task_run_id": "0d012adc-d18b-40f0-b0fb-1f6c2da13ceb",
+      "observations": 10,
+      "trusted": 7
+    },
+    {
+      "task_run_id": "155f0ef0-c5f2-4f61-891d-31240c205e41",
+      "observations": 2,
+      "trusted": 0
+    },
+    {
+      "task_run_id": "044118e6-cad0-48c1-9c0d-ff90117d66c8",
+      "observations": 2,
+      "trusted": 0
+    }
+  ],
+  "unauthorized_dispatches_observed": 0,
+  "unverifiable_password_flags": 0,
+  "diagnostic_batch": {
+    "count": 20,
+    "verified_successes": 11,
+    "success_rate": 0.55,
+    "false_successes": 0,
+    "tap_count": 11,
+    "swipe_count": 95,
+    "uncertain_dispatches": 0,
+    "api_calls": 121,
+    "all_dispatched_actions_bound": true,
+    "passed_gate": false,
+    "scope": "Fixed goals only; independent autonomous acceptance required separately"
+  },
+  "intermediate_batch": {
+    "count": 20,
+    "verified_successes": 20,
+    "success_rate": 1.0,
+    "false_successes": 0,
+    "tap_count": 20,
+    "swipe_count": 30,
+    "uncertain_dispatches": 0,
+    "api_calls": 70,
+    "all_dispatched_actions_bound": true,
+    "passed_gate": true,
+    "scope": "Fixed goals only; independent autonomous acceptance required separately"
+  },
+  "scope": "No 24-hour acceptance executed"
+}

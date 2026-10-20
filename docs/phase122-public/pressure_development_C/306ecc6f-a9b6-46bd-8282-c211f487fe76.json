@@ -1,0 +1,119 @@
+{
+  "public_schema": "evidence/1",
+  "task_run_id": "306ecc6f-a9b6-46bd-8282-c211f487fe76",
+  "status": "step_limit",
+  "elapsed_ns": 107811598800,
+  "run_kind": "manual_targeted",
+  "goal_sha256": "faf4863001cbb8835bc9f6bc6f5dffe33a315de18d401072b6a7c9c27204498f",
+  "final_observation_sha256": "b401d27b1374dc6a7001a48015a4ae4e9d43d81d9db7423ff4a479c06c8e7d28",
+  "independently_verified": false,
+  "attempts": [
+    {
+      "step_index": 1,
+      "generation_attempt": 1,
+      "response_sha256": "87a893700d56fee5736a39dbdcd34630b39b72fc895c70c81f1184d2bb056d79",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "1e4a72143216b8aa915d1fc3184744504d0eb3447968932e15e269c5e6bf6033",
+      "fresh_screenshot_sha256": "1e4a72143216b8aa915d1fc3184744504d0eb3447968932e15e269c5e6bf6033",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1196,
+        "x2": 360,
+        "y2": 772,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 2,
+      "generation_attempt": 1,
+      "response_sha256": "d2edab56ac83fa74378323f2e26e130ccf6530e4f1644c4d32613194467f10bd",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "45d1a079a5e849c090e14abbff8562c842055393a00e7594bfc130b6d60eb55a",
+      "fresh_screenshot_sha256": "45d1a079a5e849c090e14abbff8562c842055393a00e7594bfc130b6d60eb55a",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1125,
+        "x2": 360,
+        "y2": 561,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 3,
+      "generation_attempt": 1,
+      "response_sha256": "2c09bd36b23b3db5ba6fb94187afcf5c775fe4b5d0c628ba5be5a1cc3c155bb1",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "bf656c859bd5224a80f10c55aa20a9ee6d17b42f5ad16870bdeda5023a3da687",
+      "fresh_screenshot_sha256": "bf656c859bd5224a80f10c55aa20a9ee6d17b42f5ad16870bdeda5023a3da687",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1125,
+        "x2": 360,
+        "y2": 561,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 4,
+      "generation_attempt": 1,
+      "response_sha256": "45a8a6ec1be4f533b977bd75b392c509660bf4a14b5352be48ebcacd3ad36439",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "71fb1e01c7a3efd5ef13957074a71bc055c92ade784512e88b4d747c20bc136a",
+      "fresh_screenshot_sha256": "71fb1e01c7a3efd5ef13957074a71bc055c92ade784512e88b4d747c20bc136a",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1327,
+        "type": "tap"
+      }
+    },
+    {
+      "step_index": 5,
+      "generation_attempt": 1,
+      "response_sha256": "434a51750a0bbbc37452b8c460ca4c82b54f586e706976e46680e3d750b0f588",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "23fe0a5b43f0ee8dbfc7a5f8e54eb572300a09ba5b5d3a672d6c072110c15978",
+      "fresh_screenshot_sha256": "23fe0a5b43f0ee8dbfc7a5f8e54eb572300a09ba5b5d3a672d6c072110c15978",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1185,
+        "x2": 360,
+        "y2": 741,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 6,
+      "generation_attempt": 1,
+      "response_sha256": "c6e6da2c6d109df8d826601134bdc44d43c3bfa1527199ffc6de94fa1d6aa44f",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+      "fresh_screenshot_sha256": "71dab5b0993d9aac23c452a489b75cd0c606187ec9063ebf4e3f887bbec9bd19",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1113,
+        "x2": 360,
+        "y2": 524,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    }
+  ],
+  "raw_material_included": false,
+  "scope": "Hashes and bounded action facts only; excludes raw PNG/tree/model text and private paths"
+}

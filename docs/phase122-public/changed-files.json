@@ -1,0 +1,248 @@
+[
+  {
+    "file": "data/phase122/analyze.py",
+    "before_sha256": null,
+    "after_sha256": "a3fa73077c6a94e7aba1cbd0fd025ee7cdb83b084c5c0b4d32d714e6cd267190",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/check_capture_integrity.py",
+    "before_sha256": null,
+    "after_sha256": "9c5607a95f7fc4000dc61e4d11fc303f074e70cd6923ffca9f6942b96a79aefb",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/check_readonly_cli.py",
+    "before_sha256": null,
+    "after_sha256": "927e910bf13ed5c053dc6de317060c8c2b0768343047b7354c5402bfd499e66e",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/check_runtime_provenance.py",
+    "before_sha256": null,
+    "after_sha256": "78b81b05308b312a9d67f587407fb6292bd2add2116aa78411119af31b9e3234",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/deliver.py",
+    "before_sha256": null,
+    "after_sha256": "2036d0954db2644f70fa4ecdc2efddf11755c0b6e3876d373d420eb773438e4f",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/freeze.py",
+    "before_sha256": null,
+    "after_sha256": "e58d43a80fac8751fb50447d8e26957080b611a1e2279cb1485978717597911f",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/inspect_differences.py",
+    "before_sha256": null,
+    "after_sha256": "7e30357238e1e774ec9fea852cbd3adf978a6e97054c0b888a4c53689c6a3512",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/make_fixture.py",
+    "before_sha256": null,
+    "after_sha256": "6d95b7657fec99484082c06b65bb6e9ec56a6a2c87e146208fcde8c3e19403e5",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/monitor.py",
+    "before_sha256": null,
+    "after_sha256": "f7ba4275803d74d8518b1ab6b70af6c5ea839d4ea75c0411a8c63a2dce4f2db6",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/package.py",
+    "before_sha256": null,
+    "after_sha256": "8b663db14c8262d6352add4409af6a44a382a20df646d2068534d04eac7dd0d0",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/preflight.py",
+    "before_sha256": null,
+    "after_sha256": "5b875692919d36ffbe2072f7d0388c15b0fa97739a7b2c79db5e782fd7ed24b9",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/preservation.py",
+    "before_sha256": null,
+    "after_sha256": "9106a880e7a259f5fdb85e74f01214601190f110331b6cc297648e221c7ba4c9",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/reproduce.py",
+    "before_sha256": null,
+    "after_sha256": "7b18483350239c15a2139c1f68a1709b1799e9b00ec0d5f1de6865d702e3f99a",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/reproduce_decision.py",
+    "before_sha256": null,
+    "after_sha256": "32c3cc40745ddb254d75688933c988429243501bd3641866e008187e4dbe0d86",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/reproduce_deep.py",
+    "before_sha256": null,
+    "after_sha256": "c0d0fd983316531ccb9a8a50f1a989cf23838ed1e01b74e5168130e8c6378ca8",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/run_fixed.py",
+    "before_sha256": null,
+    "after_sha256": "947d96a78b9fe39a64bc37f1c37490c5fc6a51c97f67b29c520f98c95a95eaae",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/run_pressure.py",
+    "before_sha256": null,
+    "after_sha256": "9ec0f54c17891ecafbd676e134c31773d4b1932501dfc1091b8d1d23fb2b97b3",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/scan_credentials.py",
+    "before_sha256": null,
+    "after_sha256": "6dd780cb98034e135397bab3253bd028fcdc29d8c9bb92db69af2d549db2abff",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "data/phase122/seal_private.py",
+    "before_sha256": null,
+    "after_sha256": "3ee96699e542676e7bd7267122d75708c94ee80b5585fb923405d656133f805f",
+    "scope": "finite verification/evidence tool"
+  },
+  {
+    "file": "docs/PHASE1_2_1_CLOSURE_CONTRACTS.md",
+    "before_sha256": null,
+    "after_sha256": "e0cd9d96e57899cdd38eb2053ee42a740a3cc5caabc1c764d9063a8282abffed",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "docs/PHASE1_2_1_CLOSURE_REPORT.md",
+    "before_sha256": null,
+    "after_sha256": "65eaa0d6384b30e6a5aee13cf9dbd5597a080904a011f5795726a675a16072ce",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "pyproject.toml",
+    "before_sha256": "9bf5598e7323bed34dc4d55c79e75ee76c846877f27f5766891e9a3e37954221",
+    "after_sha256": "dca3acf228c63289527490db06e2e2027f5755687013ec633df29aa51cff720d",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "README.md",
+    "before_sha256": "b0659659fe8f98c325bb58f63d20dbc72d365f1809044095df2064e15481f16d",
+    "after_sha256": "edf901637fdd47bb3a87e84ba305390fb974ff0f6a4c281b75d7c45f875e793a",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/__init__.py",
+    "before_sha256": "aafa4317c31970a07aeacd94e9b5ef45abbe595e6a3dcf07ea7227a885d3a7de",
+    "after_sha256": "8a10238366b521f928015d0abe17e077185c6f423a4168948832810bd6b700bf",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/audit.py",
+    "before_sha256": "04c0a12dce07142d784958d185993366c8b8921013d8a5d158ae22f0756e6a32",
+    "after_sha256": "39cada0455928d29dcee15eee04397cb21814f18f20669fb6db78efec142c8fa",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/autonomy.py",
+    "before_sha256": "1d7cf66dacd92a1ec45ddaf82a6d4ff0079395bd93914deab21f57e81c753c7b",
+    "after_sha256": "95867b05f08e3267310292ef46a4236adac73b6d516d2293ad9231aee18895f2",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/brain.py",
+    "before_sha256": "ad20337859c84727323442ef62ea2598cd0d22b883578ca1677470167a453c10",
+    "after_sha256": "4aef5899c98a9f5eb69d674c16de4a8d07bcea557e720ba76e0593b57e8402fe",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/capabilities.py",
+    "before_sha256": "a559547fed8a61609332e3b70e6e998b6e4fdeb4dcc6f49bb213d9a220013bd2",
+    "after_sha256": "b54b2cfe083197fc1f8c4fd3745e3556a3546044ff0b167d6e363dfe7509cb76",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/decision_errors.py",
+    "before_sha256": null,
+    "after_sha256": "02df9fe48a602120ca8c838f1f0e86d08a43e71ea080206c4c92229fbf90b704",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/devices.py",
+    "before_sha256": "6295caac353b833590f29b0abe10de255801444bf09a57d1db4abcd8c50f0ada",
+    "after_sha256": "38bbc7df3498939be18f673aff344ac4b8d1571225df635b95dec8ceac85f14c",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/loop.py",
+    "before_sha256": "88180b6238435fd0810e88e356ff43178fe426ac38accf833a4c46608b6cfc94",
+    "after_sha256": "a00cb51ce042d05198a41e1d83da1d32a8046fcd550833dcb548abfa87a9cd4d",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/semantic.py",
+    "before_sha256": "1356016588908ca984b9a8e6d3ae320e1f7a6cb2c1d34d79aa864dc8586ce7e3",
+    "after_sha256": "8531af40f6e4e2d8e4842cddb5580c0339fab7b8f5f0088f51aa768aa71a37d6",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/semantic_benchmark.py",
+    "before_sha256": "3e1b5a9d3a75c4d8e4504c0429de3c84af5c2f4fe87d791aa4457bec4a44ba4e",
+    "after_sha256": "e692f36ff45e4e78182176e11219ca16a2a8223229c190e45244c895f61e23fa",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/semantic_recovery.py",
+    "before_sha256": null,
+    "after_sha256": "5f95eeda8a0606c8d1fd080efe5833310e5ecc370bec5f2ce980bf73c2799931",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/semantic_stability.py",
+    "before_sha256": null,
+    "after_sha256": "c5597ad6a85634584a1960c01402c623f121ba23c96bcb2e5c67bdcc4d31cea2",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/semantic_storage.py",
+    "before_sha256": "920a6d8113e25eeb3dda566604076a24a1fd172b031bdaa28b234b6e6b0aacb4",
+    "after_sha256": "21ec3e4d9745ff00f4118d1c04011bf0bc6bb868f925aedf483b3c8b3fb8a7a3",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "src/phonelife/verification_registry.py",
+    "before_sha256": "7cd66bff23df644c18f81bc1fecf2dc4e48a317c581044fcb8e1045d9270aa50",
+    "after_sha256": "73cb8b003d98050017f09ea8e91b80e6b862d942ec9241a1d6988045467dc931",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "tests/fixtures/uptime-api35/PROVENANCE.json",
+    "before_sha256": null,
+    "after_sha256": "eef9150054cd0e417381b58ae0043fa716e0946f004b302056da541806a16207",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "tests/fixtures/uptime-api35/tree-0.json",
+    "before_sha256": null,
+    "after_sha256": "d650a3f4c4671963f840cdaa4623f4253c163681e9c265c131cd62caa0421f05",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "tests/fixtures/uptime-api35/tree-1.json",
+    "before_sha256": null,
+    "after_sha256": "17b5f33b4a36390ef4e458c559c382406c2697509931928a5318de5f1df6c688",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  },
+  {
+    "file": "tests/test_closure.py",
+    "before_sha256": null,
+    "after_sha256": "e3cf581ce90abbdb156c719482133fefe4e7e1b0dc7480f0667ab446187c82a9",
+    "scope": "runtime, regression fixture, version or documentation; see contracts file map"
+  }
+]

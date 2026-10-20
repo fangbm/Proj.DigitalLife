@@ -1,0 +1,140 @@
+# Proj.DigitalLife — 数字生命计划 / Phase 1.2.2 Long-Run Autonomous Soak · v0.2.3
+
+GitHub 公开源码与预发布的证据边界见 [GitHub 交付说明](docs/GITHUB_DELIVERY.md)。当前完成 Stage C，正式24小时 Soak 尚未批准或执行。
+
+v0.2.3 修复独立验证器的源码交付依赖，并新增持久单调时限、只读健康/资源保护及有限 worker 监督层。架构和入口见 [长期运行管理](docs/PHASE1_2_2_LONGRUN.md)，干净源码验证见 [源码验证边界](docs/SOURCE_VERIFICATION.md)。正式 24 小时真实 API Soak 必须在预检后获得明确批准；当前准备/短试不等于长期验收通过。
+
+Stage C 最终安全修复将未知分发改为持久不可恢复的停止屏障，禁止 Resume 或期限计时覆盖。见 [停止状态契约](docs/PHASE1_2_2_STOP_BARRIER.md)；旧 preflight-02 指纹已废止，不得用于启动。新候选必须另行取得明确授权。
+
+原 v0.2.2 报告、固定 20/20、30 分钟自然会话及 continuation v1/v2 证据均保留。v2 是受控真实故障验收，不能重新命名为自然错误发生。
+
+v0.2.3 短时预检新观察到自然缺失 continuation 引用并被严格拒绝；完整自然跨轮反馈仍未观察。Stage A-C 结果、限制及待批准的24h配置见 [本轮交付报告](docs/PHASE1_2_2_DELIVERY.md)。
+
+v0.2.2 加入有证据约束的 Uptime 动态区域处理、有限租约内的语义恢复、类型化主脑拒绝的跨轮记忆及类型化脱敏。接口与运行限制见 [可靠性修复契约](docs/PHASE1_2_1_CLOSURE_CONTRACTS.md)，真实复验与完整验收状态见 [v0.2.2 验收报告](docs/PHASE1_2_1_CLOSURE_REPORT.md)。本轮只做有限测试，不启动常驻 Agent，不增加 Settings 以外的应用或权限。
+
+v0.2.1 新增 Android 15 只读语义观察后端、当前控件绑定、版本化能力、continuation 修复、目标与验证范围检查，以及独立公开证据导出。接口、后端与运行方法见 [Phase 1.2.1 语义观察](docs/PHASE1_2_1_SEMANTICS.md)，实测结果与未达门槛见 [v0.2.1 验收报告](docs/PHASE1_2_1_DELIVERY.md)。首次使用新后端先在共享租约内执行 `--device emulator --prepare-semantics`；不会安装 APK 或授予新权限。原始截图和控件树按私有材料管理。
+
+v0.2.1 原验收未全部通过：深滚动语义恢复与 continuation 跨轮反馈是本轮修复对象。旧报告和失败证据保留原样；本轮是否闭环以 v0.2.2 报告的各项实际门槛为准，不能仅凭固定 GUI 任务通过就启动长期无人值守运行。
+
+模型可以基于环境、内部状态、记忆和兴趣自主选择目标或休息，执行后通过独立验证与有预算反思更新后续行为。兴趣是可解释的计算偏好，不表示真实意识。
+
+v0.2.0 自主循环基线、SQLite 子系统、预算和原运行方式见 [Phase 1.2 自主循环](docs/PHASE1_2_AUTONOMOUS_LIFE.md)，历史实测见 [v0.2.0 交付报告](docs/PHASE1_2_DELIVERY.md)；v0.2.1 的新增接口以本页上方链接为准。默认自主能力限于只读 Android Settings 环境、已识别导航与公共设备事实；未知控件、自由输入及敏感/状态修改会被拒绝。开放式选题不表示任意应用自由控制。
+
+Windows 本机先使用独立数据库进行短试；复用现有 DPAPI 文件，只读加载密钥：
+
+```powershell
+$env:PYTHONPATH='src'
+$env:PHONE_LIFE_DB='data/life.sqlite3'
+python -m phonelife.cli --device emulator --serial emulator-5582 --prepare-semantics
+.\data\start-life.ps1 -Cycles 3 -Database data/life.sqlite3 -Output data/life-evidence
+.\data\start-life.ps1 -Pause -Database data/life.sqlite3
+.\data\start-life.ps1 -Resume -Database data/life.sqlite3
+.\data\start-life.ps1 -Status -Database data/life.sqlite3
+.\data\start-life.ps1 -EmergencyStop -Database data/life.sqlite3
+```
+
+API 模式不指定具体目标时默认走新版；--goal 与 Benchmark 保留原执行/审计路径。--legacy-loop 保留旧 explore/rest。mock 默认仍为旧演示，--autonomous 启用新离线 fixture。所有真实 CLI 执行者需使用同一设备租约协调库（默认 data/phone-life.sqlite3）；生活数据库可以分离。
+
+24 小时入口为 start-life.ps1 -Hours 24；具体命令和续跑/观测要求见运行文档。不得把入口就绪或短试通过写成已完成 24 小时验收。正式验收前不要替换正在运行的生产 Agent。
+
+## v0.1.2 兼容基线与原运行说明
+
+
+本轮加固了观察反馈式停滞检测、同一设备租约内的 Benchmark 审计、运行来源/记忆/调度隔离和真正 SQLite 只读复放。当前运行与兼容性说明见 [Phase 1.1.1 Reliability Hardening](docs/PHASE1_1_1_HARDENING.md)。Phase 1.1 文档和历史验收材料保持原样。
+
+验收结果：自动化 69/69、Android 15 固定目标正式复验 20/20；完整逐轮证据与限制见 [v0.1.2 交付报告](docs/PHASE1_1_1_DELIVERY.md)。本轮完成后暂停，等待审查后再启动 Phase 1.2。
+Phase 1.1 已加入严格动作协议、截图像素校验、有限生成修复、独立目标验证、TaskRun 审计和离线复放。使用方法、状态兼容性与验收边界见 [GUI 执行可靠性说明](docs/PHASE1_1_GUI_RELIABILITY.md)。
+
+**Proj.DigitalLife（数字生命计划）**的第一阶段研究原型：一个长期运行的 AI 角色自主决定“探索还是休息”，通过视觉模型逐步操作安卓模拟器，并将决策、动作日志、经历和下次唤醒时间持久化。仓库目录使用 `Proj.DigitalLife`，内部 Python 导入模块暂保留 `phonelife`，避免破坏现有启动命令和测试。
+
+**现有能力：**
+
+- `mock`：不联网、无需 ADB/API Key，跑完整的决策→执行→记录→休息闭环。
+- `emulator`：使用独立主模型与视觉模型 API，截屏→单步 JSON 动作→ADB 执行→再截屏；进程重启后继续。
+- `real`：实体安卓设备连接、截图、返回/主页、受控启动白名单 App。第一阶段硬禁坐标点击、滑动和输入。
+- SQLite WAL 状态、每设备唤醒计划、最近经历、不可并行的设备租约、出错后 10 分钟退避。
+- 统一 `ActionPolicy`：只接受有限动作集合、限制启动包名、长度和坐标，实体机默认更严格。
+
+**暂未实现：** QQ 适配器、TTS、带语义检索的记忆、事件总线、GUI 模型后端热切换、实体机可证明的敏感按钮识别。不要把这个第一阶段版本当成已安全验证的无人值守生产系统。
+
+## 1. 运行离线闭环
+
+需要 Python 3.11+。
+
+v0.1.2 新增 Pillow 11.3+（<13）作为内容区图像比较依赖。新环境先执行 `python -m pip install -e .`；依赖就绪后，离线闭环和自动化测试不调用模型或网络。Windows PowerShell 可用 `$env:PYTHONPATH='src'` 设置导入路径。
+
+```bash
+cd Proj.DigitalLife
+PYTHONPATH=src python -m unittest discover -s tests -v
+PYTHONPATH=src python -m phonelife.cli --mode mock --device mock --cycles 2 --force
+```
+
+第一次应有 `decision=explore` 且执行一次 `launch`，经 mock 状态验证后返回 `succeeded`；第二次应自主选择 `rest`，状态为 `rested`。再次运行会读取同一个 SQLite 数据库与记忆。`--force` 用于手动跳过唤醒时间，不能绕过设备租约，长期运行时不要使用。
+
+## 2. 运行安卓模拟器闭环
+
+1. 在独立的安卓模拟器中安装并登录你愿意让 Agent 接触的 App，**不要放入支付账户、个人密码或真实隐私数据**。
+2. 安装 Android SDK Platform Tools，确保 `adb devices` 返回 `emulator-5554 device`（实际序列号可能不同）。
+3. 准备兼容 OpenAI `/chat/completions` 的主模型和支持图片输入的 GUI 模型。主模型与 GUI 模型可以来自同一服务，但必须分别填写模型名。
+4. 在当前 shell 导出环境变量（以下值替换为真实值，**不要提交 API Key**）：
+
+```bash
+export PHONE_LIFE_API_BASE="https://your-provider.example/v1"
+export PHONE_LIFE_API_KEY="..."
+export PHONE_LIFE_BRAIN_MODEL="your-chat-model"
+export PHONE_LIFE_GUI_MODEL="your-vision-model"
+export PHONE_LIFE_PERSONA_PATH="./persona.example.md"
+export PHONE_LIFE_EMULATOR_SERIAL="emulator-5554"
+export PHONE_LIFE_ALLOWED_APPS="com.android.chrome,tv.danmaku.bili"
+PYTHONPATH=src python -m phonelife.cli --mode api --device emulator --cycles 1 --force
+```
+
+如果视觉模型运行在本地的 OpenAI-compatible 服务上，可以额外设置 `PHONE_LIFE_GUI_API_BASE=http://127.0.0.1:8000/v1` 和 `PHONE_LIFE_GUI_API_KEY`；不设置时沿用主脑 API。角色设定在 `persona.example.md`，可以根据她的身份和兴趣调整。
+
+上面会向模型服务发送模拟器截图。若服务不接受 `image_url` / `data:image/png;base64,...` 格式，则应换兼容服务或实现 provider adapter。
+
+确认单次任务正常，再启用长期调度：
+
+```bash
+PYTHONPATH=src python -m phonelife.cli --mode api --device emulator --forever
+```
+
+Ctrl+C 停止。长期运行建议用 systemd 管理环境变量和重启，见 `docs/ARCHITECTURE.md`。
+
+## 3. 实体手机（阶段 1 只读/受限操作）
+
+实体机开启 USB 调试，用独立 ADB 序列号连接：
+
+```bash
+adb devices
+export PHONE_LIFE_REAL_SERIAL="YOUR_REAL_ADB_SERIAL"
+PYTHONPATH=src python -m phonelife.cli --mode api --device real --cycles 1 --force
+```
+
+如果模型输出坐标点击、滑动或输入，策略层会拒绝并记录 `policy_denied`。实体机只允许打开白名单包和 Home/Back。这是有意的第一阶段边界。
+
+## 4. 代码导航
+
+| 文件 | 负责内容 |
+|---|---|
+| `models.py` | `Decision` / `Action` / `ExecutionResult` 数据契约 |
+| `config.py` | 模型、设备序列号和包名白名单 |
+| `llm.py` | OpenAI-compatible API、主规划器、GUI 逐步决策器、mock |
+| `devices.py` | `Phone` Protocol、模拟器/实体机 ADB 执行器、mock |
+| `policy.py` | 不受提示词更改的动作权限控制 |
+| `storage.py` | SQLite 日志、记忆、定时状态、租约 |
+| `loop.py` | 自主思考、执行、反思记录、持久化唤醒循环 |
+| `cli.py` | 单次、mock、模拟器、实体机与常驻启动 |
+
+## 5. 操作与安全边界
+
+- **模拟器必须是隔离的测试环境**，即使模型遵循“禁止付费”的提示词，也不构成可靠权限控制；坐标点击可能误触未知按钮。不要给模拟器提供支付凭据和其他高风险身份。
+- 真实手机第一阶段禁用 GUI 坐标操作。以后接入经审计的无障碍控件动作、OS 隔离与不可逆操作确认才能扩权。
+- 截图在内存里传送到 GUI API，当前版本不存盘；但模型提供商仍会接收到截图。
+- 当前 ADB `text` 仅支持受限 ASCII 字符；中文输入需后续接入经过验证的 Unicode 输入法/无障碍适配器。
+- 目前不保存聊天消息、原始屏幕图像、API Key。日志保存动作类型、理由和简短结果。
+- 外部网页/聊天内容是不可信输入，任何来自屏幕的“忽略规则”都不应成为系统指令。
+- 不要在公网暴露 ADB；USB 连接优先。
+
+完整路线图与接口、调度/记忆方案：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+

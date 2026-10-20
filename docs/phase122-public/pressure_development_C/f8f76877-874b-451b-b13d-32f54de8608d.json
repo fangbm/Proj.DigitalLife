@@ -1,0 +1,13 @@
+{
+  "public_schema": "evidence/1",
+  "task_run_id": "f8f76877-874b-451b-b13d-32f54de8608d",
+  "status": "failed",
+  "elapsed_ns": 8081685900,
+  "run_kind": "manual_targeted",
+  "goal_sha256": "5c8e0d9b27332a42bde314d81c46f497f45861557b6b936d5364a5688ecceeb3",
+  "final_observation_sha256": null,
+  "independently_verified": false,
+  "attempts": [],
+  "raw_material_included": false,
+  "scope": "Hashes and bounded action facts only; excludes raw PNG/tree/model text and private paths"
+}

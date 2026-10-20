@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
+*.class
+docs/test-evidence/
+# Only reviewed launchers and the non-sensitive historical source hash map are public.
+/data/*
+!/data/start-api.ps1
+!/data/start-life.ps1
+!/data/start-soak.ps1
+!/data/start-emulator.ps1
+!/data/phase122/
+/data/phase122/*
+!/data/phase122/final-runtime-sha256.json
+.env
+.env.*
+!.env.example
+*.sqlite3*
+*.dpapi
+*.key
+*.pem
+*.log
+

@@ -1,0 +1,227 @@
+{
+  "public_schema": "evidence/1",
+  "task_run_id": "b37212be-9cf8-4c4f-ac0f-6b16c2708ca8",
+  "status": "step_limit",
+  "elapsed_ns": 201401614800,
+  "run_kind": "benchmark",
+  "goal_sha256": "be8abba8f2658fac8431e77ed2f840631722eb6b4967576220004202782225b7",
+  "final_observation_sha256": "6c0c98bdb388c8eb634b3117e07c018d0a272214207e10dccbec64dd7826f4b2",
+  "independently_verified": false,
+  "attempts": [
+    {
+      "step_index": 1,
+      "generation_attempt": 1,
+      "response_sha256": "b8550f9e66247379075c5ca89a9791d1c349c5a28403124ccb4b3f3b787087a5",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "68a1fc74455d15cdf073b7978804ee84b754f6803eea7c7df2b8c7270d568567",
+      "fresh_screenshot_sha256": "68a1fc74455d15cdf073b7978804ee84b754f6803eea7c7df2b8c7270d568567",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1196,
+        "x2": 360,
+        "y2": 772,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 2,
+      "generation_attempt": 1,
+      "response_sha256": "97d7dd15f306d9b8b442d1c4278346054f1e05071a7ae34be818acfa809e1be1",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "3758da71f3061b0d2baf730b7d60678c6d9de62bd0a3b1f050d96d6f435fadc9",
+      "fresh_screenshot_sha256": "3758da71f3061b0d2baf730b7d60678c6d9de62bd0a3b1f050d96d6f435fadc9",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1125,
+        "x2": 360,
+        "y2": 561,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 3,
+      "generation_attempt": 1,
+      "response_sha256": "9ac1a8afa548e499a866167d652445be8965bf92317f9e6bff125f41803a9d36",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "88312a2d55806c21bfa4cf4768c4187cd32d806859aa624aa64ea3dcad26a077",
+      "fresh_screenshot_sha256": "bb6ccc6180b5fa3ffd3891924a6bef8f12b1dc4fb3f54b2af39f1ca6d32bab57",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1125,
+        "x2": 360,
+        "y2": 561,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 4,
+      "generation_attempt": 1,
+      "response_sha256": "c508c85a0a6c61b0ecf522d2e3fb2752ce545e02ce71bb7a89acad24a89d84e9",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "9697fbb127e41ac8ba443baf28f8006d4ff663096d84c94d560eeb776813a3c9",
+      "fresh_screenshot_sha256": "9697fbb127e41ac8ba443baf28f8006d4ff663096d84c94d560eeb776813a3c9",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1412,
+        "type": "tap"
+      }
+    },
+    {
+      "step_index": 5,
+      "generation_attempt": 1,
+      "response_sha256": "3df1db3d3a63138fccdc25815d38609aa426d07f3ce705c4ce7274c3a1486a3e",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "41eb2baa6200f8ca6c2c011ffa4f6a00f7e89695e7377c3e3b8458ab463ef709",
+      "fresh_screenshot_sha256": "41eb2baa6200f8ca6c2c011ffa4f6a00f7e89695e7377c3e3b8458ab463ef709",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1167,
+        "x2": 360,
+        "y2": 685,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 6,
+      "generation_attempt": 1,
+      "response_sha256": "51018c7616a13a8e2a382653cbc651dd397725d92a54f24452c6f354e4f3a788",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "41d7dcb0fc77a08a794c6040e6e477aca3c5bbb0e902719c007e2f02da97745d",
+      "fresh_screenshot_sha256": "41d7dcb0fc77a08a794c6040e6e477aca3c5bbb0e902719c007e2f02da97745d",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1113,
+        "x2": 360,
+        "y2": 524,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 7,
+      "generation_attempt": 1,
+      "response_sha256": "0154859ed154cc398638c50a73e82722f38ad848d69001391d4f9d85e5327b20",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "41d7dcb0fc77a08a794c6040e6e477aca3c5bbb0e902719c007e2f02da97745d",
+      "fresh_screenshot_sha256": "32ed6a399e99f6093010255e20f61ada9c7001ee3f89f55f3d55ec1fe1346acc",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1113,
+        "x2": 360,
+        "y2": 524,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 8,
+      "generation_attempt": 1,
+      "response_sha256": "82f9d888b9e7d09479396e5f11a0789a08903660b9ad93589c990ed15d0b3c49",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "32ed6a399e99f6093010255e20f61ada9c7001ee3f89f55f3d55ec1fe1346acc",
+      "fresh_screenshot_sha256": "32ed6a399e99f6093010255e20f61ada9c7001ee3f89f55f3d55ec1fe1346acc",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 524,
+        "x2": 360,
+        "y2": 1113,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 9,
+      "generation_attempt": 1,
+      "response_sha256": "256869fba128ec6876b9dc4a0e4398affada369d08401f374e5fc06c709ecdc3",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "ac8c3313fe5df6ebf0f6c65fd772e13ef7069828c6217ecbc6d6e2c10f3a642d",
+      "fresh_screenshot_sha256": "ac8c3313fe5df6ebf0f6c65fd772e13ef7069828c6217ecbc6d6e2c10f3a642d",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1167,
+        "x2": 360,
+        "y2": 685,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 10,
+      "generation_attempt": 1,
+      "response_sha256": "71ae5225818cf3259be98134a21e6131ed88b000717a7148a7a2f301a2ef101e",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "32ed6a399e99f6093010255e20f61ada9c7001ee3f89f55f3d55ec1fe1346acc",
+      "fresh_screenshot_sha256": "32ed6a399e99f6093010255e20f61ada9c7001ee3f89f55f3d55ec1fe1346acc",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 524,
+        "x2": 360,
+        "y2": 1113,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 11,
+      "generation_attempt": 1,
+      "response_sha256": "08db4732d02869a83f728a025129eeacbc9b309366c13661da8e92c5744bc5f3",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "0c312b91aa53053b73461ea302ce0cc5cf69a99805b759a6ceddc98eca092f70",
+      "fresh_screenshot_sha256": "19bbfd2796a4e1a973d29f1a7fe7de20705535eb52e0c4beccbc9f0d980e2b62",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1167,
+        "x2": 360,
+        "y2": 685,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    },
+    {
+      "step_index": 12,
+      "generation_attempt": 1,
+      "response_sha256": "561fb5824be44c4621ef49f46aff88aecad8447e278d88fb4a57be2147fd7423",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "c8d2dc10e1bdef3e3c657a0fddbdac8d50e43f7de103c00cd859e79981059415",
+      "fresh_screenshot_sha256": "fb40fb8d74126020525c69e41d07b5673a2ae9b90e9951f84838527f07b7231b",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 524,
+        "x2": 360,
+        "y2": 1113,
+        "duration_ms": 400,
+        "type": "swipe"
+      }
+    }
+  ],
+  "raw_material_included": false,
+  "scope": "Hashes and bounded action facts only; excludes raw PNG/tree/model text and private paths"
+}

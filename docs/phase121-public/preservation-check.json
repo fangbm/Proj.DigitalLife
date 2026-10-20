@@ -1,0 +1,166 @@
+{
+  "historical_files_checked": 506,
+  "historical_files_changed": [],
+  "frozen_runtime_files": 33,
+  "runtime_files_changed_after_freeze": [],
+  "dpapi_ciphertext_unchanged": true,
+  "original_core_database": {
+    "original_rows_preserved": true,
+    "tables": {
+      "action_attempts": {
+        "baseline_rows": 176,
+        "current_rows": 176,
+        "missing_or_changed_original_rows": 0
+      },
+      "event_sources": {
+        "baseline_rows": 252,
+        "current_rows": 252,
+        "missing_or_changed_original_rows": 0
+      },
+      "events": {
+        "baseline_rows": 460,
+        "current_rows": 460,
+        "missing_or_changed_original_rows": 0
+      },
+      "memories": {
+        "baseline_rows": 37,
+        "current_rows": 37,
+        "missing_or_changed_original_rows": 0
+      },
+      "observations": {
+        "baseline_rows": 511,
+        "current_rows": 511,
+        "missing_or_changed_original_rows": 0
+      },
+      "run_schedules": {
+        "baseline_rows": 1,
+        "current_rows": 1,
+        "missing_or_changed_original_rows": 0
+      },
+      "schedule": {
+        "baseline_rows": 2,
+        "current_rows": 2,
+        "missing_or_changed_original_rows": 0
+      },
+      "schema_migrations": {
+        "baseline_rows": 2,
+        "current_rows": 2,
+        "missing_or_changed_original_rows": 0
+      },
+      "task_runs": {
+        "baseline_rows": 45,
+        "current_rows": 45,
+        "missing_or_changed_original_rows": 0
+      }
+    },
+    "quick_check": "ok",
+    "core_user_version": 12
+  },
+  "original_phase12_database": {
+    "original_rows_preserved": true,
+    "tables": {
+      "action_attempts": {
+        "baseline_rows": 179,
+        "current_rows": 179,
+        "missing_or_changed_original_rows": 0
+      },
+      "event_sources": {
+        "baseline_rows": 294,
+        "current_rows": 294,
+        "missing_or_changed_original_rows": 0
+      },
+      "events": {
+        "baseline_rows": 502,
+        "current_rows": 502,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_controls": {
+        "baseline_rows": 1,
+        "current_rows": 1,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_cycles": {
+        "baseline_rows": 7,
+        "current_rows": 7,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_goals": {
+        "baseline_rows": 5,
+        "current_rows": 5,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_interests": {
+        "baseline_rows": 8,
+        "current_rows": 8,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_memories": {
+        "baseline_rows": 32,
+        "current_rows": 32,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_memory_links": {
+        "baseline_rows": 16,
+        "current_rows": 16,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_memory_sources": {
+        "baseline_rows": 35,
+        "current_rows": 35,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_recovery": {
+        "baseline_rows": 0,
+        "current_rows": 0,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_requests": {
+        "baseline_rows": 14,
+        "current_rows": 14,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_schema_migrations": {
+        "baseline_rows": 1,
+        "current_rows": 1,
+        "missing_or_changed_original_rows": 0
+      },
+      "life_states": {
+        "baseline_rows": 1,
+        "current_rows": 1,
+        "missing_or_changed_original_rows": 0
+      },
+      "memories": {
+        "baseline_rows": 44,
+        "current_rows": 44,
+        "missing_or_changed_original_rows": 0
+      },
+      "observations": {
+        "baseline_rows": 525,
+        "current_rows": 525,
+        "missing_or_changed_original_rows": 0
+      },
+      "run_schedules": {
+        "baseline_rows": 1,
+        "current_rows": 1,
+        "missing_or_changed_original_rows": 0
+      },
+      "schedule": {
+        "baseline_rows": 2,
+        "current_rows": 2,
+        "missing_or_changed_original_rows": 0
+      },
+      "schema_migrations": {
+        "baseline_rows": 2,
+        "current_rows": 2,
+        "missing_or_changed_original_rows": 0
+      },
+      "task_runs": {
+        "baseline_rows": 52,
+        "current_rows": 52,
+        "missing_or_changed_original_rows": 0
+      }
+    },
+    "quick_check": "ok",
+    "core_user_version": 12
+  }
+}

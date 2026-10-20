@@ -1,0 +1,39 @@
+{
+  "tasks": 20,
+  "statuses": {
+    "succeeded": 20
+  },
+  "confirmed_model_actions": {
+    "tap": 20,
+    "swipe": 30
+  },
+  "confirmed_program_manual_actions": {},
+  "unsafe_dispatches": 0,
+  "false_successes": 0,
+  "unverified_final_successes": 0,
+  "unconfirmed_primary_claims": 0,
+  "contradicted_primary_claims": 0,
+  "unknown_transports": 0,
+  "semantic_observations": 261,
+  "qualities": {
+    "trusted": 258,
+    "semantic_unavailable": 3
+  },
+  "additional_semantic_samples": 40,
+  "additional_qualities": {
+    "trusted": 40
+  },
+  "dynamic_audits": 0,
+  "dynamic_text_changes": 0,
+  "recovery_successes": 1,
+  "recovery_failures": 0,
+  "confirmed_recovery_launches": 0,
+  "recovery_states": {
+    "recovered_readonly": 1
+  },
+  "policy_denied_candidates": 0,
+  "causal_feedback": [],
+  "structured_rejection_episodes": 0,
+  "memory_feedback": [],
+  "deep_scroll_followups": []
+}

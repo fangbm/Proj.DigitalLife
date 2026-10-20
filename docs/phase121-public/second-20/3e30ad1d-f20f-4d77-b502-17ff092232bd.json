@@ -1,0 +1,42 @@
+{
+  "public_schema": "evidence/1",
+  "task_run_id": "3e30ad1d-f20f-4d77-b502-17ff092232bd",
+  "status": "succeeded",
+  "elapsed_ns": 23555816700,
+  "run_kind": "benchmark",
+  "goal_sha256": "9fb3def5843fb37d43eec867bb32e86ba707eeca1189c272c1a8a3c94ba3ccee",
+  "final_observation_sha256": "6e7d10492cf974a152da0d21d73a30106169ccfc1008e0a20317a734c9c3023f",
+  "independently_verified": true,
+  "attempts": [
+    {
+      "step_index": 1,
+      "generation_attempt": 1,
+      "response_sha256": "42c229061f8b059e5a3d5da98e0781bbd7d72793edbf7208c5b1a6dc3023fed2",
+      "executed": true,
+      "outcome_unknown": false,
+      "observation_sha256": "faeb82b4a0814f34ef356f483a86a94322b984e2bda35139b24a31a2c7e753d7",
+      "fresh_screenshot_sha256": "faeb82b4a0814f34ef356f483a86a94322b984e2bda35139b24a31a2c7e753d7",
+      "binding_checked": true,
+      "action": {
+        "x": 360,
+        "y": 1253,
+        "type": "tap"
+      }
+    },
+    {
+      "step_index": 2,
+      "generation_attempt": 1,
+      "response_sha256": "265a1463d2b159581a530b9c69bfaae52d2396e71fe1b7e374534e708f8d6bb4",
+      "executed": false,
+      "outcome_unknown": false,
+      "observation_sha256": "6e7d10492cf974a152da0d21d73a30106169ccfc1008e0a20317a734c9c3023f",
+      "fresh_screenshot_sha256": null,
+      "binding_checked": false,
+      "action": {
+        "type": "finish"
+      }
+    }
+  ],
+  "raw_material_included": false,
+  "scope": "Hashes and bounded action facts only; excludes raw PNG/tree/model text and private paths"
+}
