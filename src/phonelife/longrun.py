@@ -46,7 +46,8 @@ def prepare_session(directory,*,mode='mock',seconds=86400,private_evidence=False
             old=prior.load()
             if old['state']not in TERMINAL or not old.get('safety_stop'):raise ValueError('Prior session must remain safety terminated')
             link={'session_id':old['session_id'],'fingerprint':old['fingerprint'],'reason_code':REVIEW_STOP,
-                'barrier_sha256':sha(prior.review_path),'operator_review_reference':review_reference}
+                'barrier_sha256':sha(prior.review_path) if prior.review_path.is_file() else hashlib.sha256(canonical(old['safety_stop']).encode()).hexdigest(),
+                'barrier_medium':'marker' if prior.review_path.is_file() else 'sqlite','operator_review_reference':review_reference}
         finally:prior.close()
     restricted=secure_directory(directory)
     config={'version':__version__,'mode':mode,'source_kind':expected,'serial':cfg.emulator_serial if mode=='api' else 'mock',
@@ -177,7 +178,8 @@ class LongRunSoakController:
                 'lease_after_stop':final.get('lease',[]),'old_actions_replayed':0,'requires_manual_review':True,
                 'new_actions_dispatched':bool(new_dispatches) if final['database_readable'] else None,
                 'dispatch_check':'journal_dispatch_timestamps' if final['database_readable'] else 'unavailable',
-                'new_dispatch_records':new_dispatches,'review_finalization_error':review_error}
+                'new_dispatch_records':new_dispatches,'review_finalization_error':review_error,
+                'stop_persistence':self.ledger.review_persistence}
             # Separate result preserves the original append-once trigger even if SQLite fails.
             target=self.directory/'review-stop-result.json'
             if not target.exists():
@@ -345,6 +347,8 @@ async def run_worker(directory,parent_pid):
     cfg=state['config'];verify_freeze(cfg)
     if hashlib.sha256(canonical(cfg).encode()).hexdigest()!=state['fingerprint']:raise ValueError('CONFIG_FREEZE_MISMATCH')
     health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],worker_alive=False)
+    if not health['database_readable']:
+        ledger.close();raise PermissionError('WORKER_REFUSED: safety database unreadable')
     if health.get('safety_review_required') or health['needs_review']:
         ledger.close();barrier=SessionLedger(directory/'soak-control.sqlite3')
         try:barrier.latch_review({'sources':health.get('review_sources',[]),'worker_pid':os.getpid(),

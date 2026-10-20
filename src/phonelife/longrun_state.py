@@ -69,6 +69,7 @@ class SoakPolicy:
 class SessionLedger:
     def __init__(self,path,clock=None,readonly=False):
         self.path=Path(path);self.clock=clock or Clock();self.readonly=readonly
+        self._pending_review=None;self.review_persistence={}
         if readonly:
             self.conn=sqlite3.connect(self.path.resolve().as_uri()+'?mode=ro',uri=True,timeout=1)
             self.conn.execute('PRAGMA query_only=ON')
@@ -84,11 +85,25 @@ class SessionLedger:
         return self._review_overlay(json.loads(row[0]))
     @property
     def review_path(self):return self.path.with_name(self.path.name+'.review-stop.json')
+    def _marker_review(self,session_id):
+        try:
+            barrier=json.loads(self.review_path.read_text(encoding='utf8'))
+            if not (isinstance(barrier,dict) and barrier.get('session_id')==session_id
+                    and barrier.get('reason_code')==REVIEW_STOP and barrier.get('requires_manual_review')is True):
+                raise ValueError('Invalid review marker')
+            return barrier
+        except FileNotFoundError:return None
+        except (ValueError,OSError) as error:
+            return {'session_id':session_id,'reason_code':REVIEW_STOP,'requires_manual_review':True,
+                'evidence_unreadable':True,'marker_read_error_type':type(error).__name__}
     def _review_overlay(self,value):
-        # Append-once independent barrier survives even a failed control DB write.
-        if self.review_path.exists():
-            try:barrier=json.loads(self.review_path.read_text(encoding='utf8'))
-            except (ValueError,OSError):barrier={'reason_code':REVIEW_STOP,'evidence_unreadable':True}
+        # Either persistent medium is sufficient. SQLite's first event wins a
+        # conflict; an unreadable/partial marker still blocks a fresh process.
+        barrier=value.get('safety_stop')
+        if not barrier and (value.get('requires_manual_review') or value.get('reason')==REVIEW_STOP):
+            barrier={'session_id':value['session_id'],'reason_code':REVIEW_STOP,'requires_manual_review':True}
+        barrier=barrier or self._pending_review or self._marker_review(value['session_id'])
+        if barrier:
             value.update(safety_stop=barrier,requires_manual_review=True,worker_signal='stop')
             if value['operator']=='emergency_stopped' or value['state']=='emergency_stopped':
                 value.update(state='emergency_stopped',reason='OPERATOR_STOP')
@@ -99,16 +114,37 @@ class SessionLedger:
         self.conn.execute('INSERT INTO session VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',(canonical(value),))
     def latch_review(self,payload):
         value=self.load()
-        barrier={'session_id':value['session_id'],'reason_code':REVIEW_STOP,'triggered_utc':utc_now(),
+        barrier=dict(value.get('safety_stop') or {**payload,'session_id':value['session_id'],'reason_code':REVIEW_STOP,'triggered_utc':utc_now(),
             'triggered_monotonic':self.clock.monotonic(),'requires_manual_review':True,
-            'old_actions_replayed':0,**payload}
+            'old_actions_replayed':0})
+        self._pending_review=barrier # stops this controller even if BOTH writes fail
+        operation='create'
         try:
+            # Exclusive creation is append-once on Windows too. Never replace a
+            # partial file: its very presence remains a conservative stop barrier.
             with self.review_path.open('x',encoding='utf8') as stream:
-                stream.write(canonical(barrier));stream.flush();os.fsync(stream.fileno())
-        except FileExistsError:pass
-        self.conn.execute('BEGIN IMMEDIATE')
+                operation='write';stream.write(canonical(barrier))
+                operation='flush';stream.flush()
+                operation='fsync';os.fsync(stream.fileno());operation='close'
+            marker={'status':'created'}
+        except FileExistsError:
+            existing=self._marker_review(value['session_id'])
+            marker={'status':'existing_invalid' if not existing or existing.get('evidence_unreadable') else 'existing_valid'}
+        except OSError as error:
+            marker={'status':'failed','operation':operation,'error_type':type(error).__name__,
+                'errno':error.errno,'winerror':getattr(error,'winerror',None)}
+        self.review_persistence={'marker':marker,'sqlite':{'status':'attempting'}}
+        barrier={**barrier,'persistence':self.review_persistence}
+        self._pending_review=barrier
         try:
+            # Marker errors must NEVER skip the independent SQLite attempt.
+            self.conn.execute('BEGIN IMMEDIATE')
             raw=json.loads(self.conn.execute('SELECT payload FROM session WHERE id=1').fetchone()[0])
+            # Another stop writer may have committed since our initial load.
+            # Re-read under the write transaction; never replace its first event.
+            if raw.get('safety_stop'):
+                barrier={**raw['safety_stop'],'persistence':self.review_persistence}
+                self._pending_review=barrier
             now=self.clock.monotonic()
             if raw['state']not in TERMINAL and raw['started_monotonic']is not None and now>=raw['last_monotonic'] and raw['boot_id']==self.clock.boot_id():
                 delta=now-raw['last_monotonic'];phase=raw['state']
@@ -119,8 +155,12 @@ class SessionLedger:
                 if phase=='sleeping' and raw['sleep_class']=='model_rest':raw['autonomous_rest_seconds']+=delta
                 if phase=='sleeping' and raw['sleep_class']=='forced_rest':raw['forced_rest_seconds']+=delta
                 raw.update(last_monotonic=now,last_wall=self.clock.wall())
+            self.review_persistence['sqlite']={'status':'committed'}
+            raw['safety_stop']=barrier
             raw=self._review_overlay(raw);self.save(raw);self.conn.execute('COMMIT')
-        except BaseException:
+        except BaseException as error:
+            self.review_persistence['sqlite']={'status':'failed','error_type':type(error).__name__,
+                'sqlite_errorcode':getattr(error,'sqlite_errorcode',None)}
             if self.conn.in_transaction:self.conn.execute('ROLLBACK')
             raise
         self.event('safety_review_stop',self.load()['safety_stop'])

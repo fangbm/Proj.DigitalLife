@@ -1,6 +1,8 @@
 # Proj.DigitalLife — 数字生命计划 / Phase 1.2.2 Long-Run Autonomous Soak · v0.2.3
 
-GitHub 公开源码与预发布的证据边界见 [GitHub 交付说明](docs/GITHUB_DELIVERY.md)。当前完成 Stage C，正式24小时 Soak 尚未批准或执行。
+GitHub 公开源码与预发布的证据边界见 [GitHub 交付说明](docs/GITHUB_DELIVERY.md)。当前进行 Stage D 前持久停止屏障安全补丁，只有离线验证；旧 preflight-04 批准指纹随运行文件变化失效，正式24小时 Soak 尚未批准或执行。
+
+marker/SQLite 双路径故障保护、离线故障矩阵及未覆盖边界见 [持久停止屏障修复](docs/PHASE1_2_2_PERSISTENCE_FIX.md)。不得复用旧正式候选；新真实 Stage C 预检须另行批准。本轮不公开发布 UI 树 fixture，原件及其待批准例外均保持。
 
 v0.2.3 修复独立验证器的源码交付依赖，并新增持久单调时限、只读健康/资源保护及有限 worker 监督层。架构和入口见 [长期运行管理](docs/PHASE1_2_2_LONGRUN.md)，干净源码验证见 [源码验证边界](docs/SOURCE_VERIFICATION.md)。正式 24 小时真实 API Soak 必须在预检后获得明确批准；当前准备/短试不等于长期验收通过。
 
