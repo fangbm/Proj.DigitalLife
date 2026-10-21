@@ -4,6 +4,8 @@ GitHub 公开源码与预发布的证据边界见 [GitHub 交付说明](docs/GIT
 
 marker/SQLite 双路径故障保护、离线故障矩阵及未覆盖边界见 [持久停止屏障修复](docs/PHASE1_2_2_PERSISTENCE_FIX.md)。不得复用旧正式候选；新真实 Stage C 预检须另行批准。本轮不公开发布 UI 树 fixture，原件及其待批准例外均保持。
 
+恢复状态现区分控制库原始状态、有效安全准入、持久停止证据和正式启动批准，见 [Status 准入契约](docs/PHASE1_2_2_STATUS_ADMISSION.md)。Status 只读查询；`resume_allowed` 表示恢复控制指令准入，不能当作正式启动或创建 worker 的许可。新120秒预检及24小时运行仍未授权。
+
 v0.2.3 修复独立验证器的源码交付依赖，并新增持久单调时限、只读健康/资源保护及有限 worker 监督层。架构和入口见 [长期运行管理](docs/PHASE1_2_2_LONGRUN.md)，干净源码验证见 [源码验证边界](docs/SOURCE_VERIFICATION.md)。正式 24 小时真实 API Soak 必须在预检后获得明确批准；当前准备/短试不等于长期验收通过。
 
 Stage C 最终安全修复将未知分发改为持久不可恢复的停止屏障，禁止 Resume 或期限计时覆盖。见 [停止状态契约](docs/PHASE1_2_2_STOP_BARRIER.md)；旧 preflight-02 指纹已废止，不得用于启动。新候选必须另行取得明确授权。

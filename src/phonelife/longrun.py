@@ -216,13 +216,16 @@ class LongRunSoakController:
             try:
                 # Read safety evidence BEFORE start() can account an expired restart.
                 initial_health=self._health(quick=True)
+                admission=self.ledger.status(health=initial_health,worker_alive=bool(self.worker and self.worker.poll()is None))
                 if initial_health['operator']=='stopped' or self.ledger.load()['operator']=='emergency_stopped':
                     self.ledger.operator('emergency_stopped')
-                if initial_health.get('safety_review_required') or initial_health['needs_review']:
+                if admission['history_requires_manual_review']:
                     await self._review_stop(initial_health)
                     return self.ledger.status()
                 if self.ledger.load()['operator']=='emergency_stopped':
                     self._tick('emergency_stopped',reason='OPERATOR_STOP');return self.ledger.status()
+                if not admission['safety_admission_allowed']:
+                    self._tick('failed',reason=admission['admission_reason_code']);return self.ledger.status(health=initial_health)
                 self.ledger.start(approval,defer_completion=True)
                 while True:
                     value=self.ledger.load();now=self.clock.monotonic()
@@ -233,6 +236,7 @@ class LongRunSoakController:
                     resource=resource_sample(self.directory,self.config['agent_db'],self.worker.pid if self.worker else None)
                     violations=resource_violations(resource,self.policy)
                     health=self._health(quick=now>=next_health)
+                    admission=self.ledger.status(health=health,worker_alive=bool(self.worker and self.worker.poll()is None))
                     if now>=next_health:
                         self.ledger.event('health',{'resources':resource,'agent':health,'worker_alive':bool(self.worker and self.worker.poll()is None)})
                         next_health=now+self.policy.health_interval_seconds
@@ -241,7 +245,7 @@ class LongRunSoakController:
                         next_probe=now+self.policy.device_probe_seconds
                     if health['operator']=='stopped' or value['operator']=='emergency_stopped':
                         self.ledger.operator('emergency_stopped')
-                    if health.get('safety_review_required') or health['needs_review']:
+                    if admission['history_requires_manual_review']:
                         await self._review_stop(health);break
                     if self.ledger.load()['operator']=='emergency_stopped':
                         self._tick('emergency_stopped',reason='OPERATOR_STOP');break
@@ -253,6 +257,8 @@ class LongRunSoakController:
                         self._tick('recovering' if consecutive_bad_db<3 and self.ledger.remaining()>0 else 'failed',reason='DATABASE_UNREADABLE')
                         await asyncio.sleep(1);continue
                     consecutive_bad_db=0
+                    if not admission['safety_admission_allowed']:
+                        self._tick('failed',reason=admission['admission_reason_code']);break
                     if 'INVALID_NEXT_WAKE'in health['warnings']:
                         self._tick('failed',reason='INVALID_NEXT_WAKE');break
                     if device.get('qemu')is False:
@@ -260,14 +266,17 @@ class LongRunSoakController:
                     if self.ledger.remaining()<=0:
                         stopped=await self._stop_owned_worker()
                         final_health=self._health(quick=True)
+                        final_admission=self.ledger.status(health=final_health,worker_alive=False)
                         if final_health['operator']=='stopped' or self.ledger.load()['operator']=='emergency_stopped':
                             self.ledger.operator('emergency_stopped')
-                        if final_health.get('safety_review_required') or final_health['needs_review']:
+                        if final_admission['history_requires_manual_review']:
                             await self._review_stop(final_health)
                         elif final_health['operator']=='stopped' or self.ledger.load()['operator']=='emergency_stopped':
                             self.ledger.operator('emergency_stopped');self._tick('emergency_stopped',reason='OPERATOR_STOP')
                         elif not final_health['database_readable']:
                             self._tick('failed',reason='DATABASE_UNREADABLE')
+                        elif not final_admission['safety_admission_allowed']:
+                            self._tick('failed',reason=final_admission['admission_reason_code'])
                         elif not stopped['worker_stopped']:
                             self._tick('failed',reason='OWNED_WORKER_STOP_UNCONFIRMED')
                         else:self._tick('completed_duration',reason='GLOBAL_DEADLINE')
@@ -347,9 +356,10 @@ async def run_worker(directory,parent_pid):
     cfg=state['config'];verify_freeze(cfg)
     if hashlib.sha256(canonical(cfg).encode()).hexdigest()!=state['fingerprint']:raise ValueError('CONFIG_FREEZE_MISMATCH')
     health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],worker_alive=False)
-    if not health['database_readable']:
+    admission=ledger.status(health=health,worker_alive=False)
+    if not admission['safety_evidence_readable']:
         ledger.close();raise PermissionError('WORKER_REFUSED: safety database unreadable')
-    if health.get('safety_review_required') or health['needs_review']:
+    if admission['history_requires_manual_review']:
         ledger.close();barrier=SessionLedger(directory/'soak-control.sqlite3')
         try:barrier.latch_review({'sources':health.get('review_sources',[]),'worker_pid':os.getpid(),
             'worker_stop_result':'worker_refused_before_device_creation','lease_at_trigger':health.get('lease',[]),
@@ -357,6 +367,8 @@ async def run_worker(directory,parent_pid):
             'new_actions_dispatched':False})
         finally:barrier.close()
         return
+    if not admission['safety_admission_allowed']:
+        ledger.close();raise PermissionError('WORKER_REFUSED: '+admission['admission_reason_code'])
     store=Store(Path(cfg['agent_db']));leases=Store(Path(cfg['lease_path']));controller=None
     try:
         policy=SoakPolicy(**cfg['policy'])
@@ -410,12 +422,14 @@ def control_session(directory,mode):
         if mode=='running':
             health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],
                 worker_alive=process_alive(ledger.load().get('active_pid')))
-            if health.get('safety_review_required') or health['needs_review']:
+            admission=ledger.status(health=health)
+            if admission['history_requires_manual_review']:
                 ledger.latch_review({'sources':health.get('review_sources',[]),'worker_pid':ledger.load().get('active_pid'),
                     'worker_stop_result':'cancellation_signalled_by_resume_guard','lease_at_trigger':health.get('lease',[]),
                     'unknown_transport':bool(health.get('unknown_dispatches') or health.get('review_sources')),'new_actions_dispatched':None})
                 raise ValueError('SESSION_TERMINATED: unknown dispatch requires manual review; Resume refused')
-            if not health['database_readable']:raise ValueError('RESUME_REFUSED: database unreadable')
+            if not admission['effective_resume_allowed']:
+                raise ValueError('SESSION_TERMINATED: RESUME_REFUSED: '+admission['admission_reason_code'])
         ledger.operator(mode);store=Store(Path(cfg['agent_db']))
         try:control(store,cfg['device'],{'running':'running','paused':'paused','emergency_stopped':'stopped'}[mode],'Long-run operator request')
         finally:store.close()
@@ -443,9 +457,7 @@ def main(argv=None):
             max_goal_requests=a.goal_request_limit,max_actions=a.action_limit,task_timeout_seconds=a.task_timeout),
         reviewed_session=a.reviewed_session,review_reference=a.review_reference)
     elif a.command=='status':
-        ledger=SessionLedger(a.session/'soak-control.sqlite3',readonly=True)
-        try:result=ledger.status()
-        finally:ledger.close()
+        result=SessionLedger.read_status(a.session/'soak-control.sqlite3')
     elif a.command in {'pause','resume','emergency-stop'}:
         control_session(a.session,{'pause':'paused','resume':'running','emergency-stop':'emergency_stopped'}[a.command]);result={'operator_request':a.command}
     elif a.command=='worker':asyncio.run(run_worker(a.session,a.parent_pid));return 0

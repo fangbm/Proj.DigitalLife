@@ -65,10 +65,12 @@ class ReadOnlyDeviceProbe:
 
 def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run_kind='autonomous',policy=None,worker_alive=None,worker_exited=False):
     now=time.time() if now is None else now
+    deadline=time.monotonic()+1.
     result={'database_readable':False,'needs_review':False,'next_wake_at':0,'operator':'running','warnings':[]}
     c=None;l=None
     try:
         c=sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True,timeout=.5);c.row_factory=sqlite3.Row
+        c.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
         c.execute('PRAGMA query_only=ON')
         result['quick_check']=c.execute('PRAGMA quick_check').fetchone()[0] if quick else 'not_sampled'
         if result['quick_check'] not in ('ok','not_sampled'):raise ValueError('DATABASE_INTEGRITY_FAILED')
@@ -109,6 +111,7 @@ def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run
                 if r['event_type']=='life_guard_rest':result['guard_reason']=item.get('reason')
                 else:result['model_kind']=item.get('model_decision',{}).get('kind')
         l=sqlite3.connect(Path(lease_path).resolve().as_uri()+'?mode=ro',uri=True,timeout=.5);l.row_factory=sqlite3.Row
+        l.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
         result['lease']=[dict(r) for r in l.execute('SELECT * FROM lease WHERE device=?',(device,))]
         live_lease=any(r['expires_at']>now for r in result['lease'])
         sources=[]
@@ -133,12 +136,50 @@ def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run
             'dispatch_monotonic_ns':a['dispatch_monotonic_ns']} for row,a in zip(attempt_rows,attempts)
             if isinstance(a.get('dispatch_monotonic_ns'),int)]
         result['database_readable']=True
+        if time.monotonic()>deadline:raise TimeoutError('Safety evidence read deadline')
         return result
-    except (sqlite3.Error,ValueError,TypeError) as e:
+    except (sqlite3.Error,ValueError,TypeError,OSError,TimeoutError) as e:
+        result['database_readable']=False
         result['error_code']=type(e).__name__;return result
     finally:
         if c:c.close()
         if l:l.close()
+
+def safety_admission(value,health,*,control_state,persisted_stop,barrier_present,marker_state,
+                     worker_alive=False,wall=None,expired=False,config_error=None):
+    """One read-only safety verdict; lifecycle/approval permissions are separate."""
+    wall=time.time() if wall is None else wall
+    readable=bool(health.get('database_readable'))
+    history_review=bool(health.get('safety_review_required') or health.get('needs_review'))
+    review=bool(value.get('safety_stop') or value.get('requires_manual_review') or history_review or barrier_present)
+    emergency=value.get('operator')=='emergency_stopped' or value.get('state')=='emergency_stopped' or health.get('operator')=='stopped'
+    terminal=value.get('state')in {'failed','emergency_stopped','completed_duration'}
+    allowed=readable and not (review or emergency or terminal or config_error)
+    formal=value.get('config',{}).get('source_kind')=='live_api_natural_occurrence' and value.get('started_monotonic')is None
+    reason=('OPERATOR_STOP' if emergency else 'UNKNOWN_DISPATCH_NEEDS_REVIEW' if review else
+        'SAFETY_EVIDENCE_UNAVAILABLE' if not readable else config_error if config_error else 'SESSION_TERMINATED' if terminal else 'ALLOWED')
+    launch=allowed
+    if launch:
+        if value.get('started_monotonic')is None:launch=False;reason='APPROVAL_REQUIRED' if formal else 'SESSION_NOT_STARTED'
+        elif value.get('operator')!='running' or health.get('operator')=='paused':launch=False;reason='OPERATOR_PAUSED'
+        elif value.get('worker_signal')=='stop':launch=False;reason='WORKER_STOP_REQUESTED'
+        elif worker_alive:launch=False;reason='WORKER_ALREADY_ACTIVE'
+        elif any(r['expires_at']>wall for r in health.get('lease',[])):launch=False;reason='DEVICE_LEASE_BUSY'
+        elif expired:launch=False;reason='GLOBAL_DEADLINE'
+        elif health.get('next_wake_at',0)>wall:launch=False;reason='PERSISTED_WAKE'
+        elif health.get('budget_until',0)>wall:launch=False;reason='BUDGET_WAIT'
+    effective=('emergency_stopped' if emergency else 'failed' if persisted_stop else
+        'blocked' if review or not readable or config_error else value['state'])
+    return {'control_state':control_state,'effective_state':effective,'safety_terminated':bool(persisted_stop),
+        'persistent_barrier_present':bool(barrier_present),'history_requires_manual_review':history_review,
+        'safety_evidence_readable':readable,'safety_admission_allowed':allowed,
+        'requires_manual_review':review,'effective_resume_allowed':allowed,'resume_allowed':allowed,
+        'worker_launch_allowed':launch,'formal_approval_required':formal,
+        'initial_start_allowed_without_approval':allowed and value.get('started_monotonic')is None and not formal,
+        'admission_reason_code':reason,'admission_evidence':{
+            'control_sqlite':'readable_persisted_barrier' if persisted_stop and marker_state=='absent' else 'readable',
+            'review_marker':marker_state,'agent_history':'unavailable' if not readable else 'unknown_dispatch_found' if history_review else 'verified_no_review',
+            'history_error_type':health.get('error_code'),'config_error':config_error}}
 
 def resource_sample(directory,agent_db,worker_pid=None,free=None):
     directory=Path(directory);agent_db=Path(agent_db)

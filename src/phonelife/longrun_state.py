@@ -87,7 +87,9 @@ class SessionLedger:
     def review_path(self):return self.path.with_name(self.path.name+'.review-stop.json')
     def _marker_review(self,session_id):
         try:
-            barrier=json.loads(self.review_path.read_text(encoding='utf8'))
+            with self.review_path.open('r',encoding='utf8') as stream:raw=stream.read(1024*1024+1)
+            if len(raw)>1024*1024:raise ValueError('Review marker exceeds read bound')
+            barrier=json.loads(raw)
             if not (isinstance(barrier,dict) and barrier.get('session_id')==session_id
                     and barrier.get('reason_code')==REVIEW_STOP and barrier.get('requires_manual_review')is True):
                 raise ValueError('Invalid review marker')
@@ -165,12 +167,53 @@ class SessionLedger:
             raise
         self.event('safety_review_stop',self.load()['safety_stop'])
         return self.load()
-    def status(self):
-        value=self.load();terminal=value['state']in TERMINAL;safety=bool(value.get('safety_stop') or value['reason']==REVIEW_STOP)
-        return {**value,'safety_terminated':safety,
-            'requires_manual_review':bool(safety or value.get('requires_manual_review')),
-            'resume_allowed':not terminal and value['operator']!='emergency_stopped',
-            'session_terminated':terminal}
+    @staticmethod
+    def _unavailable_status(error):
+        return {'state':'unknown','control_state':'unavailable','effective_state':'blocked',
+            'safety_terminated':False,'persistent_barrier_present':False,'requires_manual_review':False,
+            'session_terminated':False,'resume_allowed':False,'effective_resume_allowed':False,
+            'worker_launch_allowed':False,'initial_start_allowed_without_approval':False,
+            'formal_approval_required':None,'safety_evidence_readable':False,'safety_admission_allowed':False,
+            'history_requires_manual_review':False,'admission_reason_code':'SAFETY_EVIDENCE_UNAVAILABLE',
+            'admission_evidence':{'control_sqlite':'unavailable','review_marker':'not_verified',
+                'agent_history':'not_verified','control_error_type':type(error).__name__}}
+    @classmethod
+    def read_status(cls,path):
+        try:ledger=cls(path,readonly=True)
+        except (sqlite3.Error,OSError,ValueError) as error:return cls._unavailable_status(error)
+        try:return ledger.status()
+        finally:ledger.close()
+    def status(self,*,health=None,worker_alive=None):
+        from .longrun_health import readonly_db_health,safety_admission,process_alive
+        conn=None;deadline=time.monotonic()+.75
+        try:
+            # Even a writable owner reports the physical control state through RO.
+            conn=sqlite3.connect(self.path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.25)
+            conn.execute('PRAGMA query_only=ON');conn.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
+            row=conn.execute('SELECT payload FROM session WHERE id=1').fetchone()
+            if row is None:raise ValueError('Session is not initialized')
+            raw=json.loads(row[0]);value=self._review_overlay(dict(raw));cfg=raw['config']
+            marker=self._marker_review(raw['session_id'])
+            marker_valid=marker is not None and not marker.get('evidence_unreadable')
+            sql_stop=bool(raw.get('safety_stop') or raw.get('requires_manual_review') or raw.get('reason')==REVIEW_STOP)
+            if worker_alive is None:worker_alive=process_alive(raw.get('active_pid'))
+            if health is None:
+                health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],
+                    run_kind='autonomous' if cfg['mode']=='api' else 'mock_test',policy=SoakPolicy(**cfg['policy']),worker_alive=worker_alive)
+            from .longrun import verify_freeze
+            config_error=None
+            try:
+                verify_freeze(cfg)
+                if hashlib.sha256(canonical(cfg).encode()).hexdigest()!=raw['fingerprint']:config_error='CONFIG_FREEZE_MISMATCH'
+            except (ValueError,OSError,KeyError) as error:config_error=str(error) if isinstance(error,ValueError) else 'CONFIG_EVIDENCE_UNAVAILABLE'
+            verdict=safety_admission(value,health,control_state=raw['state'],persisted_stop=sql_stop or marker_valid,
+                barrier_present=sql_stop or marker is not None,marker_state='absent' if marker is None else 'valid' if marker_valid else 'invalid_or_unreadable',
+                worker_alive=worker_alive,wall=self.clock.wall(),expired=raw['started_monotonic']is not None and self.clock.monotonic()-raw['started_monotonic']>=raw['duration_seconds'],config_error=config_error)
+            verdict['admission_evidence']['control_sqlite']='readable_persisted_barrier' if sql_stop else 'readable_no_persisted_barrier'
+            return {**value,**verdict,'session_terminated':value['state']in TERMINAL}
+        except (sqlite3.Error,OSError,ValueError,KeyError,TypeError) as error:return self._unavailable_status(error)
+        finally:
+            if conn:conn.close()
     def update(self,**fields):
         if not set(fields)<={'active_pid','restarts','worker_signal','reason','last_worker_exit'}:raise ValueError('Immutable session field')
         self.conn.execute('BEGIN IMMEDIATE')
