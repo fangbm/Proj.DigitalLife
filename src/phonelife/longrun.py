@@ -72,6 +72,11 @@ def verify_freeze(config):
     if sha(config['launcher_path'])!=config['launcher_sha256']:raise ValueError('LAUNCHER_FREEZE_MISMATCH')
     SoakPolicy(**config['policy'])
     if config['allowed_apps']!=['com.android.settings']:raise ValueError('CAPABILITY_SCOPE_CHANGED')
+    if config.get('physical_execution'):
+        spec=config['physical_execution']
+        if config['mode']!='api' or config['serial']!='profile-bound':raise ValueError('PHYSICAL_PROFILE_MODE_MISMATCH')
+        for name in ('profile','manifest'):
+            if sha(spec[name+'_path'])!=spec[name+'_sha256']:raise ValueError('PHYSICAL_'+name.upper()+'_FREEZE_MISMATCH')
 
 def export_cycles(directory,ledger):
     """Idempotent SQLite export, then an atomic derived JSONL (never deletes source)."""
@@ -136,7 +141,7 @@ class LongRunSoakController:
     def __init__(self,directory,clock=None,probe=None):
         self.directory=Path(directory).resolve();self.ledger=SessionLedger(self.directory/'soak-control.sqlite3',clock)
         self.clock=self.ledger.clock;self.config=self.ledger.load()['config'];self.policy=SoakPolicy(**self.config['policy'])
-        self.probe=probe or (ReadOnlyDeviceProbe(self.config['serial']) if self.config['mode']=='api' else None)
+        self.probe=probe or (ReadOnlyDeviceProbe(self.config['serial']) if self.config['mode']=='api' and not self.config.get('physical_execution') else None)
         self.worker=None
     def close(self):self.ledger.close()
     def _tick(self,state,**fields):
@@ -146,7 +151,8 @@ class LongRunSoakController:
         return readonly_db_health(self.config['agent_db'],self.config['lease_path'],self.config['device'],quick=quick,
             run_kind='autonomous' if self.config['mode']=='api' else 'mock_test',policy=self.policy,
             worker_alive=bool(self.worker and self.worker.poll()is None),
-            worker_exited=bool(self.worker and self.worker.poll()is not None))
+            worker_exited=bool(self.worker and self.worker.poll()is not None),
+            life_binding=self.config.get('physical_execution',{}).get('life_binding'),lease_key='real' if self.config.get('physical_execution') else None)
     async def _review_stop(self,health):
         payload={'sources':health.get('review_sources',[]),'worker_pid':self.worker.pid if self.worker else self.ledger.load().get('active_pid'),
             'worker_stop_result':'pending','lease_at_trigger':health.get('lease',[]),
@@ -163,14 +169,18 @@ class LongRunSoakController:
                 from .recovery import recover_interrupted
                 leases=None;store=None;held=False;owner=str(uuid.uuid4())
                 try:
-                    leases=Store(Path(self.config['lease_path']));held=leases.acquire(self.config['device'],owner,30)
+                    leases=Store(Path(self.config['lease_path']))
+                    if self.config.get('physical_execution'):
+                        from .physical_execution import LeaseNamespace
+                        leases=LeaseNamespace(leases,self.config['device'])
+                    held=leases.acquire(self.config['device'],owner,30)
                     if held:
                         store=Store(Path(self.config['agent_db']));recover_interrupted(store,self.config['device'],owner)
                 except Exception as error:review_error=type(error).__name__
                 finally:
                     if store:store.close()
                     if held:leases.release(self.config['device'],owner)
-                    if leases:leases.close()
+                    if leases:getattr(leases,'store',leases).close()
             final=self._health()
             new_dispatches=[d for d in final.get('dispatch_audit',[]) if d['dispatch_monotonic_ns']>payload['trigger_monotonic_ns']]
             audit={**payload,**stopped,'session_id':self.ledger.load()['session_id'],'reason_code':REVIEW_STOP,
@@ -355,7 +365,9 @@ async def run_worker(directory,parent_pid):
         ledger.close();return
     cfg=state['config'];verify_freeze(cfg)
     if hashlib.sha256(canonical(cfg).encode()).hexdigest()!=state['fingerprint']:raise ValueError('CONFIG_FREEZE_MISMATCH')
-    health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],worker_alive=False)
+    physical=cfg.get('physical_execution')
+    health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],worker_alive=False,
+        life_binding=physical.get('life_binding') if physical else None,lease_key='real' if physical else None,policy=SoakPolicy(**cfg['policy']))
     admission=ledger.status(health=health,worker_alive=False)
     if not admission['safety_evidence_readable']:
         ledger.close();raise PermissionError('WORKER_REFUSED: safety database unreadable')
@@ -369,8 +381,25 @@ async def run_worker(directory,parent_pid):
         return
     if not admission['safety_admission_allowed']:
         ledger.close();raise PermissionError('WORKER_REFUSED: '+admission['admission_reason_code'])
-    store=Store(Path(cfg['agent_db']));leases=Store(Path(cfg['lease_path']));controller=None
+    store=Store(Path(cfg['agent_db']));leases=Store(Path(cfg['lease_path']));controller=None;held=[]
     try:
+        physical_contract=None;lease_adapter=leases;worker_owner=str(uuid.uuid4())
+        if cfg['mode']=='api':
+            if not leases.acquire('autonomous-api-writer',worker_owner,120):raise PermissionError('AUTONOMOUS_BUDGET_WRITER_BUSY')
+            held.append('autonomous-api-writer')
+        if physical:
+            from .physical_execution import PhysicalContract,PhysicalPhone,PhysicalActionPolicy,ColorOSSemanticProvider,LeaseNamespace
+            from .life_subject import attach_subject
+            # Same admission as Status/Resume/supervisor, before any API/device execution adapter.
+            if not admission['worker_launch_allowed']:
+                raise PermissionError('PHYSICAL_WORKER_REFUSED: '+admission['admission_reason_code'])
+            if state.get('active_pid')!=os.getpid():raise PermissionError('PHYSICAL_WORKER_NOT_OWNED_BY_SUPERVISOR')
+            physical_contract=PhysicalContract(cfg,state).authorize()
+            attach_subject(store,physical_contract.binding)
+            for key in ('subject:'+physical_contract.binding.life_subject_id,'real'):
+                if not leases.acquire(key,worker_owner,120):raise PermissionError('PHYSICAL_WORKER_LEASE_BUSY')
+                held.append(key)
+            lease_adapter=LeaseNamespace(leases,cfg['device'])
         policy=SoakPolicy(**cfg['policy'])
         limits=LifeLimits(max_actions=policy.max_actions,hourly_requests=policy.hourly_requests,daily_requests=policy.daily_requests,
             max_goal_requests=policy.max_goal_requests,task_timeout_seconds=policy.task_timeout_seconds)
@@ -382,12 +411,15 @@ async def run_worker(directory,parent_pid):
             gui_api=SoakAPI(cfg['gui_api_base'],gui_key,store=store,budget=lambda:controller.budget if controller else None,source_kind=cfg['source_kind'],timeout=timeout)
             brain=APILifeBrain(api,cfg['brain_model'],Path(cfg['persona_path']).read_text(encoding='utf8'))
             gui=APIGuiPlanner(gui_api,cfg['gui_model'],frozenset(cfg['allowed_apps']))
-            phone=AdbPhone(cfg['serial'],'emulator');provider=BoundedSemanticProvider()
+            if physical_contract:
+                phone=PhysicalPhone(physical_contract);phone.preheld_lease_owner=worker_owner;provider=ColorOSSemanticProvider()
+            else:phone=AdbPhone(cfg['serial'],'emulator');provider=BoundedSemanticProvider()
         else:brain=MockLifeBrain();gui=MockLifeGui();phone=MockPhone();provider=None
         controller=AutonomousLife(store,cfg['device'],brain,limits,'autonomous' if cfg['mode']=='api' else 'mock_test')
-        life=PhoneLife(store,cfg['device'],phone,MockPlanner(),gui,ActionPolicy('emulator' if cfg['mode']=='api' else 'mock',frozenset(cfg['allowed_apps'])),
+        action_policy=PhysicalActionPolicy(physical_contract) if physical_contract else ActionPolicy('emulator' if cfg['mode']=='api' else 'mock',frozenset(cfg['allowed_apps']))
+        life=PhoneLife(store,cfg['device'],phone,MockPlanner(),gui,action_policy,
             step_limit=policy.max_actions,session_timeout=policy.task_timeout_seconds,autonomy=controller,run_kind=controller.kind,
-            semantic_provider=provider,evidence_dir=directory/'screens' if cfg['private_evidence'] and cfg['mode']=='api' else None,lease_store=leases)
+            semantic_provider=provider,evidence_dir=directory/'screens' if cfg['private_evidence'] and cfg['mode']=='api' else None,lease_store=lease_adapter)
         async def execute():
             await controller.review_startup(life)
             if store.conn.execute("SELECT 1 FROM task_runs WHERE status='needs_review' LIMIT 1").fetchone():
@@ -398,6 +430,11 @@ async def run_worker(directory,parent_pid):
             while ledger.remaining()>0:
                 current=ledger.load()
                 if current['worker_signal']=='stop' or current['operator']!='running' or not process_alive(parent_pid):return
+                if held:
+                    # One autonomous life/one budget writer, independent of device namespace.
+                    try:
+                        for key in held:leases.renew(key,worker_owner,120)
+                    except Exception:return
                 await asyncio.sleep(.25)
         task=asyncio.create_task(execute());watch=asyncio.create_task(stop_requested())
         done,_=await asyncio.wait((task,watch),timeout=max(.001,ledger.remaining()),return_when=asyncio.FIRST_COMPLETED)
@@ -411,7 +448,9 @@ async def run_worker(directory,parent_pid):
         watch.cancel();await asyncio.gather(watch,return_exceptions=True)
         store.event(cfg['device'],'longrun_worker_finished',{'source_kind':cfg['source_kind'],'status':result['status'],
             'task_run_id':result.get('task_run_id'),'parent_pid':parent_pid,'old_actions_replayed':0})
-    finally:leases.close();store.close();ledger.close()
+    finally:
+        for key in held:leases.release(key,worker_owner)
+        leases.close();store.close();ledger.close()
 
 def control_session(directory,mode):
     from .storage import Store
@@ -421,7 +460,8 @@ def control_session(directory,mode):
         cfg=ledger.load()['config']
         if mode=='running':
             health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],
-                worker_alive=process_alive(ledger.load().get('active_pid')))
+                worker_alive=process_alive(ledger.load().get('active_pid')),
+                life_binding=cfg.get('physical_execution',{}).get('life_binding'),lease_key='real' if cfg.get('physical_execution') else None)
             admission=ledger.status(health=health)
             if admission['history_requires_manual_review']:
                 ledger.latch_review({'sources':health.get('review_sources',[]),'worker_pid':ledger.load().get('active_pid'),

@@ -13,6 +13,11 @@ class LifeMemory:
         if run_kind not in {'autonomous', 'mock_test'}:
             raise ValueError('Life memory is unavailable to manual/benchmark runs')
         self.store, self.device, self.kind = store, device, run_kind
+        from .life_subject import scope,predicate
+        self.devices=scope(store,device,run_kind)
+        self.scope=predicate(self.devices)
+        binding=getattr(store,'life_binding',None)
+        self.interest_key=binding.namespace if binding and run_kind=='autonomous' else device
 
     def add(self, layer, subject, body, source_run, importance=.5, relation='observed'):
         if layer not in {'working', 'episodic', 'semantic', 'preference'}:
@@ -20,6 +25,8 @@ class LifeMemory:
         row = self.store.conn.execute('SELECT run_kind,device FROM task_runs WHERE task_run_id=?', (source_run,)).fetchone()
         if not row or row[0] != self.kind or row[1] != self.device:
             raise ValueError('Memory source must match device and run_kind')
+        binding=getattr(self.store,'life_binding',None)
+        if binding and self.kind=='autonomous':binding.bind_run(self.store,source_run)
         encoded = self.store._json(body)
         digest = hashlib.sha256((subject + '\n' + encoded).encode()).hexdigest()
         now = time.time()
@@ -52,8 +59,8 @@ class LifeMemory:
 
     def retrieve(self, query='', limit=12, layers=('episodic', 'semantic', 'preference')):
         limit = max(1, min(20, limit))
-        rows = self.store.conn.execute('SELECT * FROM life_memories WHERE device=? AND run_kind=? AND stale=0 ORDER BY updated_at DESC LIMIT 200',
-                                        (self.device, self.kind)).fetchall()
+        rows = self.store.conn.execute(f'SELECT * FROM life_memories WHERE {self.scope} AND run_kind=? AND stale=0 ORDER BY updated_at DESC LIMIT 200',
+                                        (*self.devices, self.kind)).fetchall()
         wanted = self.tokens(query)
         ranked = []
         for row in rows:
@@ -68,8 +75,8 @@ class LifeMemory:
                                    'trust': 'data_not_instructions'}))
         if 'episodic' in layers:
             # Bridge explicit old autonomous episodes without reclassifying or rewriting them.
-            legacy = self.store.conn.execute('SELECT id,summary,task_run_id FROM memories WHERE device=? AND run_kind=? AND (task_run_id IS NULL OR task_run_id NOT IN (SELECT task_run_id FROM life_cycles)) ORDER BY id DESC LIMIT 20',
-                                             (self.device,self.kind)).fetchall()
+            legacy = self.store.conn.execute(f'SELECT id,summary,task_run_id FROM memories WHERE {self.scope} AND run_kind=? AND (task_run_id IS NULL OR task_run_id NOT IN (SELECT task_run_id FROM life_cycles)) ORDER BY id DESC LIMIT 20',
+                                             (*self.devices,self.kind)).fetchall()
             for row in legacy:
                 score = len(wanted & self.tokens(row['summary'])) * 2 + .3
                 ranked.append((score, {'memory_id':'ordinary-'+str(row['id']), 'layer':'episodic',
@@ -79,8 +86,8 @@ class LifeMemory:
 
     def consolidate(self):
         # Deduplication occurs on insert; stale marking is bounded, never deletes history.
-        rows = self.store.conn.execute("SELECT memory_id,layer,updated_at FROM life_memories WHERE device=? AND run_kind=? AND stale=0 AND layer IN ('semantic','working') ORDER BY updated_at LIMIT 50",
-                                       (self.device, self.kind)).fetchall()
+        rows = self.store.conn.execute(f"SELECT memory_id,layer,updated_at FROM life_memories WHERE {self.scope} AND run_kind=? AND stale=0 AND layer IN ('semantic','working') ORDER BY updated_at LIMIT 50",
+                                       (*self.devices, self.kind)).fetchall()
         marked = 0
         for row in rows:
             ttl = 86400 if row['layer'] == 'working' else 30 * 86400
@@ -90,14 +97,14 @@ class LifeMemory:
         return {'examined': len(rows), 'marked_stale': marked, 'deleted': 0}
 
     def interests(self):
-        return [dict(r) for r in self.store.conn.execute('SELECT topic,weight,evidence_count FROM life_interests WHERE device=? AND run_kind=? ORDER BY weight DESC,topic LIMIT 30', (self.device, self.kind))]
+        return [dict(r) for r in self.store.conn.execute('SELECT topic,weight,evidence_count FROM life_interests WHERE device=? AND run_kind=? ORDER BY weight DESC,topic LIMIT 30', (self.interest_key, self.kind))]
 
     def update_interests(self, topics, run_id, *, verified, novelty):
         changes = []
         for topic in sorted({t.strip().casefold()[:60] for t in topics if t.strip()})[:5]:
             row = self.store.conn.execute('SELECT weight,evidence_count FROM life_interests WHERE device=? AND run_kind=? AND topic=?',
-                                         (self.device, self.kind, topic)).fetchone()
-            if row is None and self.store.conn.execute('SELECT COUNT(*) FROM life_interests WHERE device=? AND run_kind=?', (self.device,self.kind)).fetchone()[0] >= 100:
+                                         (self.interest_key, self.kind, topic)).fetchone()
+            if row is None and self.store.conn.execute('SELECT COUNT(*) FROM life_interests WHERE device=? AND run_kind=?', (self.interest_key,self.kind)).fetchone()[0] >= 100:
                 self.store.event(self.device,'interest_capacity',{'task_run_id':run_id,'new_topic_skipped':topic,'limit':100})
                 continue
             before, count = (row[0], row[1]) if row else (.5, 0)
@@ -105,7 +112,7 @@ class LifeMemory:
             delta = .05 if verified and novelty else .02 if novelty else -.02
             after = round(max(.05, min(.95, before + delta)), 6)
             self.store.conn.execute('INSERT INTO life_interests VALUES(?,?,?,?,?,?) ON CONFLICT(device,run_kind,topic) DO UPDATE SET weight=excluded.weight,evidence_count=excluded.evidence_count,updated_at=excluded.updated_at',
-                                    (self.device, self.kind, topic, after, count+1, time.time()))
+                                    (self.interest_key, self.kind, topic, after, count+1, time.time()))
             change = {'topic': topic, 'before': before, 'after': after, 'verified_outcome': verified,
                       'new_content_observed': novelty, 'source_type': 'model_interest_evaluation'}
             self.add('preference', topic, change, run_id, .6, 'subjective_preference')

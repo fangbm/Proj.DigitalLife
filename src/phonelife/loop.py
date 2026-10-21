@@ -38,7 +38,7 @@ class PhoneLife:
             from .semantic_storage import enable_semantics
             from .capabilities import CapabilityRegistry
             enable_semantics(store)
-            self.capabilities = CapabilityRegistry()
+            self.capabilities = getattr(phone,'capabilities',None) or CapabilityRegistry()
             self.gui.semantic_context_provider = lambda: self.capabilities.view(self.semantic_observation) if self.semantic_observation else None
         self.autonomy, self._life_active = autonomy, False
         if autonomy:
@@ -230,11 +230,21 @@ class PhoneLife:
                 self.leases.renew(self.name, owner, self.lease_seconds)
                 if self.semantic_provider:
                     self._use_capability(binding['capability'])
+                if hasattr(self.phone,'prepare_dispatch'):
+                    try:
+                        self.phone.prepare_dispatch(action,current_semantic,checked,self.store,self.leases,run_id,owner,attempt_id,self.step_limit)
+                    except (PolicyDenied,PermissionError,ValueError) as error:
+                        self.store.update_attempt(attempt_id,execution_status='not_executed',validation_status='policy_denied',error_code='PHYSICAL_DISPATCH_DENIED')
+                        return result('blocked',str(error),'PHYSICAL_DISPATCH_DENIED',observation=observation)
                 # Persist the conservative state BEFORE dispatch. A process death cannot cause blind replay.
                 self.store.update_attempt(attempt_id, execution_status="uncertain_after_transport_error",
                                           dispatch_wall_utc=utc_now(), dispatch_monotonic_ns=time.monotonic_ns())
                 try:
                     device_result = await self.phone.act(action)
+                except PolicyDenied as error:
+                    # Physical preflight failed before the sole input call; honest no-dispatch audit.
+                    self.store.update_attempt(attempt_id,execution_status='not_executed',validation_status='policy_denied',error_code='PHYSICAL_PRE_DISPATCH_DENIED')
+                    return result('blocked',str(error),'PHYSICAL_PRE_DISPATCH_DENIED',observation=observation)
                 except (DeviceTransportError, RuntimeError, OSError) as error:
                     self._transport_unknown=True
                     self.store.update_attempt(attempt_id, transport_error=redact(str(error)))
@@ -293,7 +303,7 @@ class PhoneLife:
         if due > time.time() and not force:
             return {"status": "sleeping", "next_wake_at": due, "run_kind": run_kind}
         run_id = str(uuid.uuid4())
-        owner = owner or run_id
+        owner = owner or getattr(self.phone,'preheld_lease_owner',None) or run_id
         if not self.leases.acquire(self.name, owner, self.lease_seconds):
             return {"status": "busy", "reason_code": "DEVICE_BUSY", "reason": "Another process owns the device lease"}
         started, interrupt, decision, audit_phase = False, None, None, False

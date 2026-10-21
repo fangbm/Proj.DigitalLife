@@ -1,0 +1,11 @@
+# 主体迁移与历史连续性
+
+life_subjects明确主体及唯一legacy_source；life_device_bindings固定设备与主体归属；life_device_sessions保存每次session/profile；life_run_bindings保存每个TaskRun的四ID；life_subject_migrations保存一致性副本SHA和显式source_device。不同主体不能占用同一旧来源；不扫描或猜测多个主体。
+
+migrate_subject要求已有autonomous来源、64位SHA和可写副本，独占BEGIN IMMEDIATE事务，不吞掉中断。首次迁移仅复制LifeState/兴趣/NextWake到主体命名空间并新增来源关系，不新增生活经历。重复迁移不重放复制；新增设备session不覆盖旧session。中断回滚；副本准备在迁移前标为failed，成功后才awaiting_approval。
+
+记忆与unfinished goal按主体明确绑定的执行设备集合检索，始终保留run_kind=autonomous；manual_targeted、benchmark、mock_test、未知来源均不合并。旧工作记忆不作为新动作命令。新动作仍需新观察和全部安全检查。旧unknown记录不能被新设备消费为动作，先触发历史审阅。
+
+RequestBudget按同一主体设备集合累计历史life_requests；新请求行仍记实际设备。失败、取消预留照旧计费，单目标预算、小时/日预算和退避不变。新增autonomous-api-writer互斥租约用于正式监督器API worker的单写者约束；不是账户级跨主机原子预算服务。仍须运维保证仅一个批准自主会话、同一共享coordinator和同一预算副本，不得同时运行另一份库或旧版本进程。
+
+本轮在最新可信历史的一致性备份副本验证34条记忆、5个TaskRun、原始反思、兴趣、状态、NextWake、42请求记录保持，结果在MIGRATION_VERIFICATION.json。不是生产迁移，也不是新的真实API经历。复制库本身仍私有。原生产库和模拟器候选不改。

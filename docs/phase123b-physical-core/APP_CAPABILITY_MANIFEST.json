@@ -1,0 +1,92 @@
+{
+  "schema": "physical-app-capabilities/1",
+  "enabled": false,
+  "apps": [
+    {
+      "package": "com.android.settings",
+      "version_code": "16000000",
+      "pages": []
+    }
+  ],
+  "pending_app_contracts": [
+    "user-approved browser and exact version",
+    "user-approved bilibili and exact version",
+    "user-approved reader and exact version"
+  ],
+  "qq": {
+    "observation": "future explicit test-account review only",
+    "draft": "not implemented",
+    "send_message": false,
+    "add_contact": false
+  },
+  "default_deny": true,
+  "account_changes": false,
+  "external_communications": false,
+  "high_risk": false,
+  "operator_approval_required": true,
+  "pending_contracts": [
+    {
+      "category": "browser",
+      "package": null,
+      "version_code": null,
+      "observation": "profile-bound complete native semantic evidence only",
+      "navigation": {
+        "enabled": false,
+        "pages": [],
+        "action_classes": [
+          "tap",
+          "swipe",
+          "back"
+        ],
+        "semantic_control_binding_required": true,
+        "independent_post_observation_required": true
+      },
+      "account_state_changes": false,
+      "external_communications": false,
+      "credential_access": false,
+      "user_exact_app_version_review_required": true
+    },
+    {
+      "category": "bilibili",
+      "package": null,
+      "version_code": null,
+      "observation": "profile-bound complete native semantic evidence only",
+      "navigation": {
+        "enabled": false,
+        "pages": [],
+        "action_classes": [
+          "tap",
+          "swipe",
+          "back"
+        ],
+        "semantic_control_binding_required": true,
+        "independent_post_observation_required": true
+      },
+      "account_state_changes": false,
+      "external_communications": false,
+      "credential_access": false,
+      "user_exact_app_version_review_required": true
+    },
+    {
+      "category": "reader",
+      "package": null,
+      "version_code": null,
+      "observation": "profile-bound complete native semantic evidence only",
+      "navigation": {
+        "enabled": false,
+        "pages": [],
+        "action_classes": [
+          "tap",
+          "swipe",
+          "back"
+        ],
+        "semantic_control_binding_required": true,
+        "independent_post_observation_required": true
+      },
+      "account_state_changes": false,
+      "external_communications": false,
+      "credential_access": false,
+      "user_exact_app_version_review_required": true
+    }
+  ]
+}

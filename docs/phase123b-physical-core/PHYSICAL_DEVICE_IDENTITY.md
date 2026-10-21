@@ -1,0 +1,9 @@
+# Find X6 身份与授权
+
+PhysicalDeviceProfile保留显式USB serial和完整getprop身份，OPPO/PGFM10仅为其中两项，绝不以brand/model单字段放行。执行另要求Android16/API36。多设备时按明确serial匹配；不默认第一个，不删除模拟器QEMU检查。物理lease_key继续real以和旧执行者协调，execution_device_id=physical:<私有身份摘要>用于动作审计。
+
+每次会话准入及关键输入前后复核身份、在线、安全窗口。身份变化、USB撤销、断连均拒绝。短样本不证明USB长期稳定；serial/getprop不是硬件密码学认证，已授权本机操作者仍是信任边界。
+
+物理批准需要单独DPAPI purpose，加密blob经CryptUnprotectData解封后必须精确匹配session_id、config_fingerprint、identity摘要、manifest摘要、life_subject_id、duration、execute_gui=true及有效期/审阅引用。拒绝重复键、非对象、普通JSON与跨会话批准。没有批准签发CLI；模型输出或普通enabled参数不能签发批准。不能防御控制同一Windows账户、修改程序或自行调用DPAPI的恶意管理员。
+
+本轮未签发真实设备执行批准；原DPAPI API密钥未解密、改写或重新保存。公开仅使用脱敏身份摘要，完整serial、build fingerprint、package清单在受限data目录。

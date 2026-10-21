@@ -38,12 +38,14 @@ class RequestBudget:
     def __init__(self, store, device, limits, run_kind='autonomous'):
         self.store, self.device, self.limits, self.run_kind = store, device, limits, run_kind
         self.run_id = ''
+        from .life_subject import scope,predicate
+        self.devices=scope(store,device,run_kind);self.scope=predicate(self.devices)
 
     def snapshot(self, now=None):
         now = time.time() if now is None else now
         conn = self.store.conn
-        counts = {name: conn.execute('SELECT COUNT(*) FROM life_requests WHERE device=? AND run_kind=? AND requested_at>?',
-                     (self.device, self.run_kind, now - seconds)).fetchone()[0]
+        counts = {name: conn.execute(f'SELECT COUNT(*) FROM life_requests WHERE {self.scope} AND run_kind=? AND requested_at>?',
+                     (*self.devices, self.run_kind, now - seconds)).fetchone()[0]
                   for name, seconds in [('hour_used', 3600), ('day_used', 86400)]}
         counts['goal_used'] = conn.execute('SELECT COUNT(*) FROM life_requests WHERE task_run_id=?', (self.run_id,)).fetchone()[0]
         return {**asdict(self.limits), **counts}
@@ -56,8 +58,8 @@ class RequestBudget:
         try:
             conn.execute('BEGIN IMMEDIATE')
             for duration, limit, scope in [(3600, self.limits.hourly_requests, 'hour'), (86400, self.limits.daily_requests, 'day')]:
-                rows = conn.execute('SELECT requested_at FROM life_requests WHERE device=? AND run_kind=? AND requested_at>? ORDER BY requested_at',
-                                    (self.device, self.run_kind, now-duration)).fetchall()
+                rows = conn.execute(f'SELECT requested_at FROM life_requests WHERE {self.scope} AND run_kind=? AND requested_at>? ORDER BY requested_at',
+                                    (*self.devices, self.run_kind, now-duration)).fetchall()
                 if len(rows) >= limit:
                     raise BudgetExceeded(rows[len(rows)-limit][0] + duration + 1, scope)
             if conn.execute('SELECT COUNT(*) FROM life_requests WHERE task_run_id=?', (self.run_id,)).fetchone()[0] >= self.limits.max_goal_requests:

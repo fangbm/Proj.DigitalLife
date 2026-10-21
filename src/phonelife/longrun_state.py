@@ -199,7 +199,8 @@ class SessionLedger:
             if worker_alive is None:worker_alive=process_alive(raw.get('active_pid'))
             if health is None:
                 health=readonly_db_health(cfg['agent_db'],cfg['lease_path'],cfg['device'],
-                    run_kind='autonomous' if cfg['mode']=='api' else 'mock_test',policy=SoakPolicy(**cfg['policy']),worker_alive=worker_alive)
+                    run_kind='autonomous' if cfg['mode']=='api' else 'mock_test',policy=SoakPolicy(**cfg['policy']),worker_alive=worker_alive,
+                    life_binding=cfg.get('physical_execution',{}).get('life_binding'),lease_key='real' if cfg.get('physical_execution') else None)
             from .longrun import verify_freeze
             config_error=None
             try:
@@ -208,9 +209,13 @@ class SessionLedger:
             except (ValueError,OSError,KeyError) as error:config_error=str(error) if isinstance(error,ValueError) else 'CONFIG_EVIDENCE_UNAVAILABLE'
             verdict=safety_admission(value,health,control_state=raw['state'],persisted_stop=sql_stop or marker_valid,
                 barrier_present=sql_stop or marker is not None,marker_state='absent' if marker is None else 'valid' if marker_valid else 'invalid_or_unreadable',
-                worker_alive=worker_alive,wall=self.clock.wall(),expired=raw['started_monotonic']is not None and self.clock.monotonic()-raw['started_monotonic']>=raw['duration_seconds'],config_error=config_error)
+                worker_alive=worker_alive,wall=self.clock.wall(),expired=self.expired(raw),config_error=config_error)
             verdict['admission_evidence']['control_sqlite']='readable_persisted_barrier' if sql_stop else 'readable_no_persisted_barrier'
-            return {**value,**verdict,'session_terminated':value['state']in TERMINAL}
+            result={**value,**verdict,'session_terminated':value['state']in TERMINAL}
+            if cfg.get('physical_execution'):
+                from .physical_execution import physical_session_admission
+                result=physical_session_admission(value,result)
+            return result
         except (sqlite3.Error,OSError,ValueError,KeyError,TypeError) as error:return self._unavailable_status(error)
         finally:
             if conn:conn.close()
@@ -249,7 +254,7 @@ class SessionLedger:
             now=self.clock.monotonic();initial=value['started_monotonic'] is None
             if initial:
                 value.update(started_monotonic=now,started_wall=self.clock.wall(),started_utc=utc_now(),
-                    last_monotonic=now,last_wall=self.clock.wall(),state='running',reason='STARTED')
+                    deadline_monotonic=now+value['duration_seconds'],last_monotonic=now,last_wall=self.clock.wall(),state='running',reason='STARTED')
                 self.save(value)
             self.conn.execute('COMMIT')
         except BaseException:
@@ -259,9 +264,16 @@ class SessionLedger:
             self.tick('interrupted',process_unavailable=True,reason='SUPERVISOR_RESTART',allow_completion=not defer_completion)
         self.event('supervisor_started',{'elapsed_seconds':self.load()['elapsed_seconds']})
         return self.load()
+    @staticmethod
+    def deadline(value):
+        # Old sessions have the same frozen operands, so derive the identical sum.
+        return value.get('deadline_monotonic',value['started_monotonic']+value['duration_seconds'])
+    def expired(self,value=None):
+        v=value if value is not None else self.load()
+        return v['started_monotonic']is not None and self.clock.monotonic()>=self.deadline(v)
     def remaining(self):
         v=self.load()
-        return v['duration_seconds'] if v['started_monotonic']is None else max(0.,v['duration_seconds']-(self.clock.monotonic()-v['started_monotonic']))
+        return v['duration_seconds'] if v['started_monotonic']is None else max(0.,self.deadline(v)-self.clock.monotonic())
     def tick(self,state,*,reason='',device_unavailable=False,process_unavailable=False,sleep_class=None,allow_completion=True):
         if state not in STATES:raise ValueError('Unknown state')
         self.conn.execute('BEGIN IMMEDIATE')
@@ -285,7 +297,7 @@ class SessionLedger:
             # Terminal states and emergency operator control are sticky.
             if previous in TERMINAL:state=previous
             elif v['operator']=='emergency_stopped':state='emergency_stopped'
-            elif allow_completion and state!='failed' and v['started_monotonic']is not None and v['elapsed_seconds']>=v['duration_seconds']:state='completed_duration'
+            elif allow_completion and state!='failed' and self.expired(v):state='completed_duration'
             v.update(state=state,reason=reason or v['reason'],last_monotonic=now,last_wall=wall,
                 device_unavailable=device_unavailable,process_unavailable=process_unavailable,sleep_class=sleep_class)
             if state in TERMINAL or state=='paused':v['worker_signal']='stop'

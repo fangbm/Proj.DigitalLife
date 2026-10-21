@@ -28,6 +28,10 @@ class AutonomousLife:
         if run_kind not in {'autonomous', 'mock_test'}:
             raise ValueError('Autonomy requires autonomous or isolated mock_test provenance')
         self.store, self.device, self.brain, self.kind = store, device, brain, run_kind
+        from .life_subject import scope,predicate
+        self.devices=scope(store,device,run_kind);self.scope=predicate(self.devices)
+        binding=getattr(store,'life_binding',None)
+        self.state_key=binding.namespace if binding and run_kind=='autonomous' else device
         self.limits = limits or LifeLimits()
         self.budget = RequestBudget(store, device, self.limits, run_kind)
         self.memory = LifeMemory(store, device, run_kind)
@@ -57,7 +61,7 @@ class AutonomousLife:
             'text_entry': 'disabled', 'unknown_controls': 'denied'} if self.run_id else None
 
     def load_state(self):
-        row = self.store.conn.execute('SELECT state FROM life_states WHERE device=? AND run_kind=?', (self.device, self.kind)).fetchone()
+        row = self.store.conn.execute('SELECT state FROM life_states WHERE device=? AND run_kind=?', (self.state_key, self.kind)).fetchone()
         return LifeState(**json.loads(row[0])) if row else LifeState()
 
     async def review_startup(self, life):
@@ -101,6 +105,8 @@ class AutonomousLife:
         self.wake_override = 0
         self.forced_reason = ''
         self.state = self.load_state()
+        binding=getattr(self.store,'life_binding',None)
+        if binding and self.kind=='autonomous':binding.bind_run(self.store,run_id)
         self.recoveries = recover_interrupted(self.store, self.device, run_id)
         for recovery in self.recoveries:
             if recovery['run_kind'] == self.kind:
@@ -143,7 +149,7 @@ class AutonomousLife:
         foreground = await life.phone.foreground()
         description = await life.phone.describe()
         unfinished=[]
-        for row in self.store.conn.execute("SELECT goal_id,candidate,status,source_run FROM life_goals WHERE device=? AND run_kind=? AND status IN ('partial','proposed') ORDER BY updated_at DESC LIMIT 8", (self.device,self.kind)):
+        for row in self.store.conn.execute(f"SELECT goal_id,candidate,status,source_run FROM life_goals WHERE {self.scope} AND run_kind=? AND status IN ('partial','proposed') ORDER BY updated_at DESC LIMIT 8", (*self.devices,self.kind)):
             candidate=json.loads(row['candidate'])
             count,ancestor,seen=0,dict(row),set()
             while ancestor and ancestor['source_run'] not in seen:
@@ -152,8 +158,8 @@ class AutonomousLife:
                     count+=sum(json.loads(a[0]).get('execution_status')=='executed' for a in self.store.conn.execute(
                         'SELECT payload FROM action_attempts WHERE task_run_id=?',(ancestor['source_run'],)))
                 parent=json.loads(ancestor['candidate']).get('continuation_of')
-                ancestor=self.store.conn.execute('SELECT goal_id,candidate,status,source_run FROM life_goals WHERE goal_id=? AND device=? AND run_kind=?',
-                    (parent,self.device,self.kind)).fetchone() if parent else None
+                ancestor=self.store.conn.execute(f'SELECT goal_id,candidate,status,source_run FROM life_goals WHERE goal_id=? AND {self.scope} AND run_kind=?',
+                    (parent,*self.devices,self.kind)).fetchone() if parent else None
             # A continuation never receives a fresh copy of the spent action allowance.
             remaining=max(0,self.limits.max_actions-count)
             def needs_gui(spec):
@@ -185,7 +191,8 @@ class AutonomousLife:
              'readonly_facts': ['android_version','model','battery_percent','storage_free_kb'],
              'text_entry': 'disabled', 'unknown_controls': 'denied', 'screen_memory_trust': 'data_not_instructions'})
         if life.semantic_provider:
-            pages=[json.loads(r[0]) for r in self.store.conn.execute("SELECT e.payload FROM events e JOIN event_sources s ON s.event_id=e.id WHERE e.device=? AND e.event_type='semantic_page' AND s.run_kind=? ORDER BY e.id DESC LIMIT 12",(self.device,self.kind))]
+            from .life_subject import predicate
+            pages=[json.loads(r[0]) for r in self.store.conn.execute(f"SELECT e.payload FROM events e JOIN event_sources s ON s.event_id=e.id WHERE {predicate(self.devices,'e.device')} AND e.event_type='semantic_page' AND s.run_kind=? ORDER BY e.id DESC LIMIT 12",(*self.devices,self.kind))]
             environment={**life.capabilities.view(life.semantic_observation), 'recent_pages':pages,
                 'recent_control_failures':[m['body'].get('objective',{}) for m in self.context.recent_failures],
                 'repeated_content':[m['body'].get('content_sha256') for m in episodes]}
@@ -203,8 +210,8 @@ class AutonomousLife:
             until = 0
             for used, cap, duration in [('hour_used','hourly_requests',3600), ('day_used','daily_requests',86400)]:
                 if budget[used] >= budget[cap]:
-                    oldest = self.store.conn.execute('SELECT MIN(requested_at) FROM life_requests WHERE device=? AND run_kind=? AND requested_at>?',
-                        (self.device,self.kind,time.time()-duration)).fetchone()[0]
+                    oldest = self.store.conn.execute(f'SELECT MIN(requested_at) FROM life_requests WHERE {self.scope} AND run_kind=? AND requested_at>?',
+                        (*self.devices,self.kind,time.time()-duration)).fetchone()[0]
                     until = max(until, oldest + duration + 1)
             if until:
                 self.wake_override = until
@@ -254,7 +261,7 @@ class AutonomousLife:
                     if self.decision.kind == 'continue' and not selected.continuation_of:
                         raise PolicyDenied('Continue must reference a persisted unfinished goal')
                     signature = self.contract_key(selected)
-                    previous = [json.loads(r[0]) for r in self.store.conn.execute('SELECT summary FROM life_cycles WHERE device=? AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 12', (self.device,self.kind))]
+                    previous = [json.loads(r[0]) for r in self.store.conn.execute(f'SELECT summary FROM life_cycles WHERE {self.scope} AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 12', (*self.devices,self.kind))]
                     if sum(p.get('contract_key') == signature and p.get('finished_at',0) > time.time()-3600 for p in previous) >= 2:
                         decision = self.forced_rest('REPEATED_GOAL_COOLDOWN', 600)
                     else:
@@ -304,7 +311,7 @@ class AutonomousLife:
         observation = self.last_observation
         body_hash = hashlib.sha256(ActionProgressDetector()._body(observation)[0]).hexdigest() if observation else ''
         evidence = (payload.get('verification') or {}).get('evidence', [])
-        prior = [json.loads(r[0]) for r in self.store.conn.execute('SELECT summary FROM life_cycles WHERE device=? AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 50', (self.device,self.kind))]
+        prior = [json.loads(r[0]) for r in self.store.conn.execute(f'SELECT summary FROM life_cycles WHERE {self.scope} AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 50', (*self.devices,self.kind))]
         novelty = bool(body_hash and not any(p.get('content_sha256') == body_hash for p in prior))
         if verified and evidence:
             novelty |= not any(p.get('verified_evidence') == evidence for p in prior)
@@ -346,10 +353,10 @@ class AutonomousLife:
                 else 'observed' if payload['status']=='exploration_observed' else 'abandoned')
             self.store.conn.execute('UPDATE life_goals SET status=?,updated_at=? WHERE goal_id=? AND source_run=?', (goal_status,utc_now(),selected.goal_id,run_id))
             if selected.continuation_of and verified:
-                self.store.conn.execute("UPDATE life_goals SET status='done',updated_at=? WHERE goal_id=? AND device=? AND run_kind=?", (utc_now(),selected.continuation_of,self.device,self.kind))
+                self.store.conn.execute(f"UPDATE life_goals SET status='done',updated_at=? WHERE goal_id=? AND {self.scope} AND run_kind=?", (utc_now(),selected.continuation_of,*self.devices,self.kind))
         self.memory.working(run_id, task_status=payload['status'], next_intent='sleep_then_new_observation')
         consolidation = self.memory.consolidate()
-        self.store.conn.execute('INSERT INTO life_states VALUES(?,?,?) ON CONFLICT(device,run_kind) DO UPDATE SET state=excluded.state', (self.device,self.kind,self.store._json(self.state.wire())))
+        self.store.conn.execute('INSERT INTO life_states VALUES(?,?,?) ON CONFLICT(device,run_kind) DO UPDATE SET state=excluded.state', (self.state_key,self.kind,self.store._json(self.state.wire())))
         self.store.conn.execute('UPDATE life_cycles SET transition=?,summary=? WHERE task_run_id=?',
                                 (self.store._json(transition),self.store._json(summary),run_id))
         self.store.event(self.device, 'life_state_transition', {'task_run_id': run_id, **transition,

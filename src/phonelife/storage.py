@@ -149,11 +149,20 @@ class Store:
         row = self.conn.execute("SELECT COUNT(*) n FROM events e JOIN event_sources s ON s.event_id=e.id WHERE device=? AND s.run_kind=?", (device, run_kind)).fetchone()
         return int(row["n"])
 
+    def _schedule_key(self,device,run_kind):
+        binding=getattr(self,'life_binding',None)
+        if binding and run_kind=='autonomous':
+            if device!=binding.execution_device_id:raise ValueError('EXECUTION_DEVICE_BINDING_MISMATCH')
+            return binding.namespace
+        return device
+
     def next_wake(self, device: str, *, run_kind="autonomous") -> float:
+        device=self._schedule_key(device,run_kind)
         row = self.conn.execute("SELECT next_wake_at FROM schedule WHERE device=?", (device,)).fetchone() if run_kind == "autonomous" else self.conn.execute("SELECT next_wake_at FROM run_schedules WHERE device=? AND run_kind=?", (device, run_kind)).fetchone()
         return float(row["next_wake_at"]) if row else 0.0
 
     def set_wake(self, device: str, when: float, result: str, *, run_kind="autonomous", task_run_id=None) -> None:
+        device=self._schedule_key(device,run_kind)
         if run_kind != "autonomous":
             self.conn.execute("INSERT INTO run_schedules VALUES(?,?,?,?,?) ON CONFLICT(device,run_kind) DO UPDATE SET next_wake_at=excluded.next_wake_at,last_result=excluded.last_result,task_run_id=excluded.task_run_id",
                 (device, run_kind, when, result[:500], task_run_id))

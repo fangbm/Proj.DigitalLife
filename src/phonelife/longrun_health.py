@@ -63,7 +63,7 @@ class ReadOnlyDeviceProbe:
             return {'online':True,'qemu':qemu=='1','sdk':sdk,'reason':'OK' if qemu=='1' else 'WRONG_DEVICE_IDENTITY'}
         except (Exception,):return {'online':False,'qemu':None,'reason':'ADB_UNAVAILABLE'}
 
-def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run_kind='autonomous',policy=None,worker_alive=None,worker_exited=False):
+def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run_kind='autonomous',policy=None,worker_alive=None,worker_exited=False,life_binding=None,lease_key=None):
     now=time.time() if now is None else now
     deadline=time.monotonic()+1.
     result={'database_readable':False,'needs_review':False,'next_wake_at':0,'operator':'running','warnings':[]}
@@ -72,12 +72,17 @@ def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run
         c=sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True,timeout=.5);c.row_factory=sqlite3.Row
         c.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
         c.execute('PRAGMA query_only=ON')
+        devices=(device,);schedule_key=device
+        if life_binding:
+            from .life_subject import LifeBinding
+            binding=LifeBinding(**life_binding);devices=binding.devices(c);schedule_key=binding.namespace
+            if binding.execution_device_id!=device:raise ValueError('EXECUTION_DEVICE_BINDING_MISMATCH')
         result['quick_check']=c.execute('PRAGMA quick_check').fetchone()[0] if quick else 'not_sampled'
         if result['quick_check'] not in ('ok','not_sampled'):raise ValueError('DATABASE_INTEGRITY_FAILED')
         result['counts']={t:c.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0] for t in ('observations','action_attempts','events','task_runs')}
         row=c.execute('SELECT mode FROM life_controls WHERE device=?',(device,)).fetchone()
         result['operator']=row[0] if row else 'running'
-        row=(c.execute('SELECT next_wake_at FROM schedule WHERE device=?',(device,)).fetchone() if run_kind=='autonomous'
+        row=(c.execute('SELECT next_wake_at FROM schedule WHERE device=?',(schedule_key,)).fetchone() if run_kind=='autonomous'
             else c.execute('SELECT next_wake_at FROM run_schedules WHERE device=? AND run_kind=?',(device,run_kind)).fetchone())
         result['next_wake_at']=row[0] if row else 0
         wake=result['next_wake_at']
@@ -101,7 +106,8 @@ def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run
         result['budget_until']=0
         if policy:
             for duration,limit in ((3600,policy.hourly_requests),(86400,policy.daily_requests)):
-                rows=c.execute('SELECT requested_at FROM life_requests WHERE device=? AND run_kind=? AND requested_at>? ORDER BY requested_at',(device,run_kind,now-duration)).fetchall()
+                from .life_subject import predicate
+                rows=c.execute(f'SELECT requested_at FROM life_requests WHERE {predicate(devices)} AND run_kind=? AND requested_at>? ORDER BY requested_at',(*devices,run_kind,now-duration)).fetchall()
                 if len(rows)>=limit:result['budget_until']=max(result['budget_until'],rows[len(rows)-limit][0]+duration+1)
         result['guard_reason']=None;result['model_kind']=None
         if last:
@@ -112,7 +118,11 @@ def readonly_db_health(path,lease_path,device='emulator',now=None,quick=True,run
                 else:result['model_kind']=item.get('model_decision',{}).get('kind')
         l=sqlite3.connect(Path(lease_path).resolve().as_uri()+'?mode=ro',uri=True,timeout=.5);l.row_factory=sqlite3.Row
         l.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
-        result['lease']=[dict(r) for r in l.execute('SELECT * FROM lease WHERE device=?',(device,))]
+        result['lease']=[dict(r) for r in l.execute('SELECT * FROM lease WHERE device=?',(lease_key or device,))]
+        if run_kind=='autonomous':
+            result['lease'].extend(dict(r) for r in l.execute("SELECT * FROM lease WHERE device='autonomous-api-writer'"))
+        if life_binding:
+            result['lease'].extend(dict(r) for r in l.execute('SELECT * FROM lease WHERE device=?',('subject:'+binding.life_subject_id,)))
         live_lease=any(r['expires_at']>now for r in result['lease'])
         sources=[]
         for row,a in zip(attempt_rows,attempts):

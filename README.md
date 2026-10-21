@@ -1,3 +1,9 @@
+# Phase 1.2.3-B：实体机执行核心离线集成 · v0.2.3
+
+本轮完成LifeSubject与执行设备分离的保留式迁移、默认拒绝的物理语义执行器、Status/Resume/Supervisor/Worker共同准入，以及绝对单调deadline修复。见[执行架构](docs/phase123b-physical-core/PHYSICAL_EXECUTION_ARCHITECTURE.md)、[迁移](docs/phase123b-physical-core/LIFE_SUBJECT_MIGRATION.md)和[限制](docs/phase123b-physical-core/UNRESOLVED_RISKS.md)。真实GUI、DeepSeek自主调用、1小时和24小时均未执行，所有实体机执行能力保持关闭，等待源码及离线证据独立审查。原生产生活库、DPAPI和旧候选不改，不复用旧批准指纹、不自动推送。
+
+以下为历史交付记录；当前边界以上述本轮说明为准。
+
 # Proj.DigitalLife — 数字生命计划 / Phase 1.2.3 物理设备只读适配准备 · v0.2.3
 
 当前完成Find X6显式身份绑定、默认关闭的只读诊断及安全准备，见[实体机安全设计与阻断](docs/phase123-physical/PHYSICAL_DEVICE_SECURITY_DESIGN.md)、[实测清单](docs/phase123-physical/FIND_X6_DEVICE_INVENTORY.md)和[生活连续性方案](docs/phase123-physical/LIFE_CONTINUITY_PLAN.md)。实际设备为Android16/API36、ColorOS16；未开放实体机GUI输入，未创建或运行1小时/24小时物理会话。原39个运行文件不改，新增模块造成旧候选与当前工作区冻结清单不同，旧候选原件不覆盖。
