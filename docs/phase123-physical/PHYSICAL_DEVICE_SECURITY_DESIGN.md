@@ -1,0 +1,11 @@
+# 实体机安全设计与阻断
+
+新增device_profiles.py，原39运行文件字节不变。EmulatorDeviceProfile仍要求显式模拟器serial、QEMU=1、API35；PhysicalDeviceProfile独立校验单位USB serial及OPPO/PGFM10、device/build/版本等完整实际身份。身份映射防御性复制并不可变，默认read_only_authorized=false，input_enabled不允许true。
+
+ReadOnlyAdb只接受固定元数据/捕获参数元组，永远显式-s；无任意shell、安装、grant、root、文件或Intent接口。命令15秒有界、输出有界，取消只结束自己的ADB客户端，不关闭服务、不重连/改授权。新观察适配器验证前后身份、实际PNG几何、方向及安全状态；未知即拒绝。act/reopen_settings无条件拒绝，包括home/back/launch。
+
+**BLOCKED_FOR_PHYSICAL_AUTONOMY：**原ActionPolicy硬禁real的tap/swipe/text；CapabilityRegistry、helper/语义恢复和长期监督器仍专为隔离模拟器设计。不能删QEMU检查或把物理设备标成emulator。physical_admission仅与原持久状态求非授予交集，不是已完成的实体机Status/Resume/supervisor/worker集成；这四入口的真实实体机端到端验收未执行。
+
+原停止屏障未改，离线证明紧急停止、未知分发、单介质故障和重启不会因新评估而解除。另一阻断是记忆/执行设备键耦合，见LIFE_CONTINUITY_PLAN。按用户要求，本轮停止于核心合同边界，没有解锁真实GUI或增设自主循环。
+
+属性可被修改过的ROM伪造，serial形式也不证明USB物理总线；可信主机/系统和人工所有权仍是前提。协作lease不能阻止外部ADB，App启动白名单不是App沙箱。原物理CLI限制保持；新增诊断入口也不代表旧CLI已具备硬件profile约束。

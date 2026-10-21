@@ -1,0 +1,17 @@
+{
+  "schema": "physical-capabilities/draft-1",
+  "default_enabled": false,
+  "autonomous_execution_enabled": false,
+  "gui_input_enabled": false,
+  "observation_only_packages": ["com.android.settings"],
+  "approved_navigation_packages": [],
+  "candidate_categories_pending_specific_approval": ["launcher", "browser", "bilibili", "reader"],
+  "separate_authorization_required": ["send_message", "add_contact", "publish", "upload", "like", "follow", "favorite", "edit_account", "install", "grant_permission", "change_settings"],
+  "prohibited": ["payments", "banking", "delete_account_or_data", "private_communications", "phone_call", "sms", "credential_export"],
+  "existing_action_policy_unchanged": true,
+  "existing_emulator_registry_unchanged": true,
+  "app_allowlist_is_not_a_sandbox": true,
+  "tool_calling_implemented": false,
+  "physical_one_hour_authorized": false,
+  "physical_twenty_four_hour_authorized": false
+}

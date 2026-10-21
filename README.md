@@ -1,4 +1,8 @@
-# Proj.DigitalLife — 数字生命计划 / Phase 1.2.2 Long-Run Autonomous Soak · v0.2.3
+# Proj.DigitalLife — 数字生命计划 / Phase 1.2.3 物理设备只读适配准备 · v0.2.3
+
+当前完成Find X6显式身份绑定、默认关闭的只读诊断及安全准备，见[实体机安全设计与阻断](docs/phase123-physical/PHYSICAL_DEVICE_SECURITY_DESIGN.md)、[实测清单](docs/phase123-physical/FIND_X6_DEVICE_INVENTORY.md)和[生活连续性方案](docs/phase123-physical/LIFE_CONTINUITY_PLAN.md)。实际设备为Android16/API36、ColorOS16；未开放实体机GUI输入，未创建或运行1小时/24小时物理会话。原39个运行文件不改，新增模块造成旧候选与当前工作区冻结清单不同，旧候选原件不覆盖。
+
+唯一一次120秒Stage C已在此前授权下结束；之后仅准备了待审批模拟器候选。本轮不复用其指纹、不启动任何自主测试、不推送私有材料。下方历史交付说明保留，当前状态以本节和本轮交付报告为准。
 
 GitHub 公开源码与预发布的证据边界见 [GitHub 交付说明](docs/GITHUB_DELIVERY.md)。当前进行 Stage D 前持久停止屏障安全补丁，只有离线验证；旧 preflight-04 批准指纹随运行文件变化失效，正式24小时 Soak 尚未批准或执行。
 

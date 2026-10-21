@@ -14,6 +14,7 @@ dependencies = ["Pillow>=11.3,<13"]
 proj-digitallife = "phonelife.cli:main"
 phone-life = "phonelife.cli:main"
 proj-digitallife-soak = "phonelife.longrun:main"
+proj-digitallife-device-probe = "phonelife.device_profiles:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
