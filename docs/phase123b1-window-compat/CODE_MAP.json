@@ -1,0 +1,57 @@
+[
+  {
+    "file": "src/phonelife/device_profiles.py",
+    "function": "parse_safety",
+    "line": 177
+  },
+  {
+    "file": "src/phonelife/device_profiles.py",
+    "function": "diagnose",
+    "line": 311
+  },
+  {
+    "file": "src/phonelife/device_profiles.py",
+    "function": "safety",
+    "line": 201
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "window_type",
+    "line": 31
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "lock_state",
+    "line": 56
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "interactive_state",
+    "line": 83
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "parse_windows",
+    "line": 137
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "parse_input",
+    "line": 189
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "assess_native",
+    "line": 222
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "readonly_capture_gate",
+    "line": 330
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "assess_xml",
+    "line": 352
+  }
+]

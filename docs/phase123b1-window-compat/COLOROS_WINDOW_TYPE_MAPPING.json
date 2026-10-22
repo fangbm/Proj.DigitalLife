@@ -1,0 +1,35 @@
+{
+  "version": "aosp-android16-layoutparams/1",
+  "source_url": "https://android.googlesource.com/platform/frameworks/base/+/android16-release/core/java/android/view/WindowManager.java",
+  "source_sha256": "74beb0d7a6e72e9924c2e33552f3128d0536eccb8547bdce585607bc6be62ea0",
+  "types": {
+    "BASE_APPLICATION": 1,
+    "APPLICATION": 2,
+    "APPLICATION_STARTING": 3,
+    "DRAWN_APPLICATION": 4,
+    "STATUS_BAR": 2000,
+    "SYSTEM_ALERT": 2003,
+    "KEYGUARD": 2004,
+    "TOAST": 2005,
+    "SYSTEM_OVERLAY": 2006,
+    "SYSTEM_DIALOG": 2008,
+    "KEYGUARD_DIALOG": 2009,
+    "INPUT_METHOD": 2011,
+    "INPUT_METHOD_DIALOG": 2012,
+    "WALLPAPER": 2013,
+    "NAVIGATION_BAR": 2019,
+    "VOLUME_OVERLAY": 2020,
+    "NAVIGATION_BAR_PANEL": 2024,
+    "DISPLAY_OVERLAY": 2026,
+    "ACCESSIBILITY_OVERLAY": 2032,
+    "APPLICATION_OVERLAY": 2038,
+    "NOTIFICATION_SHADE": 2040
+  },
+  "oem_unverified_numeric_types": [
+    2314,
+    2315
+  ],
+  "unknown_policy": "reject even inactive",
+  "normalization": "exact name, optional exact TYPE_ prefix, or exact canonical decimal; no ranges, substring, leading zeros, guesses",
+  "physical_input_granted": false
+}

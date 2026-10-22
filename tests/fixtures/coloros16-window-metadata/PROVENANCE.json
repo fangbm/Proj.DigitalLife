@@ -1,0 +1,16 @@
+{
+  "origin": "real_device_metadata_deidentified",
+  "evidence_category": "live_device_metadata_only",
+  "raw_source_file_sha256": "1109393486df49e1aead47c5f362bd062c1cb26d0166f217c0cc4eb66442b3aa",
+  "raw_source_field_sha256": {
+    "windows": "9637e03fe64b73e6c4ec3313133439eb2d1770ad2e4267eeb27b9695b70ee8d1",
+    "displays": "8220eae2e885d1ebd510c871971865d9fd207a71d949d9c0cb9aca94487f2528",
+    "power": "93941c8a57eafaa313a1c58d6ec82387f86a31de46be6d2bcfac1baca9436b86",
+    "policy": "68ce5b59f88bfe1d111ed7da675a0c2fe61ecc6cf1ebec90dd2e66262abab1a1",
+    "input": "7530d678eab49398331c71b3d9c0e761313a86f333462dd8bd3eba25f4c4bd1e"
+  },
+  "transformation": "Field whitelist only; reconstructed formatting/headers; opaque IDs, UIDs and foreign package/activity names replaced consistently. No UI nodes, PNG, free text, serial or full dump. One of two Input Dispatcher sections excerpted. Original boolean/type/geometry values retained; this derivative is not proof of complete live-source admission.",
+  "not_synthetic_origin": true,
+  "source_input_sections": 2,
+  "derivative_input_sections": 1
+}

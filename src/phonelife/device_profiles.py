@@ -175,19 +175,15 @@ def parse_size(text):
 
 
 def parse_safety(power,policy,windows,display_input):
-    locks=[v.casefold()=='true' for v in re.findall(r'(?:mShowingLockscreen|mKeyguardShowing|isKeyguardShowing|keyguardShowing)\s*[=:]\s*(true|false)',policy,re.I)]
-    # Observed ColorOS16/AOSP shape. Never trust an unrelated global "showing".
-    marker=policy.find('KeyguardServiceDelegate')
-    if marker>=0:
-        section=policy[marker:marker+1800].split('Looper state:',1)[0]
-        locks.extend(v.casefold()=='true' for v in re.findall(r'^\s*(?:showing|mIsShowing)=(true|false)\s*$',section,re.M))
-    interactive=re.search(r'mInteractive\s*=\s*(true|false)',power,re.I)
-    awake=re.search(r'mWakefulness\s*=\s*(\w+)',power)
+    from .native_windows import lock_state, interactive_state
+    lock=lock_state(policy,windows)
     orientation=re.search(r'(?:SurfaceOrientation|surfaceOrientation)\s*[:=]\s*([0-3])',display_input)
     rotations={int(n) for n in re.findall(r'Viewport INTERNAL:[^\r\n]*\bdisplayId=0,[^\r\n]*\borientation=([0-3])\b',display_input)}
     focused=re.search(r'mCurrentFocus=.*?\s([\w.]+)/',windows)
-    suspicious=bool(re.search(r'permissioncontroller|securitypermission|TYPE_APPLICATION_OVERLAY|TYPE_SYSTEM_ALERT|biometric|credential|Keyguard',windows,re.I))
-    return {'locked':any(locks) if locks else None,'interactive':interactive[1].casefold()=='true' if interactive else (awake[1]=='Awake' if awake else None),
+    # Explicit dangerous window types remain independent of lock state. Render
+    # completion fields do not assert that a Keyguard window is visible.
+    suspicious=bool(re.search(r'permissioncontroller|securitypermission|TYPE_APPLICATION_OVERLAY|TYPE_SYSTEM_ALERT|biometric|credential|\bty=(?:TYPE_)?(?:KEYGUARD|KEYGUARD_DIALOG|2004|2009)\b',windows,re.I))
+    return {'locked':lock['locked'],'interactive':interactive_state(power),
         'orientation':int(orientation[1]) if orientation else next(iter(rotations)) if len(rotations)==1 else None,'foreground_package':focused[1] if focused else None,
         'permission_or_unknown_overlay':suspicious,'overlay_absence_proven':False}
 
@@ -203,9 +199,20 @@ class PhysicalDeviceProbe:
         return {prop:await self.text(('shell','getprop',prop)) for prop in IDENTITY_PROPERTIES}
 
     async def safety(self):
-        return parse_safety(await self.text(('shell','dumpsys','power')),await self.text(('shell','dumpsys','window','policy')),
-            await self.text(('shell','dumpsys','window','windows'))+'\n'+await self.text(('shell','dumpsys','window','displays')),
-            await self.text(('shell','dumpsys','input')))
+        metadata = {key: await self.text(args) for key, args in (
+            ('power', ('shell','dumpsys','power')), ('policy', ('shell','dumpsys','window','policy')),
+            ('windows', ('shell','dumpsys','window','windows')), ('displays', ('shell','dumpsys','window','displays')),
+            ('input', ('shell','dumpsys','input')))}
+        result = parse_safety(metadata['power'], metadata['policy'], metadata['windows']+'\n'+metadata['displays'], metadata['input'])
+        # Native output must satisfy the complete metadata grammar. The legacy
+        # summary parser never claims native overlay absence or capture consent.
+        if 'WINDOW MANAGER WINDOWS' in metadata['windows']:
+            from .native_windows import assess_native
+            assessment = assess_native(metadata)
+            result['native_window_assessment'] = assessment
+            result['overlay_absence_proven'] = assessment['classification'] == 'SAFE_FOR_READONLY_CAPTURE'
+            result['permission_or_unknown_overlay'] = not result['overlay_absence_proven']
+        return result
 
     async def inventory(self,*,consent=False):
         if consent is not True:raise DeviceProfileError('READONLY_DEVICE_CONSENT_REQUIRED')
@@ -315,23 +322,10 @@ async def diagnose(args):
             'inventory_recorded':True,'model_api_calls':0,'adb_inputs':0,'autonomous_execution_enabled':False,
             'snapshot':'NOT_OBSERVED','uiautomator':'NOT_OBSERVED'}
         if args.capture_settings:
-            # Explicit one-off read-only capture; does not enable the persisted profile.
-            from dataclasses import replace
-            phone=ProfileBoundReadOnlyPhone(replace(profile,read_only_authorized=True),transport)
-            try:
-                obs=await phone.observe()
-                with (out/'screen.private.png').open('xb') as f:f.write(obs.png)
-                summary.update(snapshot='OBSERVED',png_width=obs.width,png_height=obs.height,screenshot_sha256=obs.sha256)
-                raw=await probe.text(('exec-out','uiautomator','dump','/dev/tty'))
-                start=raw.find('<?xml');end=raw.rfind('</hierarchy>')
-                if start<0 or end<0:raise DeviceProfileError('UI_TREE_UNAVAILABLE')
-                xml=raw[start:end+len('</hierarchy>')]
-                compatibility=xml_compatibility(xml)
-                with (out/'tree.private.xml').open('x',encoding='utf8') as f:f.write(xml)
-                summary.update(uiautomator=compatibility)
-            except (ValueError,RuntimeError) as error:
-                summary.update(snapshot=summary['snapshot'] if summary['snapshot']=='OBSERVED' else 'BLOCKED_OR_UNAVAILABLE',
-                    uiautomator='BLOCKED_OR_UNAVAILABLE',capture_reason=getattr(error,'code',type(error).__name__))
+            # Metadata consent is not C0 raw PNG/XML consent. Keep the option
+            # recognizable but fail closed until the separately reviewed stage.
+            summary.update(snapshot='NOT_OBSERVED',uiautomator='NOT_OBSERVED',
+                           capture_reason='RAW_CAPTURE_REQUIRES_C0_APPROVAL')
         with (out/'summary.json').open('x',encoding='utf8') as f:json.dump(summary,f,ensure_ascii=False,indent=2)
         print(json.dumps(summary,ensure_ascii=False))
         return 0
@@ -344,7 +338,7 @@ def main(argv=None):
     parser.add_argument('--serial',required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--consent-read-only',action='store_true')
-    parser.add_argument('--capture-settings',action='store_true',help='Private read-only PNG/XML only if unlocked, interactive and Settings foreground; no helper deployment')
+    parser.add_argument('--capture-settings',action='store_true',help='Reserved for separately approved C0; currently reports RAW_CAPTURE_REQUIRES_C0_APPROVAL without capture')
     args=parser.parse_args(argv)
     try:return asyncio.run(diagnose(args))
     except (ValueError,RuntimeError,OSError) as error:

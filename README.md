@@ -152,3 +152,10 @@ PYTHONPATH=src python -m phonelife.cli --mode api --device real --cycles 1 --for
 
 完整路线图与接口、调度/记忆方案：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 
+Phase 1.2.3-B1（v0.2.3）新增 ColorOS 16 严格锁屏字段及原生窗口元数据解析，
+当前实体机只读采集准入为 **INSUFFICIENT_EVIDENCE**。未知 OEM 类型、未验证前台和
+控制状态仍阻断；`--capture-settings` 只报告需另行批准 C0，不采集 PNG/XML。
+物理输入默认关闭，旧审批指纹不可复用。详见
+[`B1 根因与边界`](docs/phase123b1-window-compat/WINDOW_COMPATIBILITY_ROOT_CAUSE.md) 和
+[`C0 待批准采集范围`](docs/phase123b1-window-compat/NEXT_READONLY_CAPTURE_REQUEST.md)。
+
