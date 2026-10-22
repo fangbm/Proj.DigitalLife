@@ -1,21 +1,20 @@
-# Proj.DigitalLife v0.2.3 — Find X6 专用设备测试
+# Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
-新增 `dedicated_device_test`：用户手动启动有限会话后，连续截图/XML 和 Settings 低风险 tap/swipe/back 不需要逐次审批、动作 DPAPI 批准、自定义 JAR 或冻结批准指纹。设备白名单、独占租约、紧急停止、预算、审计、未知分发停止及高风险禁止均保留。严格模式保持独立。
+`dedicated_device_test` 动态读取绑定手机上已安装且可启动的 App，由 Brain 自主选择应用、浏览、搜索、切换或休息。普通会话没有 App 白名单、Settings 起始页、逐动作批准或 JAR 依赖。设备绑定、租约、紧急停止、预算、审计、高风险拦截和未知分发停止保留；严格模式独立。
 
-先手动解锁并打开 Settings 首页，再执行真实导航测试（无 API）：
-
-```powershell
-.\data\start-dedicated-device.ps1 -Command Smoke -Session data\find-x6-smoke-01
-```
-
-通过后手动启动一小时：
+连接既有 Find X6，手动解锁，在仓库根目录直接启动一小时：
 
 ```powershell
-.\data\start-dedicated-device.ps1 -Command Start -Hours 1 -Session data\find-x6-life-1h-01
+.\data\start-dedicated-device.ps1 -Command Start -Hours 1 -Session data\find-x6-all-apps-1h-01
 ```
 
-停止：` .\data\start-dedicated-device.ps1 -Command Stop -Session data\find-x6-life-1h-01 `。
-完整使用、迁移和删减范围见[专用测试说明](docs/dedicated-device-test.md)。本次代码开发未远程启动设备；下面保留的旧阶段限制只描述其历史交付，专用模式以本节为准。
+停止（另开终端）：
+
+```powershell
+.\data\start-dedicated-device.ps1 -Command Stop -Session data\find-x6-all-apps-1h-01
+```
+
+允许安全控件绑定的 tap、垂直 swipe、back、固定 Launcher `open_app` 和已聚焦搜索框的受限 ASCII 输入；拒绝外部账号写入、交易、删除、安装及权限修改。无法判断的控件跳过，非标准界面可能暂不可操作；中文输入尚未支持。完整范围、限制和测试证据见[运行说明](docs/dedicated-device-test.md)。本轮只做离线验证，没有启动手机或真实 API。下面旧阶段限制是历史记录。
 
 # 历史：Phase 1.2.3-B：实体机执行核心离线集成 · v0.2.3
 

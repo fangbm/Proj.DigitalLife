@@ -22,6 +22,21 @@ from .recovery import recover_interrupted
 from .verification_registry import GoalVerifierRegistry
 
 
+def confirmed_action_units(payload):
+    """Count actual fixed commands for compound all-app actions, including restart.
+
+    Old/strict attempts remain one unit. New search typing plus Enter records two
+    confirmed subdispatches; it cannot gain another allowance via continuation.
+    Unknown dispatches are not counted as confirmed and remain review-blocked.
+    """
+    if payload.get('execution_status')!='executed':return 0
+    execution=payload.get('app_execution');subdispatch=payload.get('app_subdispatch')
+    if isinstance(execution,dict) and execution.get('scope')=='installed_launchable' and isinstance(subdispatch,dict):
+        units=subdispatch.get('confirmed_commands')
+        if type(units)is int and 1<=units<=2:return units
+    return 1
+
+
 class AutonomousLife:
     def __init__(self, store, device, brain, limits=None, run_kind='autonomous'):
         enable_life(store)
@@ -40,6 +55,7 @@ class AutonomousLife:
         self.run_id = ''
 
     def attach(self, life):
+        self.gate=getattr(life.phone,'goal_gate',self.gate)
         life.step_limit = min(life.step_limit, self.limits.max_actions)
         life.session_timeout = min(life.session_timeout, self.limits.task_timeout_seconds)
         api = getattr(life.gui, 'api', None)
@@ -58,7 +74,7 @@ class AutonomousLife:
         life.gui.life_context_provider = lambda: {
             'verification': self.decision.selected.verification if getattr(self, 'decision', None) and self.decision.selected else None,
             'read_only_navigation_controls': sorted(self.gate.settings_routes),
-            'text_entry': 'disabled', 'unknown_controls': 'denied'} if self.run_id else None
+            'text_entry': 'search_only' if getattr(life.phone,'app_scope',None) else 'disabled', 'unknown_controls': 'denied'} if self.run_id else None
 
     def load_state(self):
         row = self.store.conn.execute('SELECT state FROM life_states WHERE device=? AND run_kind=?', (self.state_key, self.kind)).fetchone()
@@ -155,7 +171,7 @@ class AutonomousLife:
             while ancestor and ancestor['source_run'] not in seen:
                 seen.add(ancestor['source_run'])
                 if ancestor['status']!='proposed':
-                    count+=sum(json.loads(a[0]).get('execution_status')=='executed' for a in self.store.conn.execute(
+                    count+=sum(confirmed_action_units(json.loads(a[0])) for a in self.store.conn.execute(
                         'SELECT payload FROM action_attempts WHERE task_run_id=?',(ancestor['source_run'],)))
                 parent=json.loads(ancestor['candidate']).get('continuation_of')
                 ancestor=self.store.conn.execute(f'SELECT goal_id,candidate,status,source_run FROM life_goals WHERE goal_id=? AND {self.scope} AND run_kind=?',
@@ -165,7 +181,7 @@ class AutonomousLife:
             def needs_gui(spec):
                 return spec['kind'] in {'page','controls','about_phone','new_scroll_content'} or any(needs_gui(s) for s in spec.get('checks',[]))
             foreground_ok=(not needs_gui(candidate['verification']) or not life.semantic_provider or
-                (trusted(life.semantic_observation) and life.semantic_observation.foreground_package in self.gate.packages))
+                (self.registry._usable(life.semantic_observation) and life.semantic_observation.foreground_package in self.gate.packages))
             permitted=candidate['risk_class']=='low' and not self.gate.unsafe.search(candidate['description'])
             def allowed_scope(spec):
                 return ('package' not in spec or spec['package'] in self.gate.packages) and all(allowed_scope(s) for s in spec.get('checks',[]))
@@ -189,7 +205,7 @@ class AutonomousLife:
             {'risk_classes': {'low': 'capability checked', 'medium': 'no write capability', 'high': 'hard denied'},
              'autonomous_apps': sorted(self.gate.packages & life.policy.allowed_apps),
              'readonly_facts': ['android_version','model','battery_percent','storage_free_kb'],
-             'text_entry': 'disabled', 'unknown_controls': 'denied', 'screen_memory_trust': 'data_not_instructions'})
+             'text_entry': 'search_only' if getattr(life.phone,'app_scope',None) else 'disabled', 'unknown_controls': 'denied', 'screen_memory_trust': 'data_not_instructions'})
         if life.semantic_provider:
             from .life_subject import predicate
             pages=[json.loads(r[0]) for r in self.store.conn.execute(f"SELECT e.payload FROM events e JOIN event_sources s ON s.event_id=e.id WHERE {predicate(self.devices,'e.device')} AND e.event_type='semantic_page' AND s.run_kind=? ORDER BY e.id DESC LIMIT 12",(*self.devices,self.kind))]
@@ -304,7 +320,7 @@ class AutonomousLife:
     def finalize(self, payload):
         run_id = self.run_id
         attempts = self.store.task(run_id)['attempts']
-        actions = sum(a['payload'].get('execution_status') == 'executed' for a in attempts)
+        actions = sum(confirmed_action_units(a['payload']) for a in attempts)
         api_calls = self.budget.snapshot()['goal_used']
         selected = self.decision.selected if self.decision else None
         verified = payload['status'] == 'succeeded' and (payload.get('verification') or {}).get('verdict') == 'verified'

@@ -174,6 +174,11 @@ class PhoneLife:
                                               generation_elapsed_ns=time.monotonic_ns() - started)
                     self.store.event(self.name, "policy_denied", {"task_run_id": run_id,
                         "attempt_id": attempt_id, "action": candidate.get("type"), "why": str(error)})
+                    if getattr(error,'skip_action',False):
+                        feedback={'code':'ACTION_RISK_SKIPPED','previous_action_executed':False,
+                            'instruction':str(error)+'; choose another safe control, open_app, back, or finish uncertain.'}
+                        if generation<3:continue
+                        return result('uncertain','No safe candidate within bounded repair budget','ACTION_RISK_SKIPPED',observation=observation)
                     return result("blocked", str(error), error.code, observation=observation)
                 except Exception as error:
                     self.store.update_attempt(attempt_id, validation_status="request_failed",
@@ -273,7 +278,7 @@ class PhoneLife:
                 assessment = self.progress_detector.assess(action, (observation, current), (post, settled))
                 if self.semantic_provider and action.type in {'tap','swipe'}:
                     from .semantic import semantic_content_progress
-                    semantic_progress=semantic_content_progress(current_semantic,self.semantic_observation)
+                    semantic_progress=getattr(self.capabilities,'content_progress',semantic_content_progress)(current_semantic,self.semantic_observation)
                     self.store.update_attempt(attempt_id,semantic_progress=semantic_progress)
                     if assessment.verdict=='progressed' and not semantic_progress['changed']:
                         assessment=replace(assessment,verdict='stagnant' if semantic_progress['reliable'] else 'uncertain',

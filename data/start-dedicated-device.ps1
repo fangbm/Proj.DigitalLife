@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Smoke','Start','Status','Stop','Pause')][string]$Command = 'Smoke',
+    [ValidateSet('Smoke','Start','Status','Stop','Pause')][string]$Command = 'Start',
     [Parameter(Mandatory=$true)][string]$Session,
     [ValidateSet(1,24)][int]$Hours = 1,
     [string]$Profile = '', [string]$LifeDatabase = '', [string]$SourceDatabase = '',
@@ -26,11 +26,11 @@ if ($Command -in @('Smoke','Start')) {
 # Smoke/status/stop never decrypt it, create model clients or call a model.
 try {
     if ($Command -eq 'Start') {
-        $env:PHONE_LIFE_API_BASE = 'https://api.deepseek.com'
-        $env:PHONE_LIFE_GUI_API_BASE = $env:PHONE_LIFE_API_BASE
-        $env:PHONE_LIFE_BRAIN_MODEL = 'deepseek-flash'
-        $env:PHONE_LIFE_GUI_MODEL = 'deepseek-flash'
-        $env:PHONE_LIFE_PERSONA_PATH = Join-Path $taskRoot 'persona.life.example.md'
+        if (-not $env:PHONE_LIFE_API_BASE) { $env:PHONE_LIFE_API_BASE = 'https://api.deepseek.com' }
+        if (-not $env:PHONE_LIFE_GUI_API_BASE) { $env:PHONE_LIFE_GUI_API_BASE = $env:PHONE_LIFE_API_BASE }
+        if (-not $env:PHONE_LIFE_BRAIN_MODEL) { $env:PHONE_LIFE_BRAIN_MODEL = 'deepseek-flash' }
+        if (-not $env:PHONE_LIFE_GUI_MODEL) { $env:PHONE_LIFE_GUI_MODEL = 'deepseek-flash' }
+        if (-not $env:PHONE_LIFE_PERSONA_PATH) { $env:PHONE_LIFE_PERSONA_PATH = Join-Path $taskRoot 'persona.life.example.md' }
         if (-not $env:PHONE_LIFE_API_KEY) {
             $taskSecret = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'deepseek.key.dpapi') -Raw).Trim() | ConvertTo-SecureString
             $env:PHONE_LIFE_API_KEY = [System.Net.NetworkCredential]::new('', $taskSecret).Password

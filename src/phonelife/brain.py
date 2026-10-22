@@ -102,7 +102,7 @@ class APILifeBrain:
             self.last_audit.append({'request_user_sha256':hashlib.sha256(user.encode()).hexdigest(),
                 'life_context_sha256':hashlib.sha256(json.dumps(context_wire,sort_keys=True,ensure_ascii=False).encode()).hexdigest(),
                 'included_decision_rejections':included[:32]})
-            response = await self.api.generate(self.model, BRAIN_SYSTEM + '\nConfigured role:\n' + self.persona,
+            response = await self.api.generate(self.model, getattr(self,'system_prompt',BRAIN_SYSTEM) + '\nConfigured role:\n' + self.persona,
                 user,
                 observation.png, temperature=.5)
             self.last_audit[-1].update(response_audit(response.content))

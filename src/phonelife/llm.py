@@ -161,22 +161,22 @@ class APIGuiPlanner:
                    "previous_executed_actions": previous[-15:]}
         if feedback:
             request['last_execution_feedback' if feedback.get('previous_action_executed') else 'regenerate_without_executing'] = feedback
-        system = GUI_SYSTEM
+        system = getattr(self,'system_prompt',GUI_SYSTEM)
         semantic_provider = getattr(self,'semantic_context_provider',None)
         if semantic_provider and (semantic_context := semantic_provider()):
             from .capabilities import SEMANTIC_PROTOCOL, semantic_action_schema
             request['semantic_context'] = semantic_context
             request['action_schema_version'] = '1.1+semantic/1'
-            request['action_schema']=semantic_action_schema()
-            system += '\n'+SEMANTIC_PROTOCOL
+            request['action_schema']=getattr(self,'schema_provider',semantic_action_schema)()
+            system += '\n'+getattr(self,'semantic_protocol',SEMANTIC_PROTOCOL)
         provider = getattr(self, 'life_context_provider', None)
         if provider and (capability_context := provider()):
             request['autonomous_contract'] = capability_context
-            system += ('\nAutonomous mode: only identified read-only Settings navigation is permitted. '
+            system += getattr(self,'autonomous_instruction', ('\nAutonomous mode: only identified read-only Settings navigation is permitted. '
                        'Do not tap toggles, editable values or unknown controls. Text entry is disabled. '
                        'For readonly_fact contracts the independent verifier collects the allowlisted facts; '
                        'you may finish achieved without GUI actions. For observe you may finish after observation. '
-                       'Use uncertain/cannot_proceed when capabilities are insufficient. Never substitute a weaker goal.')
+                       'Use uncertain/cannot_proceed when capabilities are insufficient. Never substitute a weaker goal.'))
         return await self.api.generate(self.model, system, json.dumps(request, ensure_ascii=False),
                                        observation.png, temperature=0.1)
 

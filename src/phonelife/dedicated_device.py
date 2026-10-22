@@ -31,9 +31,11 @@ SETTINGS='com.android.settings'
 
 def validate_config(config):
     from .longrun_state import SoakPolicy
+    expected=[] if config.get('app_scope')=='installed_launchable' else [SETTINGS]
     if (config.get('execution_mode')!=MODE or config.get('mode')!='api' or
-            config.get('allowed_apps')!=[SETTINGS] or config.get('serial')!='profile-bound'):
-        raise ValueError('DEDICATED_SETTINGS_SCOPE_REQUIRED')
+            config.get('allowed_apps')!=expected or config.get('serial')!='profile-bound' or
+            config.get('app_scope') not in {None,'installed_launchable'}):
+        raise ValueError('DEDICATED_SCOPE_REQUIRED')
     SoakPolicy(**config['policy'])
     if config.get('test_controller') not in {None,'settings_smoke'}:raise ValueError('INVALID_TEST_CONTROLLER')
     spec=config['physical_execution']
@@ -44,7 +46,8 @@ def validate_config(config):
 class DedicatedContract(PhysicalContract):
     def authorize(self):
         validate_config(self.config)
-        if not self.profile.read_only_authorized or self.manifest.get('apps')!=[{'package':SETTINGS}]:
+        apps=[] if self.config.get('app_scope')=='installed_launchable' else [{'package':SETTINGS}]
+        if not self.profile.read_only_authorized or self.manifest.get('apps')!=apps or self.manifest.get('app_scope')!=self.config.get('app_scope'):
             raise PermissionError('DEDICATED_PROFILE_OR_SCOPE_MISMATCH')
         # Consent is the explicit CLI start of this finite session, not a DPAPI
         # grant. Each dispatch still checks live control, leases and audit rows.
@@ -196,6 +199,8 @@ class DedicatedSemanticProvider:
 
 class DedicatedPhone(PhysicalPhone):
     execution_mode=MODE
+    def foreground_allowed(self,package):return package==SETTINGS
+    deny_sensitive_scene=True
     def __init__(self,contract,transport=None):
         super().__init__(contract,transport);self.capabilities=DedicatedRegistry();self.last_semantic=None
         self.post_observation=None;self.capture_dir=Path(contract.config['session_directory'])/'screens'
@@ -208,16 +213,17 @@ class DedicatedPhone(PhysicalPhone):
             ('input',('shell','dumpsys','input')))}
         windows=m['windows']+'\n'+m['displays'];s=parse_safety(m['power'],m['policy'],windows,m['input'])
         focuses=re.findall(r'mCurrentFocus=Window\{[^}\r\n]*?\s([\w.]+/[\w.$]+)',windows)
-        if not focuses or len(set(focuses))!=1 or focuses[0].split('/')[0]!=SETTINGS:raise PolicyDenied('SETTINGS_FOREGROUND_REQUIRED')
+        if not focuses or len(set(focuses))!=1 or not self.foreground_allowed(focuses[0].split('/')[0]):raise PolicyDenied('FOREGROUND_UNVERIFIED')
         if s['locked']is not False or s['interactive']is not True or s['orientation']is None:raise PolicyDenied('SCREEN_LOCK_OR_POWER_UNSAFE')
         # Reject explicitly visible foreign application/overlay windows, not
         # unknown system input handles. System bars are outside action body.
         for block in re.split(r'(?=\bWindow #\d+ Window\{)',m['windows']):
             if re.search(r'mViewVisibility=0x0\b',block) and 'mHasSurface=true' in block:
                 pkg=re.search(r'\bpackage=([\w.]+)',block)
-                if re.search(r'permissioncontroller|securitypermission|biometric|credential|\bty=(?:TYPE_)?(?:KEYGUARD|KEYGUARD_DIALOG|2004|2009)\b',block,re.I):
+                if self.deny_sensitive_scene and re.search(r'permissioncontroller|securitypermission|biometric|credential|\bty=(?:TYPE_)?(?:KEYGUARD|KEYGUARD_DIALOG|2004|2009)\b',block,re.I):
                     raise PolicyDenied('VISIBLE_SECURITY_OVERLAY')
         self._window_metadata=m
+        self._observed_package=focuses[0].split('/')[0]
         self._scene_rotation=s['orientation']
         return {'locked':False,'interactive':True,'orientation':s['orientation'],'foreground':focuses[0]}
     async def observe(self):
@@ -313,7 +319,7 @@ class DedicatedPhone(PhysicalPhone):
         for block in re.split(r'(?=\bWindow #\d+ Window\{)',self._window_metadata.get('windows','')):
             if not (re.search(r'mViewVisibility=0x0\b',block) and 'mHasSurface=true' in block):continue
             pkg=re.search(r'\bpackage=([\w.]+)',block)
-            foreign=pkg and pkg[1] not in {SETTINGS,'com.android.systemui'}
+            foreign=pkg and pkg[1] not in {getattr(self,'_observed_package',SETTINGS),'com.android.systemui'}
             overlay=bool(re.search(r'\bty=(?:TYPE_)?(?:APPLICATION_OVERLAY|SYSTEM_ALERT|2038|2003)\b',block))
             if not foreign and not overlay:continue
             rect=re.search(r'(?:mFrame|frame)=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]',block)
@@ -369,7 +375,7 @@ def _backup(source,destination):
     finally:src.close();dst.close()
 
 def create_session(directory,*,profile_path,life_db,source_db=None,source_device='emulator',life_subject=None,
-                   lease_path,seconds=3600,smoke=False,previous_hour=None):
+                   lease_path,seconds=3600,smoke=False,previous_hour=None,app_scope=None):
     """Called by the human start command, never a candidate/approval issuer.
 
     First use copies an explicit historical life DB once. Later sessions use the
@@ -390,7 +396,8 @@ def create_session(directory,*,profile_path,life_db,source_db=None,source_device
     if not smoke:cfg.require_api()
     if life_db.exists() and source_db is not None:raise ValueError('Canonical life exists; omit source-db, never recopy budgets')
     if not life_db.exists() and (source_db is None or not Path(source_db).is_file()):raise FileNotFoundError('First start requires an existing source-db')
-    if seconds==86400:verify_one_hour(previous_hour,life_db,profile.identity_sha256)
+    if app_scope not in {None,'installed_launchable'}:raise ValueError('UNKNOWN_APP_SCOPE')
+    if seconds==86400:verify_one_hour(previous_hour,life_db,profile.identity_sha256,app_scope=app_scope)
     # Setup holds the same writer/device locks as workers. It cannot race another
     # Agent's life migration or mutate a busy device coordinator's lease owner.
     leases=Store(lease_path);owner=str(uuid.uuid4());held=[];store=None;ledger=None
@@ -415,16 +422,18 @@ def create_session(directory,*,profile_path,life_db,source_db=None,source_device
         # Enable consent on a session-local copy, never edit the historical profile.
         session_profile=directory/'device-profile.private.json'
         session_profile.write_text(json.dumps(replace(profile,read_only_authorized=True).wire(),ensure_ascii=False),'utf8')
-        manifest=directory/'settings-scope.json'
-        manifest.write_text(json.dumps({'schema':'physical-app-capabilities/1','enabled':True,'apps':[{'package':SETTINGS}]}),'utf8')
+        manifest=directory/('app-scope.json' if app_scope else 'settings-scope.json')
+        manifest.write_text(json.dumps({'schema':'physical-app-capabilities/1','enabled':True,
+            'apps':[] if app_scope else [{'package':SETTINGS}],**({'app_scope':app_scope} if app_scope else {})}),'utf8')
         config={'version':'0.2.3','mode':'api','execution_mode':MODE,
             'source_kind':'live_device_manual_test' if smoke else 'live_api_natural_occurrence',
             'serial':'profile-bound','device':'physical:'+profile.identity_sha256,'session_directory':str(directory),
-            'lease_path':str(lease_path),'agent_db':str(life_db),'allowed_apps':[SETTINGS],
+            'lease_path':str(lease_path),'agent_db':str(life_db),'allowed_apps':[] if app_scope else [SETTINGS],
             'private_evidence':False,'private_acl_restricted':True,'policy':asdict(SoakPolicy()),
             'api_base':cfg.api_base,'gui_api_base':cfg.gui_api_base,'brain_model':cfg.brain_model,'gui_model':cfg.gui_model,
             'persona_path':str((cfg.persona_path or Path('persona.life.example.md')).resolve()),
             'approved_formal_preflight_required':False,'test_controller':'settings_smoke' if smoke else None}
+        if app_scope:config['app_scope']=app_scope
         ledger=SessionLedger(directory/'soak-control.sqlite3');value=ledger.create(config,seconds)
         # Until binding is complete, no independently invoked worker can run.
         value.update(state='failed',reason='DEDICATED_SETUP_INCOMPLETE');ledger.save(value)
@@ -439,7 +448,7 @@ def create_session(directory,*,profile_path,life_db,source_db=None,source_device
         unknown=store.conn.execute('SELECT a.payload FROM action_attempts a').fetchall()
         if any(json.loads(r[0]).get('execution_status') in {'dispatching','outcome_unknown','uncertain_after_transport_error'} for r in unknown) or store.conn.execute("SELECT 1 FROM task_runs WHERE status='needs_review' LIMIT 1").fetchone():
             raise PermissionError('UNKNOWN_DISPATCH_NEEDS_REVIEW')
-        if not smoke and not successful_smoke(store,config['device'],profile.identity_sha256):
+        if not smoke and not app_scope and not successful_smoke(store,config['device'],profile.identity_sha256):
             raise ValueError('Run the manual Settings smoke once before starting autonomous GUI work')
         from .life_storage import control
         control(store,config['device'],'running','Explicit human start of a new finite dedicated session; prior session stops remain intact')
@@ -466,13 +475,14 @@ def successful_smoke(store,device,identity):
         if run and tuple(run)==('succeeded','manual_targeted') and len(executed)==1:return True
     return False
 
-def verify_one_hour(directory,life_db,identity):
+def verify_one_hour(directory,life_db,identity,*,app_scope=None):
     if directory is None:raise ValueError('24h requires --after-one-hour pointing to the completed 1h session')
     from .longrun_state import SessionLedger
     status=SessionLedger.read_status(Path(directory)/'soak-control.sqlite3')
     cfg=status.get('config',{})
     if (status.get('state')!='completed_duration' or status.get('duration_seconds')!=3600 or
             cfg.get('execution_mode')!=MODE or cfg.get('agent_db')!=str(life_db) or cfg.get('device')!='physical:'+identity or
+            cfg.get('app_scope')!=app_scope or
             status.get('requires_manual_review') or status.get('active_pid')):
         raise ValueError('A safely completed same-device 1h session is required; 24h never auto-continues')
 
@@ -531,7 +541,8 @@ def main(argv=None):
         if not a.profile:p.error('--profile is required to start the bound device')
         create_session(a.session,profile_path=a.profile,life_db=a.life_db,source_db=a.source_db,
             source_device=a.source_device,life_subject=a.life_subject,lease_path=a.lease_db,
-            seconds=180 if a.command=='smoke' else a.hours*3600,smoke=a.command=='smoke',previous_hour=a.after_one_hour)
+            seconds=180 if a.command=='smoke' else a.hours*3600,smoke=a.command=='smoke',previous_hour=a.after_one_hour,
+            app_scope=None if a.command=='smoke' else 'installed_launchable')
         if a.command=='smoke':result=asyncio.run(run_manual_smoke(a.session))
         else:
             controller=LongRunSoakController(a.session)

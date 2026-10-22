@@ -15,8 +15,7 @@ class GoalVerifierRegistry:
     def _usable(self,semantic):
         if trusted(semantic):return True
         if getattr(self.phone,'execution_mode',None)=='dedicated_device_test':
-            from .dedicated_device import DedicatedRegistry
-            return DedicatedRegistry().evidence_for_action(semantic,None)
+            return self.phone.capabilities.evidence_for_action(semantic,None)
         return False
 
     def _node_observed(self,c,s):
@@ -49,7 +48,7 @@ class GoalVerifierRegistry:
                         raise ValueError('Verification observation mismatch')
                     if require_consistency and result.verdict == 'verified':
                         from .goal_contracts import consistent
-                        aligned, reason = consistent(candidate.description,spec)
+                        aligned, reason = getattr(registry.phone,'goal_consistency',consistent)(candidate.description,spec)
                         if goal != candidate.description:
                             aligned, reason = False,'Execution goal differs from bound candidate'
                         if not aligned:

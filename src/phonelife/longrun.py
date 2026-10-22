@@ -431,9 +431,15 @@ async def run_worker(directory,parent_pid):
         if cfg.get('execution_mode')=='dedicated_device_test':
             from .dedicated_device import DedicatedPhone,DedicatedSemanticProvider,DedicatedActionPolicy
             phone=DedicatedPhone(physical_contract);phone.preheld_lease_owner=worker_owner;provider=DedicatedSemanticProvider()
+            if cfg.get('app_scope')=='installed_launchable':
+                from .app_exploration import AllAppPhone,AllAppSemanticProvider,AllAppBrain,AllAppGui,AllAppActionPolicy
+                phone=AllAppPhone(physical_contract);phone.preheld_lease_owner=worker_owner;provider=AllAppSemanticProvider()
+                brain=AllAppBrain(api,cfg['brain_model'],Path(cfg['persona_path']).read_text(encoding='utf8'))
+                gui=AllAppGui(gui_api,cfg['gui_model'],phone.catalog)
         controller=AutonomousLife(store,cfg['device'],brain,limits,'autonomous' if cfg['mode']=='api' else 'mock_test')
         action_policy=(DedicatedActionPolicy(physical_contract) if cfg.get('execution_mode')=='dedicated_device_test' else
             PhysicalActionPolicy(physical_contract) if physical_contract else ActionPolicy('emulator' if cfg['mode']=='api' else 'mock',frozenset(cfg['allowed_apps'])))
+        if cfg.get('app_scope')=='installed_launchable':action_policy=AllAppActionPolicy(physical_contract,phone.catalog)
         life=PhoneLife(store,cfg['device'],phone,MockPlanner(),gui,action_policy,
             step_limit=policy.max_actions,session_timeout=policy.task_timeout_seconds,autonomy=controller,run_kind=controller.kind,
             semantic_provider=provider,evidence_dir=directory/'screens' if cfg['private_evidence'] and cfg['mode']=='api' else None,lease_store=lease_adapter)
