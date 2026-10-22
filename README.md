@@ -1,4 +1,23 @@
-# Phase 1.2.3-B：实体机执行核心离线集成 · v0.2.3
+# Proj.DigitalLife v0.2.3 — Find X6 专用设备测试
+
+新增 `dedicated_device_test`：用户手动启动有限会话后，连续截图/XML 和 Settings 低风险 tap/swipe/back 不需要逐次审批、动作 DPAPI 批准、自定义 JAR 或冻结批准指纹。设备白名单、独占租约、紧急停止、预算、审计、未知分发停止及高风险禁止均保留。严格模式保持独立。
+
+先手动解锁并打开 Settings 首页，再执行真实导航测试（无 API）：
+
+```powershell
+.\data\start-dedicated-device.ps1 -Command Smoke -Session data\find-x6-smoke-01
+```
+
+通过后手动启动一小时：
+
+```powershell
+.\data\start-dedicated-device.ps1 -Command Start -Hours 1 -Session data\find-x6-life-1h-01
+```
+
+停止：` .\data\start-dedicated-device.ps1 -Command Stop -Session data\find-x6-life-1h-01 `。
+完整使用、迁移和删减范围见[专用测试说明](docs/dedicated-device-test.md)。本次代码开发未远程启动设备；下面保留的旧阶段限制只描述其历史交付，专用模式以本节为准。
+
+# 历史：Phase 1.2.3-B：实体机执行核心离线集成 · v0.2.3
 
 本轮完成LifeSubject与执行设备分离的保留式迁移、默认拒绝的物理语义执行器、Status/Resume/Supervisor/Worker共同准入，以及绝对单调deadline修复。见[执行架构](docs/phase123b-physical-core/PHYSICAL_EXECUTION_ARCHITECTURE.md)、[迁移](docs/phase123b-physical-core/LIFE_SUBJECT_MIGRATION.md)和[限制](docs/phase123b-physical-core/UNRESOLVED_RISKS.md)。真实GUI、DeepSeek自主调用、1小时和24小时均未执行，所有实体机执行能力保持关闭，等待源码及离线证据独立审查。原生产生活库、DPAPI和旧候选不改，不复用旧批准指纹、不自动推送。
 

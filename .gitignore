@@ -12,6 +12,7 @@ docs/test-evidence/
 !/data/start-api.ps1
 !/data/start-life.ps1
 !/data/start-soak.ps1
+!/data/start-dedicated-device.ps1
 !/data/start-emulator.ps1
 !/data/phase122/
 /data/phase122/*

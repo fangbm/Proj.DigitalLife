@@ -165,7 +165,8 @@ def safety_admission(value,health,*,control_state,persisted_stop,barrier_present
     emergency=value.get('operator')=='emergency_stopped' or value.get('state')=='emergency_stopped' or health.get('operator')=='stopped'
     terminal=value.get('state')in {'failed','emergency_stopped','completed_duration'}
     allowed=readable and not (review or emergency or terminal or config_error)
-    formal=value.get('config',{}).get('source_kind')=='live_api_natural_occurrence' and value.get('started_monotonic')is None
+    formal=(value.get('config',{}).get('source_kind')=='live_api_natural_occurrence' and
+        value.get('config',{}).get('execution_mode')!='dedicated_device_test' and value.get('started_monotonic')is None)
     reason=('OPERATOR_STOP' if emergency else 'UNKNOWN_DISPATCH_NEEDS_REVIEW' if review else
         'SAFETY_EVIDENCE_UNAVAILABLE' if not readable else config_error if config_error else 'SESSION_TERMINATED' if terminal else 'ALLOWED')
     launch=allowed

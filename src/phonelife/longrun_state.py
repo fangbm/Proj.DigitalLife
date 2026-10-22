@@ -213,8 +213,12 @@ class SessionLedger:
             verdict['admission_evidence']['control_sqlite']='readable_persisted_barrier' if sql_stop else 'readable_no_persisted_barrier'
             result={**value,**verdict,'session_terminated':value['state']in TERMINAL}
             if cfg.get('physical_execution'):
-                from .physical_execution import physical_session_admission
-                result=physical_session_admission(value,result)
+                if cfg.get('execution_mode')=='dedicated_device_test':
+                    from .dedicated_device import dedicated_admission
+                    result=dedicated_admission(value,result)
+                else:
+                    from .physical_execution import physical_session_admission
+                    result=physical_session_admission(value,result)
             return result
         except (sqlite3.Error,OSError,ValueError,KeyError,TypeError) as error:return self._unavailable_status(error)
         finally:
@@ -236,7 +240,7 @@ class SessionLedger:
         now=self.clock.monotonic();wall=self.clock.wall()
         fingerprint=hashlib.sha256(canonical(config).encode()).hexdigest()
         value={'session_id':str(uuid.uuid4()),'config':config,'fingerprint':fingerprint,
-            'state':'awaiting_approval' if config['source_kind']=='live_api_natural_occurrence' else 'prepared','operator':'running','reason':'PREPARED','boot_id':self.clock.boot_id(),
+            'state':'awaiting_approval' if config['source_kind']=='live_api_natural_occurrence' and config.get('execution_mode')!='dedicated_device_test' else 'prepared','operator':'running','reason':'PREPARED','boot_id':self.clock.boot_id(),
             'started_monotonic':None,'started_wall':None,'started_utc':None,'duration_seconds':seconds,
             'last_monotonic':now,'last_wall':wall,'elapsed_seconds':0.,'phase_seconds':{},
             'device_unavailable_seconds':0.,'process_unavailable_seconds':0.,
@@ -249,7 +253,7 @@ class SessionLedger:
             value=self.load()
             if value['state'] in TERMINAL or value['operator']=='emergency_stopped':raise ValueError('Terminal session cannot resume automatically')
             if value['started_monotonic']is None and value['boot_id']!=self.clock.boot_id():raise ValueError('Prepared session boot identity changed; repeat preflight')
-            if value['config']['source_kind']=='live_api_natural_occurrence' and approval!=value['fingerprint']:
+            if value['config']['source_kind']=='live_api_natural_occurrence' and value['config'].get('execution_mode')!='dedicated_device_test' and approval!=value['fingerprint']:
                 raise PermissionError('Formal 24h API soak requires explicit approval of this fingerprint')
             now=self.clock.monotonic();initial=value['started_monotonic'] is None
             if initial:

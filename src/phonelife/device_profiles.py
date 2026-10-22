@@ -51,6 +51,10 @@ FIXED_COMMANDS=frozenset(GETPROPS+(
     ('shell','pm','list','packages','--show-versioncode'),('exec-out','screencap','-p'),
     ('exec-out','uiautomator','dump','/dev/tty')))
 
+# Dedicated sessions use the already verified stdout target, without changing
+# the strict read-only/physical adapters' existing command selection.
+FIXED_COMMANDS=FIXED_COMMANDS | frozenset({('exec-out','uiautomator','dump','/proc/self/fd/1')})
+
 
 @dataclass(frozen=True)
 class EmulatorDeviceProfile:

@@ -67,6 +67,10 @@ def prepare_session(directory,*,mode='mock',seconds=86400,private_evidence=False
     finally:ledger.close()
 
 def verify_freeze(config):
+    if config.get('execution_mode')=='dedicated_device_test':
+        from .dedicated_device import validate_config
+        validate_config(config)
+        return
     if config['runtime_sha256']!=runtime_manifest():raise ValueError('RUNTIME_FREEZE_MISMATCH')
     if sha(config['persona_path'])!=config['persona_sha256']:raise ValueError('PERSONA_FREEZE_MISMATCH')
     if sha(config['launcher_path'])!=config['launcher_sha256']:raise ValueError('LAUNCHER_FREEZE_MISMATCH')
@@ -88,6 +92,8 @@ def export_cycles(directory,ledger):
         exported={r[0]:json.loads(r[1]) for r in ledger.conn.execute('SELECT task_run_id,payload FROM exported_cycles')}
         for row in store.conn.execute('SELECT task_run_id,status FROM task_runs ORDER BY rowid'):
             run=row[0]
+            if cfg.get('execution_mode')=='dedicated_device_test' and not store.conn.execute(
+                    'SELECT 1 FROM life_run_bindings WHERE task_run_id=? AND device_session_id=?',(run,ledger.load()['session_id'])).fetchone():continue
             if run in exported and (exported[run]['status']!='running' or row[1]=='running'):continue
             task=store.task(run)
             cy=store.conn.execute('SELECT context,decision,reflection,transition,summary FROM life_cycles WHERE task_run_id=?',(run,)).fetchone()
@@ -394,7 +400,10 @@ async def run_worker(directory,parent_pid):
             if not admission['worker_launch_allowed']:
                 raise PermissionError('PHYSICAL_WORKER_REFUSED: '+admission['admission_reason_code'])
             if state.get('active_pid')!=os.getpid():raise PermissionError('PHYSICAL_WORKER_NOT_OWNED_BY_SUPERVISOR')
-            physical_contract=PhysicalContract(cfg,state).authorize()
+            if cfg.get('execution_mode')=='dedicated_device_test':
+                from .dedicated_device import DedicatedContract
+                physical_contract=DedicatedContract(cfg,state).authorize()
+            else:physical_contract=PhysicalContract(cfg,state).authorize()
             attach_subject(store,physical_contract.binding)
             for key in ('subject:'+physical_contract.binding.life_subject_id,'real'):
                 if not leases.acquire(key,worker_owner,120):raise PermissionError('PHYSICAL_WORKER_LEASE_BUSY')
@@ -403,7 +412,11 @@ async def run_worker(directory,parent_pid):
         policy=SoakPolicy(**cfg['policy'])
         limits=LifeLimits(max_actions=policy.max_actions,hourly_requests=policy.hourly_requests,daily_requests=policy.daily_requests,
             max_goal_requests=policy.max_goal_requests,task_timeout_seconds=policy.task_timeout_seconds)
-        if cfg['mode']=='api':
+        smoke=cfg.get('execution_mode')=='dedicated_device_test' and cfg.get('test_controller')=='settings_smoke'
+        if smoke:
+            from .dedicated_device import SettingsSmokeGui
+            brain=MockLifeBrain();gui=SettingsSmokeGui();phone=None;provider=None
+        elif cfg['mode']=='api':
             key=os.environ.get('PHONE_LIFE_API_KEY','');gui_key=os.environ.get('PHONE_LIFE_GUI_API_KEY',key)
             if not key or not gui_key:raise ValueError('API key absent')
             timeout=min(45,policy.task_timeout_seconds,max(.5,ledger.remaining()))
@@ -415,12 +428,19 @@ async def run_worker(directory,parent_pid):
                 phone=PhysicalPhone(physical_contract);phone.preheld_lease_owner=worker_owner;provider=ColorOSSemanticProvider()
             else:phone=AdbPhone(cfg['serial'],'emulator');provider=BoundedSemanticProvider()
         else:brain=MockLifeBrain();gui=MockLifeGui();phone=MockPhone();provider=None
+        if cfg.get('execution_mode')=='dedicated_device_test':
+            from .dedicated_device import DedicatedPhone,DedicatedSemanticProvider,DedicatedActionPolicy
+            phone=DedicatedPhone(physical_contract);phone.preheld_lease_owner=worker_owner;provider=DedicatedSemanticProvider()
         controller=AutonomousLife(store,cfg['device'],brain,limits,'autonomous' if cfg['mode']=='api' else 'mock_test')
-        action_policy=PhysicalActionPolicy(physical_contract) if physical_contract else ActionPolicy('emulator' if cfg['mode']=='api' else 'mock',frozenset(cfg['allowed_apps']))
+        action_policy=(DedicatedActionPolicy(physical_contract) if cfg.get('execution_mode')=='dedicated_device_test' else
+            PhysicalActionPolicy(physical_contract) if physical_contract else ActionPolicy('emulator' if cfg['mode']=='api' else 'mock',frozenset(cfg['allowed_apps'])))
         life=PhoneLife(store,cfg['device'],phone,MockPlanner(),gui,action_policy,
             step_limit=policy.max_actions,session_timeout=policy.task_timeout_seconds,autonomy=controller,run_kind=controller.kind,
             semantic_provider=provider,evidence_dir=directory/'screens' if cfg['private_evidence'] and cfg['mode']=='api' else None,lease_store=lease_adapter)
         async def execute():
+            if smoke:
+                from .dedicated_device import run_settings_smoke
+                return await run_settings_smoke(life,phone,store,cfg)
             await controller.review_startup(life)
             if store.conn.execute("SELECT 1 FROM task_runs WHERE status='needs_review' LIMIT 1").fetchone():
                 return {'status':'needs_review','old_actions_replayed':0}

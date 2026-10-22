@@ -12,6 +12,18 @@ from .verification import AboutPhoneVerifier, IndependentVisionVerifier
 
 
 class GoalVerifierRegistry:
+    def _usable(self,semantic):
+        if trusted(semantic):return True
+        if getattr(self.phone,'execution_mode',None)=='dedicated_device_test':
+            from .dedicated_device import DedicatedRegistry
+            return DedicatedRegistry().evidence_for_action(semantic,None)
+        return False
+
+    def _node_observed(self,c,s):
+        if c.visible is True:return True
+        return (getattr(self.phone,'execution_mode',None)=='dedicated_device_test' and c.visible is None
+            and 0<=c.bounds[0]<c.bounds[2]<=s.screen_width and 0<=c.bounds[1]<c.bounds[3]<=s.screen_height)
+
     def __init__(self, phone, api=None, model='', semantic_provider=None, capability_use=None):
         self.phone, self.api, self.model = phone, api, model
         self.semantic_provider = semantic_provider
@@ -57,7 +69,7 @@ class GoalVerifierRegistry:
     async def _foreground(self, spec, obs, history):
         if self.semantic_provider:
             semantic=await self.semantic_provider.collect(self.phone,obs)
-            if not trusted(semantic):
+            if not self._usable(semantic):
                 return self.result(obs,'uncertain',[],'Fresh foreground/screenshot evidence unavailable','semantic_foreground')
             package=semantic.foreground_package
             ok=package==spec['package']
@@ -73,9 +85,9 @@ class GoalVerifierRegistry:
     async def _ui(self, spec, obs, history, title=False):
         if self.semantic_provider:
             semantic = await self.semantic_provider.collect(self.phone,obs)
-            if not trusted(semantic) or semantic.foreground_package != spec['package']:
+            if not self._usable(semantic) or semantic.foreground_package != spec['package']:
                 return self.result(obs,'uncertain',[],'Independent semantic evidence unavailable','semantic_ui')
-            nodes=[c for c in semantic.controls if c.package==spec['package'] and c.visible is True]
+            nodes=[c for c in semantic.controls if c.package==spec['package'] and self._node_observed(c,semantic)]
             if title:
                 # Accessibility title is not always visible while the collapsing header is expanded.
                 # Require an identified header with exact text/description, never an ordinary list row.
@@ -172,8 +184,8 @@ class GoalVerifierRegistry:
             return self.result(obs,'uncertain',[],'No bound scroll baseline and confirmed swipe','semantic_scroll')
         final=await self.semantic_provider.collect(self.phone,obs); before=self.semantic_baseline
         def labels(s):
-            return {(c.resource_id,c.text,c.content_description) for c in s.controls if c.visible is True and (c.text or c.content_description)}
-        ok=(trusted(final) and trusted(before) and final.foreground_package==before.foreground_package
+            return {(c.resource_id,c.text,c.content_description) for c in s.controls if self._node_observed(c,s) and (c.text or c.content_description)}
+        ok=(self._usable(final) and self._usable(before) and final.foreground_package==before.foreground_package
             and final.content_sha256!=before.content_sha256 and bool(labels(final)-labels(before)))
         return self.result(obs,'exploration_observed' if ok else 'uncertain',
             ['new_content_tree_sha256='+final.tree_sha256] if ok else [],
