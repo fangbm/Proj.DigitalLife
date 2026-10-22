@@ -99,3 +99,46 @@ def touch_point_assessment(handles, point, settings_id, *, compositor_verified=F
     if not compositor_verified:unresolved.append('DISPLAY_OCCLUSION_UNVERIFIED')
     return {'classification':'INSUFFICIENT_TARGET_EVIDENCE' if unresolved else 'TARGET_INPUT_SAFE',
         'receiver':receiver,'observers':observers,'reasons':sorted(set(unresolved)),'execution_allowed':False}
+
+
+def validate_diagnostic_result(raw, *, nonce, host_started_ns, host_received_ns, now_ns):
+    """Stage-v2 diagnostic envelope; success still passes the unchanged v1 guard.
+
+    Failure reports are diagnostics only: never observations or freshness resets.
+    No device, model, executor, storage or permission issuance is reachable here.
+    """
+    def fail():raise ValueError('OBSERVER_STAGE_PACKET_REJECTED')
+    def unique(pairs):
+        result={}
+        for k,v in pairs:
+            if k in result:fail()
+            result[k]=v
+        return result
+    if not isinstance(raw,bytes) or len(raw)>32768:fail()
+    p=json.loads(raw,object_pairs_hook=unique,parse_constant=lambda _:fail())
+    if not isinstance(p,dict) or p.get('schema')!='find-x6-observer-stage/2':fail()
+    if type(p.get('duration_ns'))is not int or p['duration_ns']<0:fail()
+    c=p.get('cleanup')
+    types={'NONE','REJECTED','SECURITY_EXCEPTION','TIMEOUT_EXCEPTION','INTERRUPTED_EXCEPTION',
+           'ILLEGAL_STATE_EXCEPTION','REFLECTION_EXCEPTION','LINKAGE_ERROR','OTHER'}
+    stages={'PROCESS','ENVIRONMENT','AUTOMATION','CONNECT','CONFIGURE','WINDOW','ROOT','TARGET',
+            'ATTRIBUTES','RELEASE','CLEANUP','SERIALIZE'}
+    codes={'INIT_FAILED','CONNECT_FAILED','CONFIGURE_FAILED','WINDOW_UNAVAILABLE','WINDOW_AMBIGUOUS',
+           'ROOT_UNAVAILABLE','TARGET_NOT_FOUND','TARGET_AMBIGUOUS','TARGET_REJECTED','TARGET_LOOKUP_FAILED',
+           'ATTRIBUTE_READ_FAILED','ATTRIBUTE_UNAVAILABLE','DISCONNECT_FAILED','OBSERVATION_TIMEOUT',
+           'PERMISSION_DENIED','INTERNAL_UNKNOWN','INVALID_NONCE'}
+    if (not isinstance(c,dict) or set(c)!={'status','exception_type'} or
+            c['status'] not in ('OK','FAILED','UNKNOWN','NOT_STARTED') or c['exception_type'] not in types):fail()
+    if p.get('status')=='SUCCESS':
+        if (set(p)!={'schema','status','stage','duration_ns','cleanup','packet'} or p['stage']!='CLEANUP'
+                or c!={'status':'OK','exception_type':'NONE'}):fail()
+        result=validate_packet(json.dumps(p['packet'],ensure_ascii=False).encode(),nonce=nonce,
+            host_started_ns=host_started_ns,host_received_ns=host_received_ns,now_ns=now_ns)
+        span=p['packet']['frames'][1]['sample_finished_ns']-p['packet']['frames'][0]['sample_started_ns']
+        if not span<=p['duration_ns']<=host_received_ns-host_started_ns:fail()
+        return result|{'diagnostic_status':'SUCCESS'}
+    if (p.get('status') not in ('FAILED','PARTIAL') or
+            set(p)!={'schema','status','code','stage','last_completed_stage','exception_type','duration_ns','cleanup'} or
+            p['code'] not in codes or p['stage'] not in stages or p['last_completed_stage'] not in stages or
+            p['exception_type'] not in types):fail()
+    return {'diagnostic_status':p['status'],'failure':p,'native_target_sample_consistent':False,'execution_allowed':False}

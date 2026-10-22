@@ -5,6 +5,12 @@ and never deployed by the build. Build with SDK 36/JDK 17 using `build.ps1
 -OutputDirectory <new artifact directory>`; it does not invoke ADB.
 
 One nonce, one compiled Settings selector, two native samples, then disconnect.
+The staged-v2 JAR uses a fixed diagnostic envelope and reports cleanup separately.
+Its Android-free lifecycle is tested on a host JVM with an injected backend.
+Success wraps the unchanged v1 target packet; `validate_diagnostic_result` still
+applies the existing v1 guard. Failure/partial reports contain no target fields
+or observation timestamps. Unknown native flags are never filled from defaults.
+Build output is `find-x6-target-observer-staged-v2.jar`; preserve the old JAR.
 The historical child indices bind selection, not future tap coordinates.
 Any path/title/owner mismatch fails without search or retry. Output contains
 native flags/bounds/window metadata only, no complete tree or UI strings.
