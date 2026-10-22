@@ -1,0 +1,12 @@
+{
+  "origin": "real_device_metadata_deidentified",
+  "category": "live_device_metadata_only",
+  "collection_round": "Phase 1.2.3-B2",
+  "source_file_sha256": [
+    "3776bd41082a3f813b1bcb747796e9aa8c4bdde751f85d4cdaaa97eb086650bf",
+    "00bac2cebfb7b71e1f0b018807489b2905a357de4e47b67c855b96b9b44dd75f"
+  ],
+  "transformation": "Field-whitelist semantic derivative, reconstructed headers/format. Window/Surface IDs, UID/PID, numeric input handle IDs, channel tokens and foreign package/title replaced consistently across samples. Complete indexed WMS/Input lists retained, not full native dumps. Default alpha=1 follows LayoutParams; raw field absence is not described as a verbatim emitted value. No UI nodes/images, full serial, build fingerprint or package inventory. Two Dispatcher sections retained; not mislabeled synthetic.",
+  "not_raw_device_dump": true,
+  "original_api35_ui_tree_fixtures_not_in_this_derivative": true
+}

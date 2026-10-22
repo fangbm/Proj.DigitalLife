@@ -1,0 +1,17 @@
+{
+  "category": "static_code_review",
+  "facts": {
+    "device_lease_ownership": "cfg.lease_path / lease; physical LeaseNamespace real; autonomous-api-writer and subject lease also apply",
+    "current_session_state": "selected soak-control.sqlite3 / session row id=1",
+    "manual_review": "same control SQLite safety_stop plus its configured .review-stop.json; either or invalid marker blocks",
+    "historical_unknown_actions": "cfg.agent_db TaskRun/ActionAttempt; source-copy history retains IDs; legacy coordinator audit additionally reviewed for provenance in B2",
+    "life_subject_binding": "cfg.physical_execution.life_binding with agent life_device_bindings/life_device_sessions/life_subject_migrations",
+    "operator_life_control": "cfg.agent_db life_controls, optional life schema 1 initialized explicitly",
+    "api_budget": "cfg.agent_db life_requests; no reset or migration here",
+    "configuration_identity": "config fingerprint + runtime/persona/launcher/profile/manifest freeze",
+    "current_metadata_identity": "existing private Find X6 profile exact properties + explicit USB serial before/after"
+  },
+  "shared_db_missing_life_controls": "normal for coordinator role, never safe as agent role",
+  "session_db_missing_life_controls": "normal; table authority is agent DB",
+  "current_physical_sources_bound": false
+}

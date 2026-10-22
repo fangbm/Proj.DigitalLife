@@ -205,7 +205,7 @@ def parse_input(text):
         flags = _one(r'inputConfig=([A-Z_ |]+),', line, 'INVALID_INPUT_CONFIG')
         known = {'NO_INPUT_CHANNEL', 'NOT_VISIBLE', 'NOT_FOCUSABLE', 'NOT_TOUCHABLE',
                  'DUPLICATE_TOUCH_TO_WALLPAPER', 'TRUSTED_OVERLAY', 'SPY',
-                 'WATCH_OUTSIDE_TOUCH', 'SLIPPERY', 'WALLPAPER', 'PREVENT_SPLITTING'}
+                 'WATCH_OUTSIDE_TOUCH', 'SLIPPERY', 'WALLPAPER', 'IS_WALLPAPER', 'PREVENT_SPLITTING'}
         if not set(flags.split(' | ')) <= known:
             raise NativeMetadataError('UNKNOWN_INPUT_CONFIG')
         rows.append({'index': int(index), 'id': re.match(r'([0-9a-f]+) ', line)[1] if re.match(r'([0-9a-f]+) ', line) else None,
@@ -379,3 +379,188 @@ def assess_xml(xml, *, width, height, rotation, observed_ns, now_ns, before_scen
     return {'compatibility': 'INSUFFICIENT_EVIDENCE' if errors else 'PARTIAL',
             'reason_codes': sorted(set(errors)), 'trusted_for_physical_input': False,
             'real_coloros_png_xml': 'NOT_OBSERVED'}
+
+
+def _canonical_hash(value):
+    import json
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def _window_graph_rows(text):
+    rows = parse_windows(text)
+    heads = list(re.finditer(r'^  Window #\d+ Window\{[^\n]+', text, re.M))
+    for i, row in enumerate(rows):
+        block = text[heads[i].end():heads[i+1].start() if i+1 < len(heads) else len(text)]
+        block = re.split(r'^ {0,2}\S', block, maxsplit=1, flags=re.M)[0]
+        attrs = _attrs(block)
+        row['raw_type'] = _one(r'\bty=([^\s}]+)', attrs, 'MISSING_TYPE')
+        row['pid'] = int(_one(r'\bmSession=Session\{\S+\s+(\d+):', block, 'WINDOW_PID_UNVERIFIED'))
+        flags = re.findall(r'\bfl=([A-Z_ ]+)', attrs)
+        if len(flags) != 1: raise NativeMetadataError('WINDOW_FLAGS_UNVERIFIED')
+        row['flags'] = flags[0].strip().split()
+        alpha = re.findall(r'(?<!\w)alpha=([0-9]+(?:\.[0-9]+)?)(?=$|\s)', attrs)
+        if len(alpha) != len(re.findall(r'(?<!\w)alpha=',attrs)) or len(alpha) > 1: raise NativeMetadataError('INVALID_OR_DUPLICATE_WINDOW_ALPHA')
+        row['alpha'] = float(alpha[0]) if alpha else 1.0  # LayoutParams default.
+        if not 0 <= row['alpha'] <= 1: raise NativeMetadataError('INVALID_WINDOW_ALPHA')
+        surfaces = re.findall(r'^\s+mSurface=Surface\(name=[^\n]+\)/@0x([0-9a-f]+)\s*$', block, re.M)
+        if len(surfaces) != (1 if row['surface'] else 0): raise NativeMetadataError('SURFACE_IDENTITY_UNVERIFIED')
+        row['surface_id'] = surfaces[0] if surfaces else None
+    ids = [r['surface_id'] for r in rows if r['surface_id'] is not None]
+    if len(set(ids)) != len(ids): raise NativeMetadataError('SHARED_OR_DUPLICATE_SURFACE')
+    return rows
+
+
+def _input_consensus(text):
+    """Compare every complete ColorOS Dispatcher section; never select a winner.
+
+    AOSP InputConfig IS_WALLPAPER is a flag, not a WindowManager type alias.
+    WindowInfo token is NOT a unique window identity; name+owner association and
+    independent handles are required. Duplicate names/IDs are ambiguous.
+    """
+    sections = re.findall(r'Input Dispatcher State:[\s\S]*?mMaximumObscuringOpacityForTouch:[^\n]*', text)
+    if not 1 <= len(sections) <= 2 or len(sections) != text.count('Input Dispatcher State:'):
+        raise NativeMetadataError('INCOMPLETE_OR_EXCESS_DISPATCHER_SECTIONS')
+    projections = []
+    for section in sections:
+        focus, rows = parse_input(section)
+        lines = re.findall(r'^\s{6}\d+: name=([^\n]+)', section, re.M)
+        for row, line in zip(rows, lines):
+            row['handle_id'] = int(_one(r'(?<![\w.])id=(\d+)(?=,|$)', line, 'INPUT_HANDLE_ID_UNVERIFIED'))
+            row['pid'] = int(_one(r'\bownerPid=(\d+)', line, 'INPUT_PID_UNVERIFIED'))
+            row['token'] = _one(r'(?<![\w.])token=(0x[0-9a-f]+)(?=,|$)', line, 'INPUT_CHANNEL_UNVERIFIED')
+            row['region'] = _one(r'touchableRegion=(<empty>|\[-?\d+,-?\d+\]\[-?\d+,-?\d+\])(?=,|$)', line, 'INPUT_REGION_UNVERIFIED')
+            row['flags'] = sorted(row['flags'])
+        nonnull = [r['id'] for r in rows if r['id'] is not None]
+        if len(nonnull) != len(set(nonnull)): raise NativeMetadataError('AMBIGUOUS_INPUT_WINDOW_NAME')
+        if len({r['handle_id'] for r in rows}) != len(rows): raise NativeMetadataError('DUPLICATE_INPUT_HANDLE_ID')
+        projections.append({'focus': focus, 'rows': rows})
+    if any(p != projections[0] for p in projections):
+        raise NativeMetadataError('DISPATCHER_SECTION_CONFLICT')
+    return projections[0]['focus'], projections[0]['rows'], len(sections)
+
+
+def assess_window_graph(metadata):
+    """B2 snapshot-scoped observation assessment, never an execution permission.
+
+    B1 assess_native remains strict. Unknown types are NOT normalized or added to
+    its global type map. Only an individual dormant instance can be classified
+    using no Surface + no input handle + independent noninteraction flags.
+    A two-sample gate is additionally required; one graph never authorizes PNG.
+    """
+    result = {'schema': 'native-window-graph/2', 'classification': 'INSUFFICIENT_WINDOW_EVIDENCE',
+              'reason_codes': [], 'windows': [], 'unassociated_inputs': [],
+              'raw_capture_authorized': False, 'physical_input_allowed': False,
+              'surface_evidence': 'window_state_animator_report', 'surfaceflinger_independent_sample': 'NOT_OBSERVED'}
+    errors = result['reason_codes']
+    try:
+        if not isinstance(metadata, dict) or any(not isinstance(v, str) for v in metadata.values()):
+            raise NativeMetadataError('MALFORMED_METADATA_SOURCE')
+        result['source_sha256'] = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in metadata.items()}
+        power, policy, windows, displays, inp = (metadata[k] for k in ('power','policy','windows','displays','input'))
+        if any(header not in body for body, header in [(power,'POWER MANAGER (dumpsys power)'),(policy,'WINDOW MANAGER POLICY STATE (dumpsys window policy)'),(displays,'WINDOW MANAGER DISPLAY CONTENTS (dumpsys window displays)')]):
+            raise NativeMetadataError('UNTRUSTED_METADATA_HEADER')
+        state = lock_state(policy, displays)
+        if state['locked'] is not False or state['invalid'] or state['conflict'] or lock_state(policy,'')['locked'] is not False or lock_state('',displays)['locked'] is not False:
+            errors.append('KEYGUARD_UNVERIFIED_OR_LOCKED')
+        if interactive_state(power) is not True: errors.append('INTERACTIVE_UNVERIFIED')
+        rotations = re.findall(r'Viewport INTERNAL:[^\r\n]*\bdisplayId=0,[^\r\n]*\borientation=([0-3])\b',inp)
+        if not rotations or len(set(rotations)) != 1: raise NativeMetadataError('ORIENTATION_UNVERIFIED')
+        width, height = map(int,_one(r'\bcur=(\d+)x(\d+)',displays.split('WINDOW MANAGER DISPLAY CONTENTS (EXT)')[0],'DISPLAY_GEOMETRY_UNVERIFIED'))
+        if not (1 <= width <= 16384 and 1 <= height <= 16384): raise NativeMetadataError('INVALID_DISPLAY_GEOMETRY')
+        rows = _window_graph_rows(windows)
+        focus, inputs, count = _input_consensus(inp)
+        result['dispatcher_sections'] = count
+        result['dispatcher_consensus'] = True
+        def display_id(field):
+            return _one(field+r'=Window\{([0-9a-f]+) u\d+ [^}\n]+\}',displays,'DISPLAY_FOCUS_UNVERIFIED')
+        if focus != display_id('mCurrentFocus') or focus != display_id('mObscuringWindow'):
+            errors.append('FOCUS_SOURCE_CONFLICT')
+        if 'mCurrentFocus=' in windows and focus != _one(r'mCurrentFocus=Window\{([0-9a-f]+) u\d+ [^}\n]+\}',windows,'WINDOW_FOCUS_UNVERIFIED'):
+            errors.append('FOCUS_SOURCE_CONFLICT')
+        focused = [r for r in rows if r['id'] == focus]
+        if len(focused) != 1 or focused[0]['package'] != 'com.android.settings' or focused[0]['type'] not in {1,2}:
+            errors.append('SETTINGS_NOT_FOCUSED')
+        ids = {r['id'] for r in rows}
+        for row in rows:
+            handles = [h for h in inputs if h['id'] == row['id']]
+            handle = handles[0] if len(handles) == 1 else None
+            if len(handles) > 1 or (handle and any(handle[k] != row[k] for k in ('uid','pid','display'))):
+                errors.append('WINDOW_INPUT_OWNER_CONFLICT')
+            flags = set(handle['flags']) if handle else set()
+            no_channel = bool(handle and 'NO_INPUT_CHANNEL' in flags and handle['token'] == '0x0')
+            if handle and (('NO_INPUT_CHANNEL' in flags) != (handle['token'] == '0x0')): errors.append('INPUT_CHANNEL_CONFLICT')
+            absent = not any(row[k] for k in ('surface','shown','ready','on_screen','visible')) and row['view'] in {4,8}
+            inert_flags = {'NOT_TOUCHABLE','NOT_FOCUSABLE'} <= set(row['flags'])
+            hidden = bool(handle and not row['shown'] and not row['ready'] and not row['on_screen'] and not row['requested'] and row['last_hidden'] and 'NOT_VISIBLE' in flags and {'NOT_TOUCHABLE','NOT_FOCUSABLE'} <= flags and no_channel and handle['region'] == '<empty>')
+            actually_shown = all(row[k] for k in ('surface','shown','ready','on_screen','visible','requested')) and not row['last_hidden'] and row['view'] == 0
+            classification = 'UNVERIFIED'
+            if row['display'] != 0: errors.append('MULTI_DISPLAY_UNVERIFIED')
+            if row['id'] == focus:
+                classification = 'FOCUSED_SETTINGS' if row['package'] == 'com.android.settings' else 'UNAPPROVED_FOCUS'
+                if not actually_shown or row['obscured'] or row['frame'] != (0,0,width,height) or not handle or handle['frame'] != row['frame'] or handle['alpha'] != 1 or row['alpha'] != 1 or {'NOT_VISIBLE','NOT_TOUCHABLE','NOT_FOCUSABLE','NO_INPUT_CHANNEL'} & flags or handle['region'] == '<empty>' or {'NOT_FOCUSABLE','NOT_TOUCHABLE'} & set(row['flags']):
+                    errors.append('SETTINGS_DISPLAY_OR_INPUT_UNVERIFIED')
+            elif row['type'] is None:
+                # No permission follows from type number, package, array order
+                # or a previous sample. A present input channel always blocks.
+                anonymous_owner_channel = any(h['id'] not in ids and h['uid']==row['uid'] and h['pid']==row['pid'] and h['token']!='0x0' for h in inputs)
+                # Even without a NOT_TOUCHABLE attribute, a complete consensus
+                # can prove no current target: no Surface, nonvisible view, no
+                # exact WindowState-name handle, and no unattributed channel in
+                # this owner process. This is a snapshot fact, not a type grant.
+                no_target = 'NOT_FOCUSABLE' in row['flags'] and not anonymous_owner_channel
+                if absent and (inert_flags or no_target) and handle is None:
+                    classification = 'SNAPSHOT_DORMANT_UNKNOWN_TYPE'
+                else: errors.append('UNKNOWN_TYPE_INSTANCE_UNPROVEN')
+            elif (absent and handle is None) or hidden:
+                classification = 'NONDISPLAYED_NONINTERACTIVE'
+            elif row['type'] in {2000,2019} and row['package'] == 'com.android.systemui' and handle:
+                x1,y1,x2,y2 = row['frame']
+                edge = x1 == 0 and x2 == width and ((row['type'] == 2000 and y1 == 0 and 0 < y2 <= height//10) or (row['type'] == 2019 and y2 == height and height*9//10 <= y1 < height))
+                transparent = row['alpha'] == 0 and handle['alpha'] == 0 and 'NOT_VISIBLE' in flags and handle['region'] == '<empty>'
+                normal = row['alpha'] == 1 and handle['alpha'] == 1 and 'NOT_VISIBLE' not in flags
+                if actually_shown and edge and row['frame'] == handle['frame'] and 'NOT_FOCUSABLE' in flags and 'TRUSTED_OVERLAY' in flags and (normal or transparent):
+                    classification = 'ASSOCIATED_EDGE_SYSTEM_BAR'
+                else: errors.append('SYSTEM_BAR_EVIDENCE_CONFLICT')
+            else: errors.append('UNAPPROVED_OR_CONFLICTING_WINDOW')
+            overlap = max(row['frame'][0],0) < min(row['frame'][2],width) and max(row['frame'][1],0) < min(row['frame'][3],height)
+            result['windows'].append({'window_ref':'w'+str(row['index']), 'type':row['raw_type'],
+                'type_definition':'UNKNOWN' if row['type'] is None else TYPE_VERSION,
+                'owner_category':'settings' if row['package']=='com.android.settings' else 'systemui' if row['package']=='com.android.systemui' else 'other_application',
+                'classification':classification, 'focus':row['id']==focus, 'frame':row['frame'],
+                'surface_present':row['surface'], 'surface_identity_verified':row['surface_id'] is not None,
+                'surface_shown':row['shown'],'on_screen':row['on_screen'],'visible':row['visible'],'requested':row['requested'],
+                'touchable_attribute': 'NOT_TOUCHABLE' not in row['flags'],
+                'focusable_attribute': 'NOT_FOCUSABLE' not in row['flags'],
+                'input_handle_associated':handle is not None, 'input_channel':'absent' if handle is None or no_channel else 'present',
+                'input_touch_region':'absent' if handle is None else 'empty' if handle['region']=='<empty>' else 'nonempty',
+                'overlaps_settings_region':overlap, 'base_layer':row['base_layer'], 'compositor_z':'UNKNOWN', 'surface_parent':'UNKNOWN'})
+        for handle in inputs:
+            if handle['display'] != 0: errors.append('MULTI_DISPLAY_UNVERIFIED')
+            if handle['id'] not in ids:
+                flags=set(handle['flags']);frame=handle['frame']
+                inert = 'NO_INPUT_CHANNEL' in flags and handle['token']=='0x0' and {'NOT_TOUCHABLE','NOT_FOCUSABLE'} <= flags and (frame[0]==frame[2] or frame[1]==frame[3])
+                result['unassociated_inputs'].append({'input_ref':'i'+str(handle['index']),'classification':'EMPTY_NONVISUAL_NO_CHANNEL' if inert else 'UNPROVEN','channel_present':handle['token']!='0x0','region_empty':handle['region']=='<empty>','spy':'SPY'in flags})
+                if not inert: errors.append('UNATTRIBUTED_INPUT_OR_SURFACE_LAYER')
+        # Includes private object identities to detect substitution. Only the
+        # digest is public; offsets, raw names, UID/PID and tokens stay private.
+        result['safety_projection_sha256'] = _canonical_hash({'rows':rows,'input':inputs,'focus':focus,'rotation':rotations[0],'size':[width,height],'lock':state,'interactive':interactive_state(power)})
+        result['settings_focus_verified'] = not any(x in errors for x in ('SETTINGS_NOT_FOCUSED','FOCUS_SOURCE_CONFLICT','SETTINGS_DISPLAY_OR_INPUT_UNVERIFIED'))
+        if not errors: result['classification'] = 'SAFE_FOR_READONLY_CAPTURE'
+    except (NativeMetadataError,KeyError,TypeError,ValueError) as error:
+        errors.append(str(error) if isinstance(error,NativeMetadataError) else 'MALFORMED_GRAPH_METADATA')
+    result['reason_codes'] = sorted(set(errors))
+    return result
+
+
+def assess_window_pair(first, second, *, started_ns, ended_ns):
+    """Bounded consensus, not an atomic compositor/screenshot transaction."""
+    a,b=assess_window_graph(first),assess_window_graph(second)
+    reasons=sorted(set(a['reason_codes']+b['reason_codes']))
+    if type(started_ns) is not int or type(ended_ns) is not int or not 0 <= ended_ns-started_ns <= 8_000_000_000:
+        reasons.append('METADATA_SAMPLE_BOUND_EXCEEDED')
+    if not a.get('safety_projection_sha256') or a.get('safety_projection_sha256') != b.get('safety_projection_sha256'):
+        reasons.append('METADATA_GRAPH_CHANGED_OR_UNVERIFIED')
+    return {'schema':'native-window-pair/2','classification':'SAFE_FOR_READONLY_CAPTURE' if not reasons else 'INSUFFICIENT_WINDOW_EVIDENCE',
+        'reason_codes':sorted(set(reasons)), 'first':a,'second':b,
+        'safety_projection_sha256':b.get('safety_projection_sha256'), 'sample_elapsed_ns':ended_ns-started_ns,
+        'atomic_snapshot':False, 'raw_capture_authorized':False,'physical_input_allowed':False}

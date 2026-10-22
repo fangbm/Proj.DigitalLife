@@ -1,0 +1,82 @@
+[
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "_window_graph_rows",
+    "line": 389
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "_input_consensus",
+    "line": 413
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "assess_window_graph",
+    "line": 442
+  },
+  {
+    "file": "src/phonelife/native_windows.py",
+    "function": "assess_window_pair",
+    "line": 555
+  },
+  {
+    "file": "src/phonelife/readonly_sources.py",
+    "function": "inspect_coordinator",
+    "line": 44
+  },
+  {
+    "file": "src/phonelife/readonly_sources.py",
+    "function": "observation_admission",
+    "line": 79
+  },
+  {
+    "file": "src/phonelife/readonly_sources.py",
+    "function": "read_bound_sources",
+    "line": 102
+  },
+  {
+    "file": "src/phonelife/longrun_health.py",
+    "function": "readonly_db_health",
+    "line": 66
+  },
+  {
+    "file": "src/phonelife/longrun_health.py",
+    "function": "safety_admission",
+    "line": 158
+  },
+  {
+    "file": "src/phonelife/longrun_state.py",
+    "function": "read_status",
+    "line": 181
+  },
+  {
+    "file": "src/phonelife/longrun_state.py",
+    "function": "status",
+    "line": 186
+  },
+  {
+    "file": "src/phonelife/longrun.py",
+    "function": "run_worker",
+    "line": 348
+  },
+  {
+    "file": "src/phonelife/longrun.py",
+    "function": "control_session",
+    "line": 455
+  },
+  {
+    "file": "src/phonelife/longrun.py",
+    "function": "_health",
+    "line": 150
+  },
+  {
+    "file": "src/phonelife/physical_execution.py",
+    "function": "physical_session_admission",
+    "line": 322
+  },
+  {
+    "file": "src/phonelife/life_storage.py",
+    "function": "enable_life",
+    "line": 21
+  }
+]
