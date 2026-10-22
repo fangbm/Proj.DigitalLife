@@ -164,3 +164,8 @@ Phase 1.2.3-B2 新增按快照关联 Window/Surface/Input 的只读审查入口�
 整体仍 **BLOCKED**：未归属输入层、壁纸状态及当前实体机安全来源绑定尚未闭合。
 详见 [`B2 数据库角色分析`](docs/phase123b2-window-admission/DATABASE_ROLE_ROOT_CAUSE.md)。
 
+Phase 1.2.3-C0 Prep 新增独立人工诊断的授权、隐私存储和 Mock PNG/XML 流程。
+真实 ADB 后端在本版本硬禁用，无新采集 CLI，不签发真实许可，不调用模型或自主 worker。
+诊断采集完成始终不代表 GUI 语义可信。详见
+[`C0 Prep 架构、边界及下一轮授权审查`](docs/phase123c0-diagnostic/README.md)。
+
