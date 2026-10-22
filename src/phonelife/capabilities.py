@@ -57,6 +57,12 @@ class CapabilityRegistry:
     def wire(self):
         return {'version':self.version,'capabilities':[asdict(v) for v in self.entries.values()]}
 
+    def evidence_for_action(self, semantic, action):
+        return trusted(semantic)
+
+    def navigation_node_allowed(self, node):
+        return node.editable is False
+
     @staticmethod
     def subtree(semantic, target):
         nodes = {c.control_id:c for c in semantic.controls}
@@ -67,14 +73,15 @@ class CapabilityRegistry:
         return result
 
     def safe_target(self, semantic, target, scroll=False):
-        if not trusted(semantic) or target.package not in self.packages:
+        if not self.evidence_for_action(semantic, 'swipe' if scroll else 'tap') or target.package not in self.packages:
             raise PolicyDenied('Trusted Settings evidence without overlays required')
         a,b,c,d = target.bounds
         if not (c>a and d>b and a < semantic.screen_width and c>0 and b < semantic.screen_height*.92 and d>semantic.screen_height*.08):
             raise PolicyDenied('Control outside visible application body')
         if not (target.enabled is True and target.visible is True):
             raise PolicyDenied('Target is not explicitly visible and enabled')
-        if any(getattr(target,k) is not False for k in ('checkable','editable','password','long_clickable')):
+        if (any(getattr(target,k) is not False for k in ('checkable','password','long_clickable')) or
+                (target.editable is not False if scroll else not self.navigation_node_allowed(target))):
             raise PolicyDenied('Unknown or state-changing target properties')
         if any(s in target.class_name for s in self.state_classes):
             raise PolicyDenied('State-changing control has no capability')
@@ -93,7 +100,7 @@ class CapabilityRegistry:
             raise PolicyDenied('No configured read-only route for this control')
         if not any(c.resource_id=='android:id/title' and c.text.strip().casefold() in self.routes for c in children):
             raise PolicyDenied('Navigation row lacks a known preference title resource')
-        if any(n.package not in self.packages or n.checkable is not False or n.editable is not False or
+        if any(n.package not in self.packages or n.checkable is not False or not self.navigation_node_allowed(n) or
                n.password is not False or any(s in n.class_name for s in self.state_classes) for n in children):
             raise PolicyDenied('Navigation row contains unsafe or unknown descendants')
 
@@ -183,7 +190,7 @@ class CapabilityRegistry:
             raise PolicyDenied('No text entry capability')
         if action.type == 'launch' and (not isinstance(action.package,str) or action.package not in self.packages):
             raise PolicyDenied('Launch allowlist does not grant an autonomous capability')
-        if action.type in {'tap','swipe','back','home'} and (not trusted(semantic) or semantic.foreground_package not in self.packages):
+        if action.type in {'tap','swipe','back','home'} and (not self.evidence_for_action(semantic,action.type) or semantic.foreground_package not in self.packages):
             raise PolicyDenied('semantic_unavailable or unsupported foreground; navigation refused')
         if action.type=='swipe':
             for c in semantic.controls:

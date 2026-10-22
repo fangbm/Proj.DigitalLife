@@ -1,7 +1,8 @@
 """Default-deny physical execution core; no approval issuer or auto-launch CLI.
 
-Native XML may lack safety attributes. Such observations remain partial forever:
-this module does not deploy the API35 helper or infer missing attributes.
+Native XML may lack safety attributes. Missing values remain unknown. A narrowly
+bound navigation TAP can tolerate missing editable, never missing visibility.
+This module does not deploy the API35 helper or infer missing attributes.
 """
 from __future__ import annotations
 import asyncio
@@ -21,7 +22,7 @@ from .devices import DeviceTransportError
 from .life_subject import LifeBinding
 from .models import ScreenObservation
 from .policy import ActionPolicy,PolicyDenied
-from .semantic import UIAutomatorBackend,normalize
+from .semantic import UIAutomatorBackend,normalize,digest as semantic_digest
 from .semantic_stability import trusted
 
 def strict_json(raw):
@@ -117,10 +118,28 @@ def page_key(s):
 
 class PhysicalRegistry(CapabilityRegistry):
     version='physical-capabilities/1'
+    routes=CapabilityRegistry.routes | frozenset({'显示与亮度'})
     def __init__(self,contract):
         super().__init__();self.contract=contract
-    def page(self,s):
-        if not trusted(s) or s.provider!='coloros16_native_xml/1' or s.stability:
+    def evidence_for_action(self,s,action):
+        if trusted(s):return True
+        # Action-specific eligibility, not a mutation of the observation's global
+        # trust or nullable attributes. Window/input/lease/approval checks still run.
+        return bool(action=='tap' and s.provider=='coloros16_native_xml/1' and
+            s.evidence_quality=='partial' and s.failure_reason=='INCOMPLETE_ATTRIBUTES_OR_OVERLAY' and
+            not s.overlays and not s.stability and s.controls and
+            all(type(c.visible)is bool and c.package=='com.android.settings' for c in s.controls) and
+            s.tree_sha256==semantic_digest([c.identity() for c in s.controls]))
+    def navigation_node_allowed(self,node):
+        if node.editable is False:return True
+        # Unknown stays unknown. This only permits navigation through an exact
+        # approved page/row; it grants no text or editing capability. Custom
+        # widgets, editable=True and independently clickable title children deny.
+        return node.editable is None and (node.class_name in {
+            'android.widget.LinearLayout','android.widget.RelativeLayout'} or
+            node.class_name in {'android.widget.TextView','android.widget.ImageView'} and node.clickable is False)
+    def page(self,s,action=None):
+        if not self.evidence_for_action(s,action) or s.provider!='coloros16_native_xml/1' or s.stability:
             raise PolicyDenied('PHYSICAL_TRUSTED_NATIVE_SEMANTICS_REQUIRED')
         self.contract.authorize()
         packages=self.contract.manifest.get('apps',[])
@@ -130,7 +149,24 @@ class PhysicalRegistry(CapabilityRegistry):
         if not page:raise PolicyDenied('PHYSICAL_PAGE_NOT_APPROVED')
         return page
     def safe_target(self,s,target,scroll=False):
-        page=self.page(s)
+        page=self.page(s,'swipe' if scroll else 'tap')
+        if not any(c==target for c in s.controls):raise PolicyDenied('PHYSICAL_TARGET_NOT_IN_OBSERVATION')
+        a,b,c,d=target.bounds
+        if not 0<=a<c<=s.screen_width or not 0<=b<d<=s.screen_height:
+            raise PolicyDenied('PHYSICAL_TARGET_BOUNDS_INVALID')
+        nodes={c.control_id:c for c in s.controls}
+        ancestor=target;seen=set()
+        while ancestor:
+            if ancestor.control_id in seen or ancestor.visible is not True:
+                raise PolicyDenied('PHYSICAL_TARGET_ANCESTRY_NOT_VISIBLE')
+            seen.add(ancestor.control_id)
+            if ancestor.parent is not None and ancestor.parent not in nodes:
+                raise PolicyDenied('PHYSICAL_TARGET_ANCESTRY_UNBOUND')
+            ancestor=nodes.get(ancestor.parent)
+        if not scroll and any(n.visible is not True or not
+                a<=n.bounds[0]<n.bounds[2]<=c or not b<=n.bounds[1]<n.bounds[3]<=d
+                for n in self.subtree(s,target)):
+            raise PolicyDenied('PHYSICAL_ROW_DESCENDANT_NOT_VISIBLE_OR_CONTAINED')
         if not any(r.get('resource_id')==target.resource_id and r.get('class_name')==target.class_name
             and r.get('action')==('swipe' if scroll else 'tap') for r in page.get('controls',[])):
             raise PolicyDenied('PHYSICAL_CONTROL_NOT_APPROVED')
@@ -141,13 +177,22 @@ class PhysicalRegistry(CapabilityRegistry):
                         or any(c in node.class_name for c in self.state_classes)):
                     raise PolicyDenied('PHYSICAL_SCROLL_REGION_CONTAINS_UNSAFE_CONTROLS')
     def ground(self,candidate,s):
-        page=self.page(s)
+        kind=candidate.get('type')
+        page=self.page(s,'tap' if kind in {'tap','tap_control'} else 'swipe' if kind in {'swipe','scroll_region'} else kind)
         if candidate.get('type') in {'home','launch','open_allowed_app','text'}:raise PolicyDenied('PHYSICAL_ACTION_NOT_REGISTERED')
         if candidate.get('type') in {'back','navigate_back'} and page.get('back_allowed')is not True:raise PolicyDenied('PHYSICAL_BACK_NOT_APPROVED')
         return super().ground(candidate,s)
     def revalidate(self,binding,original,current):
-        self.page(original);self.page(current)
+        action=binding.get('actual_action',{}).get('type')
+        self.page(original,action);self.page(current,action)
         if page_key(original)!=page_key(current) or original.content_sha256!=current.content_sha256:raise GroundingError('PHYSICAL_SCENE_CHANGED','Exact ColorOS scene unchanged')
+        if action=='tap' and (not trusted(original) or not trusted(current)):
+            if binding.get('target') is None:raise GroundingError('UNKNOWN_CONTROL','Bound navigation row required')
+            matches=[c for c in current.controls if c.identity()==binding['target']]
+            if len(matches)!=1:raise GroundingError('CONTROL_CHANGED','Exactly one unchanged target required')
+            self.safe_target(current,matches[0])
+            return {**binding,'fresh_observation_id':current.observation_id,'fresh_screenshot_sha256':current.screenshot_sha256,
+                'pre_dispatch_consistency':'verified','stability':{'mode':'exact_native_tap'}}
         return super().revalidate(binding,original,current)
     def recovery_action(self,*args):raise PolicyDenied('PHYSICAL_RECOVERY_INPUT_NOT_APPROVED')
 
@@ -165,17 +210,32 @@ class ColorOSSemanticProvider:
         from .semantic import SemanticObservation
         try:
             # Native XML only. Two exact frames, no helper, no inferred properties.
+            started=time.monotonic_ns()
+            if not 0<=started-obs.captured_monotonic_ns<=2_000_000_000:
+                raise ValueError('COLOROS_OBSERVATION_STALE_OR_FUTURE')
             raw=await UIAutomatorBackend().read(phone,obs)
+            first_end=time.monotonic_ns()
             first=normalize(raw,obs,await phone.foreground(),'coloros16_native_xml/1')
             fresh=await phone.observe()
+            second_start=time.monotonic_ns()
             second_raw=await UIAutomatorBackend().read(phone,fresh)
+            second_end=time.monotonic_ns()
             second=normalize(second_raw,fresh,await phone.foreground(),'coloros16_native_xml/1')
-            if not trusted(first) or not trusted(second) or page_key(first)!=page_key(second) or first.content_sha256!=second.content_sha256:
+            registry=PhysicalRegistry(None)
+            if not registry.evidence_for_action(first,'tap') or not registry.evidence_for_action(second,'tap') or page_key(first)!=page_key(second) or first.content_sha256!=second.content_sha256:
                 raise ValueError('COLOROS_SEMANTICS_NOT_EXACT_AND_COMPLETE')
-            return first
+            finished=time.monotonic_ns()
+            if not (obs.captured_monotonic_ns<=started<=first_end<=fresh.captured_monotonic_ns<=second_start<=second_end<=finished
+                    and finished-obs.captured_monotonic_ns<=2_000_000_000):
+                raise ValueError('COLOROS_OBSERVATION_STALE_OR_INCONSISTENT')
+            return replace(first,attempts=({'source':'host_monotonic_acquisition',
+                'png_received_ns':obs.captured_monotonic_ns,'xml_started_ns':started,'xml_finished_ns':first_end,
+                'second_png_received_ns':fresh.captured_monotonic_ns,'second_xml_started_ns':second_start,
+                'second_xml_finished_ns':second_end,'validation_finished_ns':finished},))
         except Exception as e:
+            code=str(e)
             return SemanticObservation(obs.observation_id,obs.sha256,obs.width,obs.height,None,'','',
-                'coloros16_native_xml/1','',failure_reason=getattr(e,'code',type(e).__name__))
+                'coloros16_native_xml/1','',failure_reason=code if re.fullmatch('[A-Z][A-Z0-9_]{1,100}',code) else type(e).__name__)
 
 class PhysicalPhone(ProfileBoundReadOnlyPhone):
     kind='real'
@@ -231,7 +291,7 @@ class PhysicalPhone(ProfileBoundReadOnlyPhone):
         if self._unknown:raise PolicyDenied('PHYSICAL_UNKNOWN_DISPATCH_NEEDS_REVIEW')
         self.contract.authorize();self.contract.binding.verify(store.conn)
         if type(limit)is not int or not 1<=limit<=self.contract.config['policy']['max_actions'] or self._dispatched>=limit:raise PolicyDenied('PHYSICAL_ACTION_BUDGET')
-        self.capabilities.page(semantic)
+        self.capabilities.page(semantic,action.type)
         if binding.get('actual_action')!=action.wire():raise PolicyDenied('PHYSICAL_ACTION_BINDING_MISMATCH')
         key=getattr(leases,'lease_key',self.contract.binding.execution_device_id)
         row=leases.conn.execute('SELECT owner,expires_at FROM lease WHERE device=?',(key,)).fetchone()
@@ -267,7 +327,7 @@ class PhysicalPhone(ProfileBoundReadOnlyPhone):
             raise
     async def act(self,action):
         permit,self._permit=self._permit,None
-        if not permit or permit[0]!=action or time.monotonic()-permit[-1]>2 or self._unknown:
+        if not permit or permit[0]!=action or not 0<=time.monotonic()-permit[-1]<=2 or self._unknown:
             raise PolicyDenied('PHYSICAL_SINGLE_USE_DISPATCH_PERMIT_REQUIRED')
         _,semantic,binding,store,leases,run_id,owner,attempt_id,limit,_=permit
         try:
@@ -281,6 +341,10 @@ class PhysicalPhone(ProfileBoundReadOnlyPhone):
             # can race hot-plug, so stop if it no longer matches before input.
             await self._identity_online()
             self._final_guard(store,leases,run_id,owner,attempt_id)
+            # The original deadline survives all awaited reads and the second
+            # prepare_dispatch. Neither WMS reads nor permit renewal refresh XML.
+            if not 0<=time.monotonic()-permit[-1]<=2:
+                raise PolicyDenied('PHYSICAL_FRESH_OBSERVATION_DEADLINE_EXCEEDED')
         except Exception:
             raise PolicyDenied('PHYSICAL_PRE_DISPATCH_RECHECK_FAILED_NO_INPUT') from None
         args=({'tap':lambda:('tap',str(action.x),str(action.y)),
@@ -296,7 +360,7 @@ class PhysicalPhone(ProfileBoundReadOnlyPhone):
             # unknown and require review; reconnect must not silently resume it.
             post=await self.observe()
             post_semantic=await ColorOSSemanticProvider().collect(self,post)
-            self.capabilities.page(post_semantic)
+            self.capabilities.page(post_semantic,action.type)
         except BaseException as e:
             self._unknown=True
             # Make a concurrent Status see transport uncertainty even while this

@@ -189,6 +189,15 @@ class UIAutomatorBackend:
                     'resource_id':'resource-id','package':'package','class_name':'class'}.items()}}
             for key in ('clickable','scrollable','enabled','checkable','editable','visible','password','long_clickable'):
                 val = value.get(key.replace('_','-'))
+                if key == 'visible':
+                    # Alias only when explicitly serialized. Existence in a dump is
+                    # never visibility evidence, including on OEM UIAutomator builds.
+                    alias = value.get('visible-to-user')
+                    if val is not None and alias is not None and val != alias:
+                        raise ValueError('CONFLICTING_VISIBILITY_ATTRIBUTES')
+                    val = val if val is not None else alias
+                if val is not None and val not in {'true','false'}:
+                    raise ValueError('INVALID_ATTRIBUTE')
                 output[key] = {'true': True, 'false': False}.get(val)
             output['children'] = [node(c,path+'/'+str(i)) for i,c in enumerate(element)]
             return output
