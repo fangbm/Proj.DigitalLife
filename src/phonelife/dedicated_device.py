@@ -387,7 +387,8 @@ def create_session(directory,*,profile_path,life_db,source_db=None,source_device
     from .life_subject import migrate_subject
     from .storage import Store
     from .life_storage import enable_life
-    if (smoke and seconds!=180) or (not smoke and seconds not in {3600,86400}):raise ValueError('USE_SMOKE_180S_OR_1H_OR_24H')
+    if (smoke and seconds!=180) or (not smoke and seconds not in {600,3600,86400}):raise ValueError('USE_SMOKE_180S_OR_10M_OR_1H_OR_24H')
+    if seconds==600 and app_scope!='installed_launchable':raise ValueError('SHORT_RETEST_REQUIRES_ALL_APP_MODE')
     directory=Path(directory).resolve();life_db=Path(life_db).resolve();lease_path=Path(lease_path).resolve()
     if directory.exists():raise FileExistsError('Use a new session directory; old stops and evidence are immutable')
     if not lease_path.is_file():raise FileNotFoundError('Existing shared lease coordinator required')
@@ -519,6 +520,38 @@ async def run_manual_smoke(directory):
             return result
         finally:ledger.close()
 
+def session_activity(directory):
+    """Host-only, session-scoped counters; no adapters, key loads or migrations."""
+    from .longrun_state import SessionLedger
+    from .storage import Store
+    from .autonomy import confirmed_action_units
+    ledger=SessionLedger(Path(directory)/'soak-control.sqlite3',readonly=True)
+    try:value=ledger.load()
+    finally:ledger.close()
+    s=Store.open_readonly(Path(value['config']['agent_db']))
+    try:
+        rows=s.conn.execute('SELECT t.task_run_id,t.status,t.result FROM task_runs t JOIN life_run_bindings b USING(task_run_id) WHERE b.device_session_id=? ORDER BY t.rowid',(value['session_id'],)).fetchall()
+        ids=[r[0] for r in rows];attempts=[];requests=0;app=None;last_failure=None
+        for run in ids:
+            attempts.extend(json.loads(r[0]) for r in s.conn.execute('SELECT payload FROM action_attempts WHERE task_run_id=?',(run,)))
+            requests+=s.conn.execute('SELECT COUNT(*) FROM life_requests WHERE task_run_id=?',(run,)).fetchone()[0]
+            for r in s.conn.execute('SELECT payload FROM semantic_observations WHERE task_run_id=? ORDER BY rowid',(run,)):
+                pkg=json.loads(r[0]).get('foreground_package','')
+                if re.fullmatch(r'[A-Za-z_][\w.]*(?:\.[\w]+)+',pkg):app=pkg
+        for r in rows:
+            result=json.loads(r[2]) if r[2] else {}
+            code=result.get('reason_code','')
+            if r[1] in {'failed','blocked','uncertain','needs_review','interrupted'} and re.fullmatch('[A-Z_]{1,80}',code):last_failure=code
+        last=json.loads(rows[-1][2]) if rows and rows[-1][2] else {}
+        return {'cycles':len(rows),'latest_cycle_status':rows[-1][1] if rows else None,'latest_reason_code':last.get('reason_code'),
+            'current_phase':value['state'],'sleep_class':value.get('sleep_class'),'confirmed_input_commands':sum(confirmed_action_units(p) for p in attempts if (p.get('candidate_action')or{}).get('type')!='finish'),
+            'verified_goals':sum(r[1]=='succeeded' and (json.loads(r[2]).get('verification')or{}).get('verdict')=='verified' for r in rows if r[2]),
+            'denied_input_candidates':sum(p.get('validation_status')=='policy_denied' and (p.get('candidate_action')or{}).get('type')!='finish' for p in attempts),
+            'invalid_output_candidates':sum(p.get('validation_status')=='invalid' for p in attempts),
+            'logical_finishes':sum((p.get('candidate_action')or{}).get('type')=='finish' and p.get('validation_status')=='valid' for p in attempts),
+            'recent_app':app,'api_requests':requests,'last_failure_code':last_failure}
+    finally:s.close()
+
 def main(argv=None):
     from .longrun import LongRunSoakController,control_session
     from .longrun_state import SessionLedger
@@ -531,17 +564,23 @@ def main(argv=None):
     p.add_argument('--source-device',default='emulator')
     p.add_argument('--life-subject')
     p.add_argument('--lease-db',type=Path,default=Path('data/phone-life.sqlite3'))
-    p.add_argument('--hours',type=int,choices=(1,24),default=1)
+    duration=p.add_mutually_exclusive_group()
+    duration.add_argument('--hours',type=int,choices=(1,24))
+    duration.add_argument('--minutes',type=int,choices=(10,))
     p.add_argument('--after-one-hour',type=Path)
     a=p.parse_args(argv)
-    if a.command=='status':result=SessionLedger.read_status(a.session/'soak-control.sqlite3')
+    if a.command=='status':
+        result=SessionLedger.read_status(a.session/'soak-control.sqlite3')
+        if result.get('execution_mode')==MODE:
+            try:result['activity']=session_activity(a.session)
+            except (sqlite3.Error,OSError,ValueError,KeyError):result['activity']={'available':False,'reason_code':'ACTIVITY_EVIDENCE_UNAVAILABLE'}
     elif a.command in {'stop','pause'}:
         control_session(a.session,'emergency_stopped' if a.command=='stop' else 'paused');result={'operator_request':a.command}
     else:
         if not a.profile:p.error('--profile is required to start the bound device')
         create_session(a.session,profile_path=a.profile,life_db=a.life_db,source_db=a.source_db,
             source_device=a.source_device,life_subject=a.life_subject,lease_path=a.lease_db,
-            seconds=180 if a.command=='smoke' else a.hours*3600,smoke=a.command=='smoke',previous_hour=a.after_one_hour,
+            seconds=180 if a.command=='smoke' else a.minutes*60 if a.minutes else (a.hours or 1)*3600,smoke=a.command=='smoke',previous_hour=a.after_one_hour,
             app_scope=None if a.command=='smoke' else 'installed_launchable')
         if a.command=='smoke':result=asyncio.run(run_manual_smoke(a.session))
         else:
@@ -550,7 +589,7 @@ def main(argv=None):
             finally:controller.close()
     # Whitelist terminal output. Full UI/serial/config stays in private files.
     print(json.dumps({k:result.get(k) for k in ('state','effective_state','reason','requires_manual_review',
-        'elapsed_seconds','operator_request','worker_launch_allowed','settings_smoke') if k in result},ensure_ascii=False))
+        'elapsed_seconds','operator_request','worker_launch_allowed','settings_smoke','activity') if k in result},ensure_ascii=False))
     return 2 if result.get('state')=='failed' or ('settings_smoke' in result and result['settings_smoke'].get('status')!='succeeded') else 0
 
 if __name__=='__main__':raise SystemExit(main())

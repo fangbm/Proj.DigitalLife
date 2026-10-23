@@ -4,6 +4,8 @@
 
 ## 使用
 
+首次真实一小时之后的修复及 `-Minutes 10` 复测命令见[本轮结果说明](find-x6-first-run-fix.md)。原 `-Hours 1/24` 继续兼容，十分钟不会替代一小时门槛。
+
 在仓库根目录打开 PowerShell。连接绑定的 Find X6，手动解锁；不要求打开 Settings。直接运行：
 
 ```powershell
@@ -71,7 +73,7 @@ Status 不调用 ADB、模型或 DPAPI。Stop 使用已有粘滞紧急停止和�
 
 未删除数据库、marker、旧批准、失败日志、旧 JAR 或完整 UI fixture。未改严格 ActionPolicy/PhysicalRegistry；新模块及明确 mode 分支隔离。真实 unknown/紧急停止不属于冗余审批，不随模式简化而清除。
 
-## 验收边界
+## 上一轮开发验证（历史；用户随后已手动完成首次一小时）
 
 本轮仅 offline_fixture：没有发送真实 ADB 或模型请求，没有启动真实一小时/24 小时，也没有创建真实专用生活库。真实任意 App 启动、Settings 首次点击、搜索和跨 App 行为仍为 NOT OBSERVED，等待用户运行上述命令后的实际记录。
 

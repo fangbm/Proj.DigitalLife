@@ -2,10 +2,12 @@ param(
     [ValidateSet('Smoke','Start','Status','Stop','Pause')][string]$Command = 'Start',
     [Parameter(Mandatory=$true)][string]$Session,
     [ValidateSet(1,24)][int]$Hours = 1,
+    [ValidateSet(10)][Nullable[int]]$Minutes = $null,
     [string]$Profile = '', [string]$LifeDatabase = '', [string]$SourceDatabase = '',
     [string]$SourceDevice = 'emulator', [string]$AfterOneHour = ''
 )
 $ErrorActionPreference = 'Stop'
+if ($Minutes -and ($PSBoundParameters.ContainsKey('Hours') -or $Command -eq 'Smoke')) { throw 'Use Minutes 10 for Start, or Hours 1/24; do not combine durations.' }
 $taskRoot = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $taskRoot
 $env:PYTHONPATH = Join-Path $taskRoot 'src'
@@ -18,7 +20,8 @@ if ($Command -in @('Smoke','Start') -and -not (Test-Path -LiteralPath $LifeDatab
 $taskArgs = @('-u','-m','phonelife.dedicated_device',$Command.ToLowerInvariant(),'--session',$Session)
 if ($Command -in @('Smoke','Start')) {
     $taskArgs += @('--profile',$Profile,'--life-db',$LifeDatabase,'--source-device',$SourceDevice,
-                   '--lease-db',(Join-Path $PSScriptRoot 'phone-life.sqlite3'),'--hours',[string]$Hours)
+                   '--lease-db',(Join-Path $PSScriptRoot 'phone-life.sqlite3'))
+    if ($Minutes) { $taskArgs += @('--minutes',[string]$Minutes) } else { $taskArgs += @('--hours',[string]$Hours) }
     if ($SourceDatabase) { $taskArgs += @('--source-db',$SourceDatabase) }
     if ($AfterOneHour) { $taskArgs += @('--after-one-hour',$AfterOneHour) }
 }

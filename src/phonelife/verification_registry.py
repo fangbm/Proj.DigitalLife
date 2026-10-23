@@ -146,10 +146,14 @@ class GoalVerifierRegistry:
         return self.result(obs, 'verified', values, 'Allowlisted independent device fact read', 'readonly_device_fact')
 
     async def _observe(self, spec, obs, history):
+        if getattr(self.phone,'app_scope',None) and getattr(self.phone,'_redacted',False):
+            return self.result(obs,'uncertain',[],'Redacted placeholder is not evidence of app content','redacted_observation')
         return self.result(obs, 'exploration_observed', ['screen_sha256=' + obs.sha256],
                            'A screen was observed; no arbitrary business goal is claimed complete', 'screen_observation')
 
     async def _visual(self, spec, obs, history):
+        if getattr(self.phone,'app_scope',None) and getattr(self.phone,'_redacted',False):
+            return self.result(obs,'uncertain',[],'Redacted placeholder is not sent for visual verification','redacted_observation')
         if self.api is None:
             return self.result(obs, 'uncertain', [], 'No visual observation provider', 'independent_visual_observation')
         response = await self.api.generate(self.model,

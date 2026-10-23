@@ -167,6 +167,9 @@ class PhoneLife:
                     feedback = {"field_errors": scrub(errors), "previous_response_excerpt":
                         response_audit(response.content)["model_response_excerpt"] if response else "",
                         "instruction": "No action was executed for this candidate. Generate one NEW complete JSON action."}
+                    if getattr(self.phone,'app_scope',None) and any(e.get('field')=='reason' for e in errors):
+                        feedback['instruction']='No action executed. Return the same safe intent with a NEW concise reason of at most 120 characters (hard limit 400). Do not list observed contents, packages or versions.'
+                        feedback['field_errors']=[{k:v for k,v in e.items() if k!='value'}|{'actual_length':len(e.get('value','')) if isinstance(e.get('value'),str) else None} for e in errors]
                     continue
                 except PolicyDenied as error:
                     self.store.update_attempt(attempt_id, validation_status="policy_denied",
@@ -190,6 +193,7 @@ class PhoneLife:
                     candidate_action=action.wire(), bound_observation_id=action.observation_id,
                     generation_elapsed_ns=time.monotonic_ns() - started)
                 if action.type == "finish":
+                    self.store.update_attempt(attempt_id,logical_completion=True,device_input_dispatched=False)
                     final = await self._observe(run_id)
                     if action.outcome == "uncertain":
                         verification = VerificationResult("uncertain", [], "Executor declared uncertainty",
@@ -248,7 +252,14 @@ class PhoneLife:
                     device_result = await self.phone.act(action)
                 except PolicyDenied as error:
                     # Physical preflight failed before the sole input call; honest no-dispatch audit.
-                    self.store.update_attempt(attempt_id,execution_status='not_executed',validation_status='policy_denied',error_code='PHYSICAL_PRE_DISPATCH_DENIED')
+                    self.store.update_attempt(attempt_id,execution_status='not_executed',validation_status='policy_denied',error_code='PHYSICAL_PRE_DISPATCH_DENIED',guard_reason_code=redact(str(error)))
+                    if getattr(self.phone,'app_scope',None):self.store.update_attempt(attempt_id,field_errors=[{'code':redact(str(error)),'field':'pre_dispatch_guard','expected':'Fresh unoccluded safe target; otherwise change action without replay'}])
+                    if getattr(error,'skip_action',False) and getattr(self.phone,'app_scope',None):
+                        feedback={'code':'PHYSICAL_PRE_DISPATCH_DENIED','guard_reason_code':str(error),'previous_action_executed':False,
+                            'instruction':'No input was sent. Reobserve and choose a NEW safe action, back, another app, or finish uncertain. Never replay the rejected coordinates.'}
+                        if generation>=3:return result('blocked',str(error),'PHYSICAL_PRE_DISPATCH_DENIED',observation=observation)
+                        observation=await self._observe(run_id);semantic=self.semantic_observation
+                        continue # Same original three-candidate/request budget; never resend.
                     return result('blocked',str(error),'PHYSICAL_PRE_DISPATCH_DENIED',observation=observation)
                 except (DeviceTransportError, RuntimeError, OSError) as error:
                     self._transport_unknown=True

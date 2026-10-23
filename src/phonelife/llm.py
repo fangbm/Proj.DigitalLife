@@ -177,6 +177,7 @@ class APIGuiPlanner:
                        'For readonly_fact contracts the independent verifier collects the allowlisted facts; '
                        'you may finish achieved without GUI actions. For observe you may finish after observation. '
                        'Use uncertain/cannot_proceed when capabilities are insufficient. Never substitute a weaker goal.'))
+        request=getattr(self,'request_view',lambda value:value)(request)
         return await self.api.generate(self.model, system, json.dumps(request, ensure_ascii=False),
                                        observation.png, temperature=0.1)
 

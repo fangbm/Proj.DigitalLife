@@ -1,5 +1,7 @@
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
+用户首次真实一小时已结束：14周期、2次确认App启动、0个已验证目标。针对真实tap/swipe拒绝、finish与超长reason的修复及十分钟手动复测命令，见[本轮结果说明](docs/find-x6-first-run-fix.md)。修复验证为964项离线回归；本轮没有擅自启动手机。
+
 `dedicated_device_test` 动态读取绑定手机上已安装且可启动的 App，由 Brain 自主选择应用、浏览、搜索、切换或休息。普通会话没有 App 白名单、Settings 起始页、逐动作批准或 JAR 依赖。设备绑定、租约、紧急停止、预算、审计、高风险拦截和未知分发停止保留；严格模式独立。
 
 连接既有 Find X6，手动解锁，在仓库根目录直接启动一小时：

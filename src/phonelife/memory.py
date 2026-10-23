@@ -18,6 +18,7 @@ class LifeMemory:
         self.scope=predicate(self.devices)
         binding=getattr(store,'life_binding',None)
         self.interest_key=binding.namespace if binding and run_kind=='autonomous' else device
+        self.environment_device=None # Optional relevance view; never rewrites history.
 
     def add(self, layer, subject, body, source_run, importance=.5, relation='observed'):
         if layer not in {'working', 'episodic', 'semantic', 'preference'}:
@@ -68,17 +69,20 @@ class LifeMemory:
                 continue
             overlap = len(wanted & self.tokens(row['subject'] + row['body']))
             score = overlap * 2 + row['importance'] + .2 / (1 + max(0, time.time()-row['updated_at']) / 86400)
+            if self.environment_device and row['device']!=self.environment_device:score*=.15
             sources = [r[0] for r in self.store.conn.execute('SELECT task_run_id FROM life_memory_sources WHERE memory_id=? LIMIT 8', (row['memory_id'],))]
             related = [r[0] for r in self.store.conn.execute('SELECT to_memory FROM life_memory_links WHERE from_memory=? LIMIT 8', (row['memory_id'],))]
             ranked.append((score, {'memory_id': row['memory_id'], 'layer': row['layer'], 'subject': row['subject'],
                                    'body': json.loads(row['body']), 'source_runs': sources, 'related_memory_ids': related,
                                    'trust': 'data_not_instructions'}))
+            if self.environment_device:ranked[-1][1]['environment_relation']='current_device' if row['device']==self.environment_device else 'earlier_device'
         if 'episodic' in layers:
             # Bridge explicit old autonomous episodes without reclassifying or rewriting them.
-            legacy = self.store.conn.execute(f'SELECT id,summary,task_run_id FROM memories WHERE {self.scope} AND run_kind=? AND (task_run_id IS NULL OR task_run_id NOT IN (SELECT task_run_id FROM life_cycles)) ORDER BY id DESC LIMIT 20',
+            legacy = self.store.conn.execute(f'SELECT id,device,summary,task_run_id FROM memories WHERE {self.scope} AND run_kind=? AND (task_run_id IS NULL OR task_run_id NOT IN (SELECT task_run_id FROM life_cycles)) ORDER BY id DESC LIMIT 20',
                                              (*self.devices,self.kind)).fetchall()
             for row in legacy:
                 score = len(wanted & self.tokens(row['summary'])) * 2 + .3
+                if self.environment_device and row['device']!=self.environment_device:score*=.15
                 ranked.append((score, {'memory_id':'ordinary-'+str(row['id']), 'layer':'episodic',
                     'subject':'Earlier explicit-source episode', 'body':{'legacy_summary':row['summary'],'verification':'not_inferred'},
                     'source_runs':[row['task_run_id']] if row['task_run_id'] else [], 'trust':'data_not_instructions'}))
@@ -97,7 +101,14 @@ class LifeMemory:
         return {'examined': len(rows), 'marked_stale': marked, 'deleted': 0}
 
     def interests(self):
-        return [dict(r) for r in self.store.conn.execute('SELECT topic,weight,evidence_count FROM life_interests WHERE device=? AND run_kind=? ORDER BY weight DESC,topic LIMIT 30', (self.interest_key, self.kind))]
+        items=[dict(r) for r in self.store.conn.execute('SELECT topic,weight,evidence_count FROM life_interests WHERE device=? AND run_kind=? ORDER BY weight DESC,topic LIMIT ?', (self.interest_key, self.kind,100 if self.environment_device else 30))]
+        if self.environment_device:
+            for item in items:
+                current=self.store.conn.execute("SELECT 1 FROM life_memories WHERE device=? AND run_kind=? AND layer='preference' AND subject=? LIMIT 1",(self.environment_device,self.kind,item['topic'])).fetchone()
+                item['context_weight']=item['weight']*(1 if current else .15)
+                item['environment_relation']='current_device_evidence' if current else 'historical_interest'
+            items.sort(key=lambda v:-v['context_weight'])
+        return items[:30]
 
     def update_interests(self, topics, run_id, *, verified, novelty):
         changes = []

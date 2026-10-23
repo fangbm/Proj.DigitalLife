@@ -56,6 +56,7 @@ class AutonomousLife:
 
     def attach(self, life):
         self.gate=getattr(life.phone,'goal_gate',self.gate)
+        if getattr(life.phone,'app_scope',None):self.memory.environment_device=self.device
         life.step_limit = min(life.step_limit, self.limits.max_actions)
         life.session_timeout = min(life.session_timeout, self.limits.task_timeout_seconds)
         api = getattr(life.gui, 'api', None)
@@ -195,6 +196,7 @@ class AutonomousLife:
         state_view['energy'] = clamp(self.state.energy + min(.12, elapsed/3600*.15))
         interests = self.memory.interests()
         query = ' '.join(i['topic'] for i in interests[:5]) + ' ' + foreground
+        if getattr(life.phone,'app_scope',None):query=foreground+' '+' '.join(i['topic'] for i in interests[:3] if i.get('environment_relation')=='current_device_evidence')
         episodes = self.memory.retrieve('', 8, ('episodic',))
         self.context = LifeContext(utc_now(), time.monotonic()-self.started,
             {'name': self.device, 'task_run_id':self.run_id, 'serial': getattr(life.phone, 'serial', 'mock'), 'kind': life.phone.kind,
@@ -214,6 +216,9 @@ class AutonomousLife:
                 'repeated_content':[m['body'].get('content_sha256') for m in episodes]}
             self.context=replace(self.context,semantic_environment=environment)
             self.registry.semantic_baseline=life.semantic_observation
+        if getattr(life.phone,'app_scope',None):
+            from .request_context import compact_context
+            self.context=compact_context(self.context)
         self.store.conn.execute('UPDATE life_cycles SET context=? WHERE task_run_id=?', (self.store._json(self.context.wire()), self.run_id))
         if self.operator_error():
             decision = self.forced_rest('OPERATOR_' + control_mode(self.store, self.device).upper(), self.limits.min_rest_seconds)
