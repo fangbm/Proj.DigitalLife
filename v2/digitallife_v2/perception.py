@@ -97,6 +97,8 @@ class Observation:
     xml_path: str | None = None
     xml_sha256: str | None = None
     monotonic: float = field(default_factory=time.monotonic)
+    vision_allowed: bool = True
+    image_withheld_reason: str | None = None
 
     def summary(self):
         d = asdict(self)

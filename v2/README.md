@@ -1,8 +1,8 @@
-# DigitalLife V2 · M1
+# DigitalLife V2 · M2
 
-独立 Python 实现，当前只交付 M1 的有限会话：观察 → 单个模型动作 → 风险检查 → 分发前复核 → 持久记录 → ADB 分发 → 再观察。V1 源码、数据库、证据和密钥保留，不导入 V1 运行模块。[设计原文](DESIGN.md)中的 M2/M3 尚未实现。
+独立 Python 实现：观察 → 单个模型动作 → 风险检查 → 分发前复核 → 持久记录 → ADB 分发 → 再观察，并加入跨会话记忆、兴趣与精力状态。[M2 使用与边界](M2.md) · [M2 交付记录](M2-DELIVERY.md)。按用户最新要求不导入 V1 数据；V1 源码、数据库、证据和密钥保留，不导入 V1 运行模块。M3 尚未展开。
 
-**状态：2026-10-27 已完成自主真机测试和复测，另通过真实搜索提交、运行中 Stop 的定向验收，M1 核心验收可结项。** 自主复测 9 次分发、0 次拦截、0 次未知结果；搜索/停止专项约 0.45 秒响应 Stop。证据与限制见 [DELIVERY.md](DELIVERY.md)。
+**状态：2026-10-27 M2 核心已通过跨进程自主真机验证，三键另经脚本驱动的真机专项验证，源码和安装包各通过 59 项离线测试。** 一次截止时后观察被截断的 unknown 已保留并只读核对；增加观察时间预留后复测无 unknown。完整证据与局限见 [M2-DELIVERY.md](M2-DELIVERY.md)。M1 历史验收见 [DELIVERY.md](DELIVERY.md)。
 
 ## 手动运行
 
@@ -41,6 +41,7 @@ python -m digitallife_v2 doctor --profile find-x6
 python -m digitallife_v2 run --profile find-x6 --minutes 10 --session data/sessions/find-x6-v2-10m-01
 python -m digitallife_v2 status --session data/sessions/find-x6-v2-10m-01
 python -m digitallife_v2 stop --session data/sessions/find-x6-v2-10m-01
+python -m digitallife_v2 memory --profile find-x6
 ```
 
 ## 模型与费用
@@ -64,7 +65,7 @@ python -m digitallife_v2 stop --session data/sessions/find-x6-v2-10m-01
 
 ## 操作和安全边界
 
-允许实时清单中的固定 MAIN/LAUNCHER 启动、当前控件绑定的普通导航 tap、可滚动容器中的垂直 swipe、back、受限搜索和 1–120 秒休息。没有逐截图人工批准或 V1 批准指纹。模型仅能输出严格 JSON，不能发送坐标、任意 shell、Intent 或网络请求。
+允许实时清单中的固定 MAIN/LAUNCHER 启动、当前控件绑定的普通导航 tap、可滚动容器中的垂直 swipe、back/home/recent_apps、受限搜索和 1–120 秒休息。没有逐截图人工批准或 V1 批准指纹。模型仅能输出严格 JSON，不能发送坐标、任意 shell、Intent 或网络请求。
 
 搜索先通过 tap 聚焦已识别的搜索框，下一轮 `search` 在该框内发送固定 CTRL+A，再重新观察并复核目标，输入 1–80 字符 ASCII 查询；输入后重新观察，提交前再读取 XML，核对相同页面、唯一搜索编辑框、焦点和最终文字完全等于查询，才发送回车。支持 EditText 和标准 AutoCompleteTextView/SearchAutoComplete。XML 的提示文字保留原值，不当成已验证空文本。仅替换当前搜索框中的临时查询；焦点、角色或文字不符时跳过提交，不重放输入。中文输入尚未支持。
 
@@ -80,7 +81,7 @@ UIAutomator 缺少 visible/editable 字段时保留未知。标签文字可以�
 
 私有数据默认位于忽略提交的 `v2/data/`：单份 `life.sqlite3`、会话 `events.jsonl`、原子更新的 `status.json`、PNG/XML。状态包含前台、最近动作、分发/拒绝次数、用量、错误、下一次唤醒及约两秒的心跳。`stale=true` 表示心跳超过 20 秒，不能据此认定进程已正常结束。源码不附带真实截图、设备标识、密钥或数据库。
 
-事件区分 `observed`、`pending`、`action_dispatched`、`changed/unchanged`、`blocked`、`unknown`。哈希变化只代表页面数据变化；所有业务 `achieved` 留空。时长到期使用 `completed_duration`，不能据此宣称探索成功。M1 只保留最近五条即时上下文和简短稳定人格提示；跨会话记忆、兴趣演化、V1 历史导入、恢复、一小时与二十四小时属于后续 M2/M3。
+事件区分 `observed`、`pending`、`action_dispatched`、`changed/unchanged`、`blocked`、`unknown`。哈希变化只代表页面数据变化；所有业务 `achieved` 留空。时长到期使用 `completed_duration`，不能据此宣称探索成功。M2 的跨会话记忆、兴趣和休息延续见 [M2.md](M2.md)；目标不是可执行动作队列。V1 历史不导入，自动恢复、一小时与二十四小时仍留在 M3。
 
 手动十分钟后检查同一会话的真实事件和文件：
 
@@ -96,7 +97,7 @@ python -m unittest discover -s tests -v
 python -m pip wheel --no-deps --no-build-isolation --wheel-dir dist .
 ```
 
-测试仅用虚拟手机、临时 SQLite、模拟 ADB 返回和 loopback HTTP 服务；不会访问真实 ADB、DPAPI 或提供商。交付验证详情见 [DELIVERY.md](DELIVERY.md)。
+测试仅用虚拟手机、临时 SQLite、模拟 ADB 返回和 loopback HTTP 服务；不会访问真实 ADB、DPAPI 或提供商。交付验证详情见 [M2-DELIVERY.md](M2-DELIVERY.md)。
 
 已授权的定向真机专项可从 `v2/` 运行：
 
@@ -107,3 +108,11 @@ python -m digitallife_v2 stop --session data/sessions/find-x6-v2-search-stop-new
 ```
 
 这是仓库内的脚本驱动验收，复用生产 SessionLoop/PhoneController，不调用模型 API，不代表新的自主模型测试。默认使用实时清单中的 LibChecker；需要已安装且已解锁的绑定测试设备。会话有三分钟硬期限，只有搜索 READY 且正式 Stop 生效后专项入口才返回成功；到期本身不算通过。
+
+Android 导航专项同样使用生产控制器、无模型请求：
+
+```powershell
+python -m acceptance.navigation_keys --session data/sessions/find-x6-v2-navigation-new
+```
+
+顺序为 HOME → 多任务 → BACK → LibChecker → HOME。成功时生成 `NAVIGATION_READY.json`，需核对其中各步的实际 PNG/XML；分发次数本身不证明界面正确。脚本不训练生命记忆或兴趣。

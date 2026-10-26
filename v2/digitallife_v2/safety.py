@@ -27,13 +27,14 @@ def parse_decision(content):
         if not isinstance(content, str) or len(content) > 12000:
             raise ValueError()
         d = json.loads(content, object_pairs_hook=unique)
-        if not isinstance(d, dict) or set(d) != {"intent", "action", "note"}:
+        if not isinstance(d, dict) or set(d) - {"intent", "action", "note", "life"} or not {"intent", "action", "note"} <= set(d):
             raise ValueError()
         if d["intent"] not in {"explore", "rest"} or not isinstance(d["note"], str) or len(d["note"]) > 400:
             raise ValueError()
         a = d["action"]
         fields = {"open_app": {"type", "package_name"}, "tap": {"type", "control_id"},
                   "swipe": {"type", "control_id", "direction"}, "back": {"type"},
+                  "home": {"type"}, "recent_apps": {"type"},
                   "search": {"type", "control_id", "query"}, "rest": {"type", "seconds"}}
         if not isinstance(a, dict) or a.get("type") not in fields or set(a) != fields[a["type"]]:
             raise ValueError()
@@ -50,6 +51,13 @@ def parse_decision(content):
             raise ValueError()
         if (d["intent"] == "rest") != (a["type"] == "rest"):
             raise ValueError()
+        if "life" in d:
+            life = d["life"]
+            limits = {"topic": 40, "goal": 160, "memory_id": 64}
+            if not isinstance(life, dict) or set(life) - set(limits):
+                raise ValueError()
+            if any(not isinstance(value, str) or len(value) > limits[key] for key, value in life.items()):
+                raise ValueError()
         return d
     except (ValueError, TypeError, KeyError) as e:
         raise Blocked("MODEL_OUTPUT_INVALID") from e
@@ -64,6 +72,8 @@ def guard(action, obs, apps):
     if kind == "open_app":
         if action["package_name"] not in apps:
             raise Blocked("APP_NOT_CURRENTLY_LAUNCHABLE")
+        return None
+    if kind in {"home", "recent_apps"}:
         return None
     if obs.redacted or obs.incomplete:
         raise Blocked("SENSITIVE_OR_INCOMPLETE_PAGE")

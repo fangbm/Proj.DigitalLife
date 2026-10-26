@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 import uuid
 from .brain import LifeBrain
+from .memory import LifeMemory
 from .phone import PhoneController
 from .safety import Blocked, DeviceLock, UnknownDispatch, guard, rebind
 from .store import LifeStore
@@ -22,10 +23,14 @@ class SessionLoop:
         self.directory = Path(directory).resolve()
         self.minutes = minutes
         if not 0 < minutes <= 10:
-            raise ValueError("M1_SESSION_REQUIRES_0_TO_10_MINUTES")
+            raise ValueError("SESSION_REQUIRES_0_TO_10_MINUTES")
         self.phone_factory, self.brain_factory = phone_factory, brain_factory
         self.store = None
-        self.recent = []  # M1 short context only, no M2 memory migration/state machine.
+        self.recent = []
+        self.memory = None
+        self.run_kind = "autonomous" if phone_factory is PhoneController and brain_factory is LifeBrain else "scripted" if phone_factory is PhoneController else "fixture"
+        self.action_ids = []
+        self.last_result_event = None
 
     def check_stop(self):
         if (self.directory / "STOP").exists() or self.lock.emergency.exists():
@@ -58,6 +63,8 @@ class SessionLoop:
 
     async def send(self, command, action, observation):
         self.check_stop()
+        if self.run_kind != "fixture" and self.deadline - time.monotonic() < 20:
+            raise SessionStopped("OBSERVATION_TIME_RESERVE")
         if self.store.state["dispatched"] >= self.config.max_actions:
             raise SessionStopped("ACTION_BUDGET_EXHAUSTED")
         action_id = uuid.uuid4().hex
@@ -90,12 +97,14 @@ class SessionLoop:
                    (observation.xml_sha256 is not None and after.xml_sha256 is not None
                     and observation.xml_sha256 != after.xml_sha256))
         result = "changed" if changed else "unchanged"
-        self.store.event(result, {"action_id": action_id, "before": observation.observation_id,
+        self.last_result_event = self.store.event(result, {"action_id": action_id, "before": observation.observation_id,
                                  "after": after.observation_id, "achieved": None})
         self.lock.pending.unlink()
+        self.action_ids.append(action_id)
         return after, result
 
     async def step(self):
+        self.action_ids = []
         before = await self.guarded(self.phone.observe())
         self.observed(before)
         apps = await self.guarded(self.phone.catalog())
@@ -106,14 +115,25 @@ class SessionLoop:
         guard(action, before, apps)
         if action["type"] == "rest":
             seconds = min(action["seconds"], max(0, self.deadline - time.monotonic()))
-            self.store.event("rest", {"seconds": seconds})
+            self.store.event("rest", {"seconds": action["seconds"], "sleep_in_session": seconds})
             self.store.update(next_wake=time.time() + seconds)
-            await self.guarded(asyncio.sleep(seconds))
+            if self.memory:
+                self.memory.begin_rest(action["seconds"])
+            started = time.monotonic()
+            try:
+                await self.guarded(asyncio.sleep(seconds))
+            finally:
+                if self.memory:
+                    elapsed = min(seconds, time.monotonic() - started)
+                    completed = elapsed >= action["seconds"] - .05
+                    event = self.store.event("rest_finished", {"elapsed_seconds": elapsed, "completed": completed})
+                    self.memory.end_rest(elapsed, completed, event)
+                    self.store.update(life=self.memory.brief())
             self.store.update(next_wake=None)
             return {"action": action, "outcome": "rested"}
         fresh = await self.guarded(self.phone.observe())
         self.observed(fresh)
-        if action["type"] == "open_app":
+        if action["type"] in {"open_app", "home", "recent_apps"}:
             # An app switch may recover from a sensitive page; it still uses fresh device/window checks.
             guard(action, fresh, apps)
             target = None
@@ -129,9 +149,13 @@ class SessionLoop:
             if typed.foreground != fresh.foreground:
                 raise Blocked("SEARCH_FOREGROUND_CHANGED_AFTER_TYPING")
             command = await self.guarded(self.phone.prepare_search_submit(typed, action, target))
-            _, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, typed)
+            after, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, typed)
         else:
-            _, result = await self.send(command, action, fresh)
+            after, result = await self.send(command, action, fresh)
+        if self.memory:
+            self.memory.record(proposal, before, after, self.action_ids, result, self.last_result_event,
+                               getattr(self.brain, "offered_memory_ids", ()))
+            self.store.update(life=self.memory.brief())
         return {"action": action, "outcome": result, "note": proposal["note"]}
 
     async def run(self):
@@ -139,7 +163,7 @@ class SessionLoop:
             # No resumption/replay: every run has a fresh exclusive evidence directory.
             self.directory.mkdir(parents=True, exist_ok=False)
             self.deadline = time.monotonic() + self.minutes * 60
-            self.store = LifeStore(self.config.data, str(self.directory), self.config.serial)
+            self.store = LifeStore(self.config.data, str(self.directory), self.config.serial, self.run_kind)
             self.store.update(status="running", deadline=time.time() + self.minutes * 60,
                               emergency_path=str(self.lock.emergency), pending_path=str(self.lock.pending),
                               vision_configured=self.config.vision)
@@ -147,6 +171,26 @@ class SessionLoop:
             self.brain = self.brain_factory(self.config, self.store)
             status, reason = "stopped", "INTERRUPTED"
             try:
+                if self.run_kind == "autonomous":
+                    self.memory = self.store.memory = LifeMemory(self.store.db, self.config.serial,
+                                                                  str(self.directory), self.store.event)
+                    self.memory.start()
+                    self.store.update(life=self.memory.brief())
+                    remaining = min(120, max(0, self.memory.state["rest_until"] - time.time()))
+                    if remaining:
+                        requested = remaining
+                        remaining = min(requested, max(0, self.deadline - time.monotonic()))
+                        self.store.event("rest_continued", {"seconds": remaining})
+                        self.store.update(next_wake=time.time() + remaining)
+                        started = time.monotonic()
+                        try:
+                            await self.guarded(asyncio.sleep(remaining))
+                        finally:
+                            elapsed = min(remaining, time.monotonic() - started)
+                            completed = elapsed >= requested - .05
+                            event = self.store.event("rest_finished", {"elapsed_seconds": elapsed, "completed": completed})
+                            self.memory.end_rest(elapsed, completed, event)
+                            self.store.update(life=self.memory.brief(), next_wake=None)
                 failures = 0
                 while True:
                     self.check_stop()
@@ -155,7 +199,10 @@ class SessionLoop:
                         failures = 0
                     except Blocked as e:
                         code = str(e)
-                        self.store.event("blocked", {"reason": code})
+                        event = self.store.event("blocked", {"reason": code})
+                        if self.memory:
+                            self.memory.blocked(code, event, self.action_ids)
+                            self.store.update(life=self.memory.brief())
                         self.store.update(blocked=self.store.state["blocked"] + 1, last_error=code)
                         if "BUDGET" in code or "TOKEN_LIMIT" in code or "IDENTITY" in code or "OFFLINE" in code:
                             raise SessionStopped(code)

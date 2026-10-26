@@ -22,6 +22,7 @@ class PhoneController:
         self.apps = {}
         self.last_windows = ""
         self.rotation = None
+        self._recent_apps_requested = False
 
     async def _adb(self, *args, dispatch=False):
         """Only internal fixed builders call this method; cancellation kills own child."""
@@ -167,8 +168,12 @@ class PhoneController:
         pp, xp = self.directory / (oid + ".png"), self.directory / (oid + ".xml")
         pp.write_bytes(png)
         xp.write_text(xml, encoding="utf-8")
+        overview = self._recent_apps_requested or bool(
+            re.search(r"launcher|quickstep|systemui|recents", before, re.I) and
+            re.search(r"recents.?view|recent_apps|overview|task.?view|recent.?task|task.?switch", xml, re.I))
         return Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial, before,
-            w, h, rotation, controls, False, False, str(pp), sha(png), str(xp), sha(xml.encode()))
+            w, h, rotation, controls, False, False, str(pp), sha(png), str(xp), sha(xml.encode()),
+            vision_allowed=not overview, image_withheld_reason="unclassified_task_preview_images" if overview else None)
 
     async def prepare(self, action, target, observation):
         """All pre-dispatch failures are known non-dispatches."""
@@ -197,8 +202,8 @@ class PhoneController:
                 raise Blocked("FINAL_SCENE_CHANGED_OR_EXPIRED")
             self.check_windows(fg)
             return ("shell", "am", "start", "-W", *LAUNCH_FLAGS, "-n", matches[0])
-        if kind == "back":
-            return ("shell", "input", "keyevent", "4")
+        if kind in {"back", "home", "recent_apps"}:
+            return ("shell", "input", "keyevent", {"back": "4", "home": "3", "recent_apps": "187"}[kind])
         if kind == "search":
             # Select only in the freshly verified focused search editor. The next
             # observation/recheck must still bind that editor before typing.
@@ -219,7 +224,7 @@ class PhoneController:
                   and command[4:8] == LAUNCH_FLAGS and command[8] == "-n"
                   and COMPONENT.fullmatch(command[9]))
         input_command = command[:2] == ("shell", "input") and (
-            (len(command) == 4 and command[2] == "keyevent" and command[3] in {"4", "66"}) or
+            (len(command) == 4 and command[2] == "keyevent" and command[3] in {"3", "4", "66", "187"}) or
             (command == ("shell", "input", "keycombination", "113", "29")) or
             (len(command) == 5 and command[2] == "tap" and all(s.isdigit() for s in command[3:])) or
             (len(command) == 8 and command[2] == "swipe" and all(s.isdigit() for s in command[3:])) or
@@ -227,6 +232,11 @@ class PhoneController:
         if not (launch or input_command):
             raise Blocked("FIXED_DISPATCH_COMMAND_REQUIRED")
         await self._adb(*command, dispatch=True)
+        if command == ("shell", "input", "keyevent", "187"):
+            self._recent_apps_requested = True
+        elif command[:3] == ("shell", "am", "start") or command in {
+                ("shell", "input", "keyevent", "3"), ("shell", "input", "keyevent", "4")}:
+            self._recent_apps_requested = False
 
     def search_editor(self, observation, old_target, expected_text=None):
         candidates = [c for c in observation.controls if c.resource == old_target.resource and c.package == old_target.package

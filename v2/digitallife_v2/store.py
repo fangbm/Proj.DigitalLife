@@ -6,6 +6,38 @@ from pathlib import Path
 import sqlite3
 import time
 from .safety import Blocked
+from .memory import initialize
+
+
+def open_database(data):
+    data = Path(data)
+    data.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(data / "life.sqlite3")
+    version = db.execute("PRAGMA user_version").fetchone()[0]
+    if version not in {0, 2}:
+        db.close()
+        raise ValueError("UNSUPPORTED_V2_DATABASE_VERSION")
+    db.execute("PRAGMA journal_mode=WAL")
+    db.execute("PRAGMA synchronous=FULL")
+    db.executescript("""
+    CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,serial TEXT,started REAL,ended REAL,status TEXT,reason TEXT);
+    CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,session TEXT,at REAL,kind TEXT,payload TEXT);
+    CREATE TABLE IF NOT EXISTS usage(id INTEGER PRIMARY KEY,session TEXT,at REAL,kind TEXT,input_tokens INTEGER,output_tokens INTEGER,cost REAL,reserved REAL);
+    """)
+    if "run_kind" not in {r[1] for r in db.execute("PRAGMA table_info(sessions)")}:
+        if db.execute("SELECT count(*) FROM sessions").fetchone()[0]:
+            backups = data / "backups"
+            backups.mkdir(exist_ok=True)
+            backup = sqlite3.connect(backups / f"pre-m2-{time.time_ns()}.sqlite3")
+            try:
+                db.backup(backup)
+            finally:
+                backup.close()
+        db.execute("ALTER TABLE sessions ADD COLUMN run_kind TEXT NOT NULL DEFAULT 'legacy_unclassified'")
+    initialize(db)
+    db.execute("PRAGMA user_version=2")
+    db.commit()
+    return db
 
 
 def write_json(path, value):
@@ -19,24 +51,17 @@ def write_json(path, value):
 
 
 class LifeStore:
-    def __init__(self, data, session, serial):
-        data.mkdir(parents=True, exist_ok=True)
+    def __init__(self, data, session, serial, run_kind="unclassified"):
         self.session = session
         self.serial = serial
         self.directory = Path(session)
-        self.db = sqlite3.connect(data / "life.sqlite3")
-        self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.execute("PRAGMA synchronous=FULL")
-        self.db.executescript("""
-        CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,serial TEXT,started REAL,ended REAL,status TEXT,reason TEXT);
-        CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,session TEXT,at REAL,kind TEXT,payload TEXT);
-        CREATE TABLE IF NOT EXISTS usage(id INTEGER PRIMARY KEY,session TEXT,at REAL,kind TEXT,input_tokens INTEGER,output_tokens INTEGER,cost REAL,reserved REAL);
-        """)
+        self.db = open_database(data)
+        self.memory = None
         self.state = {"session": session, "serial": serial, "status": "starting", "started_at": time.time(),
                       "foreground": None, "last_action": None, "dispatched": 0, "blocked": 0,
                       "requests": 0, "input_tokens": 0, "output_tokens": 0, "cost": None,
-                      "last_error": None, "next_wake": None}
-        self.db.execute("INSERT INTO sessions VALUES(?,?,?,NULL,'starting',NULL)", (session, serial, time.time()))
+                      "last_error": None, "next_wake": None, "run_kind": run_kind}
+        self.db.execute("INSERT INTO sessions(id,serial,started,status,run_kind) VALUES(?,?,?,'starting',?)", (session, serial, time.time(), run_kind))
         self.db.commit()
         self.update()
 
@@ -48,14 +73,15 @@ class LifeStore:
 
     def event(self, kind, payload):
         now = time.time()
-        self.db.execute("INSERT INTO events(session,at,kind,payload) VALUES(?,?,?,?)",
+        cursor = self.db.execute("INSERT INTO events(session,at,kind,payload) VALUES(?,?,?,?)",
                         (self.session, now, kind, json.dumps(payload, ensure_ascii=False)))
         self.db.commit()
         with (self.directory / "events.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps({"at": datetime.fromtimestamp(now, timezone.utc).isoformat(),
-                                "source": "v2_m1", "kind": kind, **payload}, ensure_ascii=False) + "\n")
+                                "source": "v2", "kind": kind, **payload}, ensure_ascii=False) + "\n")
             f.flush()
             os.fsync(f.fileno())
+        return cursor.lastrowid
 
     def reserve_request(self, config):
         """Reserve before sending; failed/cancelled requests retain pessimistic cost."""

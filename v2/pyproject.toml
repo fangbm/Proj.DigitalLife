@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "digitallife-v2"
-version = "2.0.0a1"
-description = "Independent, bounded Android exploration loop (M1)"
+version = "2.0.0a2"
+description = "Bounded Android exploration with source-linked life continuity"
 requires-python = ">=3.11"
 dependencies = ["Pillow>=11.3,<13"]
 
