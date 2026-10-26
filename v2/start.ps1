@@ -24,7 +24,7 @@ $v2LoadedKey = $false
 try {
     $env:PYTHONPATH = $PSScriptRoot
     $env:PYTHONUTF8 = '1'
-    # Only a user-invoked Run may decrypt the existing credential. No secret file is modified.
+    # Only an explicitly authorized Run may decrypt the existing credential. No secret file is modified.
     if ($Command -eq 'Run' -and -not $env:DIGITALLIFE_V2_API_KEY -and -not $env:PHONE_LIFE_API_KEY) {
         $v2SecretPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'data/deepseek.key.dpapi'
         if (Test-Path -LiteralPath $v2SecretPath) {

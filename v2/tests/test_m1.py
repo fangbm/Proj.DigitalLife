@@ -161,6 +161,77 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(Blocked):
                 rebind(a, observation(), fresh, {})
 
+    def test_tab_label_uses_verified_clickable_parent_without_inventing_flags(self):
+        raw = ('<?xml version="1.0"?><hierarchy><node package="com.reader" bounds="[0,0][720,1600]">'
+               '<node package="com.reader" bounds="[100,200][300,400]" clickable="true" enabled="true">'
+               '<node package="com.reader" resource-id="com.reader:id/tv_tab_title" text="热榜" '
+               'class="android.widget.TextView" bounds="[120,230][280,330]" clickable="false" enabled="true"/>'
+               '</node></node></hierarchy>')
+        controls = parse_xml(raw, "one")[1]
+        obs = replace(observation(), controls=controls)
+        self.assertIs(controls[2].clickable, False)
+        self.assertIsNone(controls[2].visible)
+        self.assertIsNotNone(guard({"type": "tap", "control_id": "one:2"}, obs, {}))
+        fresh = replace(observation("two"), controls=parse_xml(raw, "two")[1])
+        self.assertEqual(rebind({"type": "tap", "control_id": "one:2"}, obs, fresh, {}).control_id, "two:2")
+        bad = raw.replace('clickable="true"', 'clickable="false"')
+        with self.assertRaises(Blocked):
+            rebind({"type": "tap", "control_id": "one:2"}, obs,
+                   replace(fresh, controls=parse_xml(bad, "two")[1]), {})
+        risky = raw.replace('<node package="com.reader" bounds="[100,200]',
+                            '<node text="关注" package="com.reader" bounds="[100,200]')
+        with self.assertRaises(Blocked):
+            guard({"type": "tap", "control_id": "one:2"}, replace(obs, controls=parse_xml(risky, "one")[1]), {})
+
+    async def test_fullscreen_scroll_uses_clipped_gesture_not_edge_controls(self):
+        obs = observation()
+        obs.controls[0] = replace(obs.controls[0], bounds=(0, 0, 720, 1600), scrollable=True)
+        action = {"type": "swipe", "control_id": "one:0", "direction": "up"}
+        target = guard(action, obs, {})
+        phone = PhoneController(self.config, self.root)
+        phone.identity = AsyncMock()
+        phone.scene = AsyncMock(return_value=obs.foreground)
+        cmd = await phone.prepare(action, target, obs)
+        self.assertGreater(int(cmd[4]), int(cmd[6]))
+        self.assertGreater(int(cmd[6]), 1600 * .12)
+        self.assertLess(int(cmd[4]), 1600 * .82)
+        obs.controls[0] = replace(target, bounds=(0, 200, 720, 350))
+        with self.assertRaisesRegex(Blocked, "SCROLL_REGION"):
+            guard(action, obs, {})
+
+    def overlay_xml(self):
+        return ('<?xml version="1.0"?><hierarchy><node package="com.reader" bounds="[0,0][720,1600]">'
+                '<node drawing-order="1" package="com.reader" bounds="[0,0][720,1600]">'
+                '<node package="com.reader" resource-id="article" text="后台文章" class="android.widget.Button" '
+                'bounds="[100,200][600,400]" enabled="true" clickable="true"/></node>'
+                '<node drawing-order="7" package="com.reader" bounds="[0,0][720,1600]">'
+                '<node package="com.reader" resource-id="search" class="android.widget.EditText" '
+                'bounds="[100,100][600,200]" enabled="true" clickable="true" focused="true" text=""/>'
+                '</node></node></hierarchy>')
+
+    def test_focused_overlay_excludes_retained_background_controls(self):
+        controls = parse_xml(self.overlay_xml(), "one")[1]
+        obs = replace(observation(), controls=controls)
+        self.assertTrue(controls[2].covered)
+        self.assertFalse(controls[4].covered)
+        with self.assertRaises(Blocked):
+            guard({"type": "tap", "control_id": "one:2"}, obs, {})
+        self.assertIsNotNone(guard({"type": "search", "control_id": "one:4"}, obs, {}))
+        unknown = parse_xml(self.overlay_xml().replace('drawing-order="7"', ''), "one")[1]
+        self.assertFalse(any(c.covered for c in unknown))
+
+    def test_prompt_has_only_guarded_affordances_and_active_layer_text(self):
+        store = self.make_store()
+        controls = parse_xml(self.overlay_xml(), "one")[1]
+        obs = replace(observation(), controls=controls)
+        value = json.loads(LifeBrain(self.config, store).payload(obs, {"com.reader": []}, [])["messages"][1]["content"])
+        offered = value["observation"]["controls"]
+        self.assertEqual(len(offered), 1)
+        self.assertEqual(offered[0]["control_id"], "one:4")
+        self.assertIn("search", offered[0]["allowed_actions"])
+        self.assertNotIn("后台文章", str(value["page_text_from_xml"]))
+        self.assertTrue(all("control_id" not in x for x in value["page_text_from_xml"]))
+
     def test_scroll_requires_current_container(self):
         obs = observation()
         a = {"type": "swipe", "control_id": "one:0", "direction": "up"}

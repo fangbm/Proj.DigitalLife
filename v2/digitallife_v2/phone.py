@@ -8,7 +8,7 @@ import uuid
 from PIL import Image
 from .config import IDENTITY
 from .perception import Observation, parse_xml, sha, unlocked_awake
-from .safety import Blocked, UnknownDispatch
+from .safety import Blocked, UnknownDispatch, swipe_region
 
 LAUNCH_FLAGS = ("-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER")
 COMPONENT = re.compile(r"([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)/([A-Za-z_.$][\w.$]*)", re.ASCII)
@@ -173,7 +173,12 @@ class PhoneController:
         """All pre-dispatch failures are known non-dispatches."""
         await self.identity()
         fg = await self.scene()
-        self.check_windows(fg, target.bounds if target else None)
+        region = target.bounds if target else None
+        if action["type"] == "swipe":
+            a, b, c, d = swipe_region(observation, target)
+            x = (a + c) // 2
+            region = (x - 1, b + (d - b) // 4, x + 1, d - (d - b) // 4)
+        self.check_windows(fg, region)
         if (fg != observation.foreground or time.monotonic() - observation.monotonic > 10
                 or (self.rotation is not None and self.rotation != observation.rotation)):
             raise Blocked("FINAL_SCENE_CHANGED_OR_EXPIRED")
@@ -200,7 +205,9 @@ class PhoneController:
         x, y = (x1 + x2) // 2, (y1 + y2) // 2
         if kind == "tap":
             return ("shell", "input", "tap", str(x), str(y))
-        top, bottom = y1 + (y2 - y1) // 4, y2 - (y2 - y1) // 4
+        _, safe_top, _, safe_bottom = swipe_region(observation, target)
+        top = safe_top + (safe_bottom - safe_top) // 4
+        bottom = safe_bottom - (safe_bottom - safe_top) // 4
         begin, end = (bottom, top) if action["direction"] == "up" else (top, bottom)
         return ("shell", "input", "swipe", str(x), str(begin), str(x), str(end), "350")
 

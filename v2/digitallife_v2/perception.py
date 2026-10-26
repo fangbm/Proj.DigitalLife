@@ -55,6 +55,13 @@ class Control:
     visible: bool | None
     editable: bool | None
     ancestry: str = ""
+    tap_owner: tuple | None = None
+    covered: bool = False
+
+    @property
+    def own_words(self):
+        role = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", self.resource)
+        return " ".join((role, self.text, self.description)).replace("_", " ")
 
     @property
     def words(self):
@@ -64,7 +71,8 @@ class Control:
     @property
     def signature(self):
         return (self.package, self.resource, self.text, self.description, self.kind, self.bounds,
-                self.clickable, self.scrollable, self.enabled, self.focused, self.visible, self.editable, self.ancestry)
+                self.clickable, self.scrollable, self.enabled, self.focused, self.visible, self.editable,
+                self.ancestry, self.tap_owner, self.covered)
 
 
 @dataclass
@@ -109,8 +117,9 @@ def parse_xml(raw, observation_id):
     dialog = any(re.search(r"(?:alertTitle|parentPanel|:id/button1|Dialog)", " ".join(n.attrib.values())) for n in nodes)
     if dialog and any(RISK.search(" ".join(n.attrib.values()).replace("_", " ")) for n in nodes):
         redacted = True
+    active = focused_layer(root, nodes)
     controls = []
-    def visit(node, ancestor="", invisible=False, disabled=False):
+    def visit(node, ancestor="", invisible=False, disabled=False, tap_owner=None):
         if node.tag == "node":
             attrs = node.attrib
             b = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", attrs.get("bounds", ""))
@@ -126,17 +135,61 @@ def parse_xml(raw, observation_id):
                             if match:
                                 risk_descendant = " " + match[0]
                                 break
+                covered = active is not None and node not in active
                 controls.append(Control(f"{observation_id}:{len(controls)}", attrs.get("package", ""),
                     attrs.get("resource-id", "")[:300], attrs.get("text", "")[:300],
                     attrs.get("content-desc", "")[:300], attrs.get("class", ""), tuple(map(int, b.groups())),
                     boolean("clickable"), boolean("scrollable"), False if disabled else boolean("enabled"), boolean("focused"),
-                    False if invisible else boolean("visible-to-user"), boolean("editable"), ancestor + risk_descendant))
+                    False if invisible else boolean("visible-to-user"), boolean("editable"), ancestor + risk_descendant,
+                    tap_owner, covered))
+                if boolean("clickable") is True:
+                    tap_owner = (attrs.get("package", ""), attrs.get("resource-id", ""),
+                                 attrs.get("class", ""), tuple(map(int, b.groups())),
+                                 False if disabled else boolean("enabled"),
+                                 False if invisible else boolean("visible-to-user"),
+                                 bool(RISK.search(controls[-1].words)), covered)
             # Parent's action role vetoes a nested apparently harmless label.
             ancestor = " ".join((ancestor, attrs.get("resource-id", ""), attrs.get("text", ""), attrs.get("content-desc", "")))[-1200:]
         for child in node:
-            visit(child, ancestor, invisible, disabled)
+            visit(child, ancestor, invisible, disabled, tap_owner)
     visit(root)
     return xml, controls, redacted, int(root.get("rotation", "0"))
+
+
+def focused_layer(root, nodes):
+    """A focused editor in a large, later-drawn sibling pane covers retained UI.
+
+    This is positive XML layer evidence, not an invented visible=true attribute.
+    If the required geometry/order is missing, do not infer a layer from names.
+    """
+    parents = {child: parent for parent in root.iter() for child in parent}
+    focused = [n for n in nodes if n.get("focused") == "true"
+               and ("EditText" in n.get("class", "") or n.get("editable") == "true")]
+    if len(focused) != 1:
+        return None
+    def rect(n):
+        values = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", n.get("bounds", ""))
+        return tuple(map(int, values.groups())) if values else None
+    frame = rect(nodes[0]) if nodes else None
+    if frame is None:
+        return None
+    width, height = frame[2] - frame[0], frame[3] - frame[1]
+    node, scope = focused[0], None
+    while node in parents:
+        parent = parents[node]
+        bounds = rect(node)
+        order = node.get("drawing-order", "")
+        if (bounds and order.isdigit() and bounds[2] - bounds[0] >= width * .9
+                and bounds[3] - bounds[1] >= height * .5):
+            for sibling in parent:
+                other, other_order = rect(sibling), sibling.get("drawing-order", "")
+                if (sibling is not node and other and other_order.isdigit() and int(other_order) < int(order)
+                        and max(bounds[0], other[0]) < min(bounds[2], other[2])
+                        and max(bounds[1], other[1]) < min(bounds[3], other[3])):
+                    scope = node
+                    break
+        node = parent
+    return set(scope.iter("node")) if scope is not None else None
 
 
 def sha(data):

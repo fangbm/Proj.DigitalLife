@@ -74,25 +74,41 @@ def guard(action, obs, apps):
         raise Blocked("CURRENT_CONTROL_REQUIRED")
     c = controls[0]
     x1, y1, x2, y2 = c.bounds
-    if (c.package != obs.foreground.split("/")[0] or c.enabled is not True or c.visible is False
+    if (c.package != obs.foreground.split("/")[0] or c.enabled is not True or c.visible is False or c.covered
             or not (0 <= x1 < x2 <= obs.width and 0 <= y1 < y2 <= obs.height)
-            or y1 < obs.height * .035 or y2 > obs.height * .96):
+            or (kind != "swipe" and (y1 < obs.height * .035 or y2 > obs.height * .96))):
         raise Blocked("TARGET_NOT_USABLE")
     if RISK.search(c.words):
         raise Blocked("EXTERNAL_SIDE_EFFECT_OR_SENSITIVE_TARGET")
     if kind == "swipe":
-        if c.scrollable is not True or y2 - y1 < 160:
+        if c.scrollable is not True:
             raise Blocked("SCROLL_CONTAINER_REQUIRED")
+        swipe_region(obs, c)
     elif kind == "search":
         if (not SEARCH.search(c.words) or c.focused is not True
                 or not ("EditText" in c.kind or c.editable is True) or c.text.strip()):
             raise Blocked("EMPTY_FOCUSED_SEARCH_EDITOR_REQUIRED")
     else:
-        own_words = " ".join((c.resource.replace("_", " "), c.text, c.description))
+        own_words = c.own_words
         editor = "EditText" in c.kind or c.editable is True
-        if c.clickable is not True or not READ.search(own_words) or (editor and (not SEARCH.search(own_words) or c.text.strip())):
+        clickable = c.clickable is True
+        if not clickable and c.tap_owner and "TextView" in c.kind:
+            package, _, _, bounds, enabled, visible, risky, covered = c.tap_owner
+            a, b, d, e = bounds
+            clickable = (package == c.package and enabled is True and visible is not False and not risky
+                         and not covered and a <= x1 < x2 <= d and b <= y1 < y2 <= e)
+        if not clickable or not READ.search(own_words) or (editor and (not SEARCH.search(own_words) or c.text.strip())):
             raise Blocked("UNKNOWN_ACTION_ROLE")
     return c
+
+
+def swipe_region(obs, control):
+    """Clip the gesture inside a known scroll container, away from fixed edge UI."""
+    x1, y1, x2, y2 = control.bounds
+    top, bottom = max(y1, int(obs.height * .12)), min(y2, int(obs.height * .82))
+    if bottom - top < max(160, obs.height * .18):
+        raise Blocked("SCROLL_REGION_TOO_SMALL")
+    return (x1, top, x2, bottom)
 
 
 def rebind(action, before, fresh, apps):
