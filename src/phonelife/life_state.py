@@ -16,9 +16,17 @@ class LifeState:
     consecutive_failures: int = 0
     cycles: int = 0
     last_update: float = 0.
+    last_failure_at: float | None = None
 
     def wire(self):
         return asdict(self)
+
+    def failure_cooldown_remaining(self,now,threshold,seconds=600):
+        if self.consecutive_failures<threshold:return 0.
+        # Legacy standalone states have only last_update. The controller recovers
+        # an authoritative TaskRun timestamp where available before this fallback.
+        anchor=self.last_failure_at if self.last_failure_at is not None else self.last_update or now
+        return max(0.,seconds-max(0.,now-anchor))
 
     def evolve(self, *, now, status, actions, api_calls, novelty, repeated, resting=False):
         before = self.wire()
@@ -30,6 +38,11 @@ class LifeState:
         self.boredom = clamp(self.boredom + (.08 if repeated else -.04 if novelty else 0))
         self.curiosity = clamp(self.curiosity + (.025 if novelty else -.025 if repeated else 0))
         failure = status in {'failed', 'blocked', 'step_limit', 'interrupted', 'needs_review'}
+        if failure:self.last_failure_at=now
+        elif status=='succeeded':self.last_failure_at=None
+        elif self.consecutive_failures and self.last_failure_at is None:
+            # Pin a legacy fallback before a rest can overwrite last_update.
+            self.last_failure_at=self.last_update or now
         self.consecutive_failures = self.consecutive_failures + 1 if failure else 0 if status == 'succeeded' else self.consecutive_failures
         self.confidence = clamp(self.confidence + (.04 if status == 'succeeded' else -.06 if failure else -.01 if status == 'uncertain' else 0))
         self.cycles += 1

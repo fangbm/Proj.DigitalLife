@@ -6,6 +6,7 @@ import asyncio
 import json
 import time
 import uuid
+from datetime import datetime
 from dataclasses import asdict, replace
 
 from .semantic_stability import trusted
@@ -79,7 +80,22 @@ class AutonomousLife:
 
     def load_state(self):
         row = self.store.conn.execute('SELECT state FROM life_states WHERE device=? AND run_kind=?', (self.state_key, self.kind)).fetchone()
-        return LifeState(**json.loads(row[0])) if row else LifeState()
+        state=LifeState(**json.loads(row[0])) if row else LifeState()
+        if state.consecutive_failures and state.last_failure_at is None:
+            # Read-only JSON compatibility: state may predate last_failure_at.
+            # Only finalized life cycles of this subject/provenance can anchor it;
+            # later rests, targeted tests and unrelated devices must not renew it.
+            failure=self.store.conn.execute(f'''SELECT ended_wall_utc FROM task_runs WHERE {self.scope}
+                AND run_kind=? AND status IN ('failed','blocked','step_limit','interrupted','needs_review')
+                AND ended_wall_utc IS NOT NULL AND task_run_id IN (SELECT task_run_id FROM life_cycles)
+                ORDER BY julianday(ended_wall_utc) DESC, rowid DESC LIMIT 1''',(*self.devices,self.kind)).fetchone()
+            if failure:
+                try:
+                    ended=datetime.fromisoformat(failure[0].replace('Z','+00:00'))
+                    if ended.tzinfo is not None:state.last_failure_at=ended.timestamp()
+                except (ValueError,OverflowError,OSError):pass
+            if state.last_failure_at is None:state.last_failure_at=state.last_update or time.time()
+        return state
 
     async def review_startup(self, life):
         pending = self.store.conn.execute("SELECT COUNT(*) FROM task_runs WHERE device=? AND status='running'",(self.device,)).fetchone()[0]
@@ -192,7 +208,10 @@ class AutonomousLife:
                 'continuation_reason':'Persisted unfinished goal; remaining budget and current evidence checked',
                 'current_capability_available':bool(foreground_ok and permitted)})
         state_view = self.state.wire()
-        elapsed = max(0, time.time()-self.state.last_update) if self.state.last_update else 0
+        now=time.time()
+        elapsed = max(0, now-self.state.last_update) if self.state.last_update else 0
+        failure_cooldown=self.state.failure_cooldown_remaining(now,self.limits.consecutive_failures)
+        state_view.update(failure_cooldown_remaining_seconds=failure_cooldown,failure_cooldown_active=failure_cooldown>0)
         state_view['energy'] = clamp(self.state.energy + min(.12, elapsed/3600*.15))
         interests = self.memory.interests()
         query = ' '.join(i['topic'] for i in interests[:5]) + ' ' + foreground
@@ -224,8 +243,8 @@ class AutonomousLife:
             decision = self.forced_rest('OPERATOR_' + control_mode(self.store, self.device).upper(), self.limits.min_rest_seconds)
         elif state_view['energy'] < .2:
             decision = self.forced_rest('LOW_ENERGY', 600)
-        elif self.state.consecutive_failures >= self.limits.consecutive_failures and elapsed < 600:
-            decision = self.forced_rest('FAILURE_COOLDOWN', 600-elapsed)
+        elif failure_cooldown>0:
+            decision = self.forced_rest('FAILURE_COOLDOWN', failure_cooldown)
         else:
             budget = self.context.budgets
             until = 0
