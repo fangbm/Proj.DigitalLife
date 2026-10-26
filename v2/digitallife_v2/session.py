@@ -120,12 +120,18 @@ class SessionLoop:
         else:
             target = rebind(action, before, fresh, apps)
         command = await self.guarded(self.phone.prepare(action, target, fresh))
-        after, result = await self.send(command, action, fresh)
         if action["type"] == "search":
-            if after.foreground != fresh.foreground:
+            selected, _ = await self.send(command, {"type": "search_select", "control_id": action["control_id"]}, fresh)
+            if selected.foreground != fresh.foreground:
+                raise Blocked("SEARCH_FOREGROUND_CHANGED_AFTER_SELECTION")
+            command = await self.guarded(self.phone.prepare_search_text(selected, action, target))
+            typed, _ = await self.send(command, action, selected)
+            if typed.foreground != fresh.foreground:
                 raise Blocked("SEARCH_FOREGROUND_CHANGED_AFTER_TYPING")
-            command = await self.guarded(self.phone.prepare_search_submit(after, action, target))
-            _, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, after)
+            command = await self.guarded(self.phone.prepare_search_submit(typed, action, target))
+            _, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, typed)
+        else:
+            _, result = await self.send(command, action, fresh)
         return {"action": action, "outcome": result, "note": proposal["note"]}
 
     async def run(self):

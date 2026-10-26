@@ -1,5 +1,6 @@
 """Fixed ADB operations. No subprocess shell, arbitrary Intent or model argv."""
 import asyncio
+from dataclasses import replace
 from datetime import datetime, timezone
 from io import BytesIO
 import re
@@ -8,7 +9,7 @@ import uuid
 from PIL import Image
 from .config import IDENTITY
 from .perception import Observation, parse_xml, sha, unlocked_awake
-from .safety import Blocked, UnknownDispatch, swipe_region
+from .safety import Blocked, UnknownDispatch, guard, swipe_region
 
 LAUNCH_FLAGS = ("-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER")
 COMPONENT = re.compile(r"([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)/([A-Za-z_.$][\w.$]*)", re.ASCII)
@@ -199,8 +200,9 @@ class PhoneController:
         if kind == "back":
             return ("shell", "input", "keyevent", "4")
         if kind == "search":
-            # Query is validated ASCII, remotely shell-quoted; no model metacharacters.
-            return ("shell", "input", "text", "'" + action["query"].replace(" ", "%s") + "'")
+            # Select only in the freshly verified focused search editor. The next
+            # observation/recheck must still bind that editor before typing.
+            return ("shell", "input", "keycombination", "113", "29")  # CTRL+A
         x1, y1, x2, y2 = target.bounds
         x, y = (x1 + x2) // 2, (y1 + y2) // 2
         if kind == "tap":
@@ -218,6 +220,7 @@ class PhoneController:
                   and COMPONENT.fullmatch(command[9]))
         input_command = command[:2] == ("shell", "input") and (
             (len(command) == 4 and command[2] == "keyevent" and command[3] in {"4", "66"}) or
+            (command == ("shell", "input", "keycombination", "113", "29")) or
             (len(command) == 5 and command[2] == "tap" and all(s.isdigit() for s in command[3:])) or
             (len(command) == 8 and command[2] == "swipe" and all(s.isdigit() for s in command[3:])) or
             (len(command) == 4 and command[2] == "text" and re.fullmatch(r"'[A-Za-z0-9% .,?_-]{1,240}'", command[3])))
@@ -225,21 +228,40 @@ class PhoneController:
             raise Blocked("FIXED_DISPATCH_COMMAND_REQUIRED")
         await self._adb(*command, dispatch=True)
 
-    async def prepare_search_submit(self, typed, action, old_target):
-        await self.identity()
-        if time.monotonic() - typed.monotonic > 10:
-            raise Blocked("SEARCH_OBSERVATION_EXPIRED")
-        candidates = [c for c in typed.controls if c.resource == old_target.resource and c.package == old_target.package
-                      and c.kind == old_target.kind and c.bounds == old_target.bounds and c.focused is True
-                      and c.text == action["query"]]
-        if typed.redacted or typed.incomplete or len(candidates) != 1:
+    def search_editor(self, observation, old_target, expected_text=None):
+        candidates = [c for c in observation.controls if c.resource == old_target.resource and c.package == old_target.package
+                      and c.kind == old_target.kind and c.focused is True]
+        if len(candidates) != 1:
             raise Blocked("SEARCH_FOCUS_OR_TEXT_CHANGED")
-        # Re-read focused widget immediately before ENTER; typing itself is never replayed.
+        target = candidates[0]
+        # Unique nonempty resource identity allows normal editor width changes
+        # when a clear icon appears. Unnamed widgets keep exact geometry binding.
+        if (not target.resource and target.bounds != old_target.bounds
+                or expected_text is not None and target.text != expected_text):
+            raise Blocked("SEARCH_FOCUS_OR_TEXT_CHANGED")
+        guard({"type": "search", "control_id": target.control_id}, observation, {})
+        return target
+
+    async def recheck_search(self, observation, old_target, expected_text):
+        await self.identity()
+        if time.monotonic() - observation.monotonic > 10:
+            raise Blocked("SEARCH_OBSERVATION_EXPIRED")
+        self.search_editor(observation, old_target, expected_text)
         _, controls, redacted, rotation = parse_xml(await self._text(
             "exec-out", "uiautomator", "dump", "/proc/self/fd/1"), uuid.uuid4().hex)
-        if redacted or rotation != typed.rotation or len([c for c in controls if c.signature == candidates[0].signature]) != 1:
+        if redacted or rotation != observation.rotation:
             raise Blocked("SEARCH_FOCUS_OR_TEXT_CHANGED")
-        if await self.scene() != typed.foreground:
+        fresh = replace(observation, controls=controls, monotonic=time.monotonic())
+        target = self.search_editor(fresh, old_target, expected_text)
+        if await self.scene() != observation.foreground:
             raise Blocked("SEARCH_SCENE_CHANGED")
-        self.check_windows(typed.foreground)
+        self.check_windows(observation.foreground, target.bounds)
+
+    async def prepare_search_text(self, selected, action, old_target):
+        await self.recheck_search(selected, old_target, old_target.text)
+        # Query is validated ASCII, remotely shell-quoted; no model metacharacters.
+        return ("shell", "input", "text", "'" + action["query"].replace(" ", "%s") + "'")
+
+    async def prepare_search_submit(self, typed, action, old_target):
+        await self.recheck_search(typed, old_target, action["query"])
         return ("shell", "input", "keyevent", "66")

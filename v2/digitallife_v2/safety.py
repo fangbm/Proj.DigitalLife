@@ -86,18 +86,18 @@ def guard(action, obs, apps):
         swipe_region(obs, c)
     elif kind == "search":
         if (not SEARCH.search(c.words) or c.focused is not True
-                or not ("EditText" in c.kind or c.editable is True) or c.text.strip()):
-            raise Blocked("EMPTY_FOCUSED_SEARCH_EDITOR_REQUIRED")
+                or not c.is_editor):
+            raise Blocked("FOCUSED_SEARCH_EDITOR_REQUIRED")
     else:
         own_words = c.own_words
-        editor = "EditText" in c.kind or c.editable is True
+        editor = c.is_editor
         clickable = c.clickable is True
         if not clickable and c.tap_owner and "TextView" in c.kind:
             package, _, _, bounds, enabled, visible, risky, covered = c.tap_owner
             a, b, d, e = bounds
             clickable = (package == c.package and enabled is True and visible is not False and not risky
                          and not covered and a <= x1 < x2 <= d and b <= y1 < y2 <= e)
-        if not clickable or not READ.search(own_words) or (editor and (not SEARCH.search(own_words) or c.text.strip())):
+        if not clickable or not READ.search(own_words) or (editor and not SEARCH.search(own_words)):
             raise Blocked("UNKNOWN_ACTION_ROLE")
     return c
 

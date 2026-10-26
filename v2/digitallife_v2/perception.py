@@ -59,6 +59,11 @@ class Control:
     covered: bool = False
 
     @property
+    def is_editor(self):
+        return (self.editable is True or "EditText" in self.kind
+                or "AutoCompleteTextView" in self.kind or self.kind.endswith(".SearchAutoComplete"))
+
+    @property
     def own_words(self):
         role = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", self.resource)
         return " ".join((role, self.text, self.description)).replace("_", " ")
@@ -112,7 +117,8 @@ def parse_xml(raw, observation_id):
     if len(nodes) > 4000:
         raise ValueError("XML_TOO_LARGE")
     redacted = any(n.get("password") == "true" or SENSITIVE.search(" ".join(n.attrib.values()))
-                   or (("EditText" in n.get("class", "") or n.get("editable") == "true")
+                   or (("EditText" in n.get("class", "") or "AutoCompleteTextView" in n.get("class", "")
+                        or n.get("class", "").endswith(".SearchAutoComplete") or n.get("editable") == "true")
                        and not SEARCH.search(" ".join(n.attrib.values()))) for n in nodes)
     dialog = any(re.search(r"(?:alertTitle|parentPanel|:id/button1|Dialog)", " ".join(n.attrib.values())) for n in nodes)
     if dialog and any(RISK.search(" ".join(n.attrib.values()).replace("_", " ")) for n in nodes):
@@ -164,7 +170,8 @@ def focused_layer(root, nodes):
     """
     parents = {child: parent for parent in root.iter() for child in parent}
     focused = [n for n in nodes if n.get("focused") == "true"
-               and ("EditText" in n.get("class", "") or n.get("editable") == "true")]
+               and ("EditText" in n.get("class", "") or "AutoCompleteTextView" in n.get("class", "")
+                    or n.get("class", "").endswith(".SearchAutoComplete") or n.get("editable") == "true")]
     if len(focused) != 1:
         return None
     def rect(n):

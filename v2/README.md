@@ -2,7 +2,7 @@
 
 独立 Python 实现，当前只交付 M1 的有限会话：观察 → 单个模型动作 → 风险检查 → 分发前复核 → 持久记录 → ADB 分发 → 再观察。V1 源码、数据库、证据和密钥保留，不导入 V1 运行模块。[设计原文](DESIGN.md)中的 M2/M3 尚未实现。
 
-**状态：2026-10-27 已完成十分钟真机测试，修复后另跑五分钟，确认真实 tap、标签切换和 swipe。** 第二轮 9 次分发、0 次拦截、0 次未知结果；证据与限制见 [DELIVERY.md](DELIVERY.md)。
+**状态：2026-10-27 已完成自主真机测试和复测，另通过真实搜索提交、运行中 Stop 的定向验收，M1 核心验收可结项。** 自主复测 9 次分发、0 次拦截、0 次未知结果；搜索/停止专项约 0.45 秒响应 Stop。证据与限制见 [DELIVERY.md](DELIVERY.md)。
 
 ## 手动运行
 
@@ -53,7 +53,7 @@ python -m digitallife_v2 stop --session data/sessions/find-x6-v2-10m-01
 | `VISION` | `false`；默认只发真实 XML 控件摘要，明确 `vision_available=false` |
 | `MAX_INPUT_TOKENS`, `MAX_OUTPUT_TOKENS` | 16000 / 600；输入采用 UTF-8 字节上界加封装预留，输出由请求上限控制 |
 | `REQUESTS_HOUR`, `REQUESTS_DAY` | 60 / 200；在同一 V2 数据库中跨会话计数，失败请求也占额度 |
-| `MAX_ACTIONS` | 80 次设备输入分发；搜索输入和回车分别计数 |
+| `MAX_ACTIONS` | 80 次设备输入分发；搜索选中、输入和回车分别计数 |
 | `MAX_COST` | 不设置则金额未知；设置时必须同时提供以下价格 |
 | `INPUT_PRICE`, `OUTPUT_PRICE` | 由你提供可靠的每百万 token 价格，币种必须与金额上限相同 |
 | `ADB`, `DATA` | `adb` / `v2/data` |
@@ -66,7 +66,7 @@ python -m digitallife_v2 stop --session data/sessions/find-x6-v2-10m-01
 
 允许实时清单中的固定 MAIN/LAUNCHER 启动、当前控件绑定的普通导航 tap、可滚动容器中的垂直 swipe、back、受限搜索和 1–120 秒休息。没有逐截图人工批准或 V1 批准指纹。模型仅能输出严格 JSON，不能发送坐标、任意 shell、Intent 或网络请求。
 
-搜索先通过 tap 聚焦空的搜索框，下一轮 `search` 输入 1–80 字符 ASCII 查询；输入后重新观察，提交前再读取 XML，核对相同页面、控件、焦点和文本，才发送回车。无法确认搜索角色、中文输入、已有文本或自动跳页时跳过，不清空或重放输入。
+搜索先通过 tap 聚焦已识别的搜索框，下一轮 `search` 在该框内发送固定 CTRL+A，再重新观察并复核目标，输入 1–80 字符 ASCII 查询；输入后重新观察，提交前再读取 XML，核对相同页面、唯一搜索编辑框、焦点和最终文字完全等于查询，才发送回车。支持 EditText 和标准 AutoCompleteTextView/SearchAutoComplete。XML 的提示文字保留原值，不当成已验证空文本。仅替换当前搜索框中的临时查询；焦点、角色或文字不符时跳过提交，不重放输入。中文输入尚未支持。
 
 支付、账号写入、发消息、评论、发布、点赞、关注、收藏、安装/卸载、删除、权限和安全设置修改默认拒绝。敏感表单、密码、验证码、未知编辑框及已识别的风险对话框遮蔽；XML 不完整时也遮蔽。遮蔽观察没有伪造 PNG，不保存/发送该轮 UI 内容。截图后再次检查 XML，发现新敏感表单则丢弃采集内容。
 
@@ -97,3 +97,13 @@ python -m pip wheel --no-deps --no-build-isolation --wheel-dir dist .
 ```
 
 测试仅用虚拟手机、临时 SQLite、模拟 ADB 返回和 loopback HTTP 服务；不会访问真实 ADB、DPAPI 或提供商。交付验证详情见 [DELIVERY.md](DELIVERY.md)。
+
+已授权的定向真机专项可从 `v2/` 运行：
+
+```powershell
+python -m acceptance.search_and_stop --session data/sessions/find-x6-v2-search-stop-new --query settings
+# 在另一终端检查该会话 READY.json 和实际 PNG/XML 结果，然后在会话仍运行时执行：
+python -m digitallife_v2 stop --session data/sessions/find-x6-v2-search-stop-new
+```
+
+这是仓库内的脚本驱动验收，复用生产 SessionLoop/PhoneController，不调用模型 API，不代表新的自主模型测试。默认使用实时清单中的 LibChecker；需要已安装且已解锁的绑定测试设备。会话有三分钟硬期限，只有搜索 READY 且正式 Stop 生效后专项入口才返回成功；到期本身不算通过。

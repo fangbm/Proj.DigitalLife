@@ -240,7 +240,7 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         obs.controls[0] = replace(obs.controls[0], scrollable=True)
         self.assertIsNotNone(guard(a, obs, {}))
 
-    def test_search_requires_empty_focused_search_editor(self):
+    def test_search_requires_identified_focused_search_editor(self):
         obs = observation()
         obs.controls[0] = replace(obs.controls[0], resource="com.reader:id/search", text="", kind="android.widget.EditText")
         a = {"type": "search", "control_id": "one:0", "query": "space"}
@@ -250,8 +250,22 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         obs.controls[0] = replace(obs.controls[0], focused=True)
         self.assertIsNotNone(guard(a, obs, {}))
         obs.controls[0] = replace(obs.controls[0], text="existing private text")
+        self.assertIsNotNone(guard(a, obs, {}))
+        obs.controls[0] = replace(obs.controls[0], resource="message_input", description="", text="")
         with self.assertRaises(Blocked):
             guard(a, obs, {})
+
+    def test_autocomplete_search_hint_is_not_treated_as_verified_empty_text(self):
+        raw = ('<?xml version="1.0"?><hierarchy><node package="com.reader" resource-id="com.reader:id/search_src_text" '
+               'class="android.widget.AutoCompleteTextView" text="搜索…" clickable="true" focused="true" enabled="true" '
+               'bounds="[100,200][600,300]"/></hierarchy>')
+        _, controls, redacted, _ = parse_xml(raw, "one")
+        obs = replace(observation(), controls=controls)
+        self.assertFalse(redacted)
+        self.assertTrue(controls[0].is_editor)
+        self.assertEqual(controls[0].text, "搜索…")
+        self.assertIsNotNone(guard({"type": "search", "control_id": "one:0"}, obs, {}))
+        self.assertTrue(parse_xml(raw.replace("search_src_text", "message_input").replace("搜索…", ""), "one")[2])
 
     def test_device_lock_and_persistent_barriers(self):
         with DeviceLock(self.config.serial) as lock:
@@ -311,7 +325,11 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await phone.prepare({"type": "swipe", "direction": "up"}, c, obs))[-1], "350")
         self.assertEqual(await phone.prepare({"type": "back"}, None, obs), ("shell", "input", "keyevent", "4"))
         self.assertEqual(await phone.prepare({"type": "search", "query": "space science"}, c, obs),
+                         ("shell", "input", "keycombination", "113", "29"))
+        phone.recheck_search = AsyncMock()
+        self.assertEqual(await phone.prepare_search_text(obs, {"query": "space science"}, c),
                          ("shell", "input", "text", "'space%sscience'"))
+        phone.recheck_search.assert_awaited_once_with(obs, c, c.text)
         phone.catalog = AsyncMock()
         phone.apps = {"com.reader": ["com.reader/.Main"]}
         phone._text = AsyncMock(return_value="com.reader/.Main")
@@ -351,6 +369,28 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         phone._text = AsyncMock(return_value='<?xml version="1.0"?><hierarchy rotation="0"><node package="com.reader" resource-id="search" text="space" class="android.widget.EditText" bounds="[100,200][600,800]" clickable="true" scrollable="false" enabled="true" focused="false"/></hierarchy>')
         with self.assertRaisesRegex(Blocked, "FOCUS"):
             await phone.prepare_search_submit(obs, {"query": "space"}, target)
+
+    async def test_search_wrong_or_appended_text_never_produces_enter(self):
+        phone = PhoneController(self.config, self.root)
+        phone.identity = AsyncMock()
+        phone._text = AsyncMock()
+        obs = observation()
+        target = replace(obs.controls[0], kind="android.widget.AutoCompleteTextView", resource="search", focused=True, text="old")
+        obs.controls[0] = replace(target, text="oldsettings")
+        with self.assertRaisesRegex(Blocked, "TEXT_CHANGED"):
+            await phone.prepare_search_submit(obs, {"query": "settings"}, target)
+        phone._text.assert_not_awaited()
+
+    async def test_search_selection_focus_change_blocks_typing(self):
+        phone = PhoneController(self.config, self.root)
+        phone.identity = AsyncMock()
+        phone._text = AsyncMock()
+        obs = observation()
+        target = replace(obs.controls[0], kind="android.widget.AutoCompleteTextView", resource="search", focused=True, text="Search...")
+        obs.controls[0] = replace(target, focused=False)
+        with self.assertRaisesRegex(Blocked, "FOCUS"):
+            await phone.prepare_search_text(obs, {"query": "settings"}, target)
+        phone._text.assert_not_awaited()
 
     def test_hidden_parent_and_nested_side_effect_label(self):
         raw = '<?xml version="1.0"?><hierarchy><node package="com.reader" resource-id="article" bounds="[100,200][600,800]" clickable="true" enabled="true"><node text="点赞"/></node></hierarchy>'
@@ -394,12 +434,16 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         phone = PhoneController(self.config, self.root)
         phone._adb = AsyncMock()
         for cmd in (("shell", "reboot"), ("shell", "input", "text", "'a;reboot'"),
-                    ("shell", "am", "start", "https://example.com"), ("shell", "input", "keyevent", "26")):
+                    ("shell", "am", "start", "https://example.com"), ("shell", "input", "keyevent", "26"),
+                    ("shell", "input", "keycombination", "113", "28")):
             with self.subTest(command=cmd), self.assertRaises(Blocked):
                 await phone.dispatch(cmd)
         phone._adb.assert_not_awaited()
         await phone.dispatch(("shell", "input", "tap", "100", "200"))
         phone._adb.assert_awaited_once_with("shell", "input", "tap", "100", "200", dispatch=True)
+        phone._adb.reset_mock()
+        await phone.dispatch(("shell", "input", "keycombination", "113", "29"))
+        phone._adb.assert_awaited_once_with("shell", "input", "keycombination", "113", "29", dispatch=True)
 
     def test_v2_imports_do_not_load_v1(self):
         result = subprocess.run([sys.executable, "-c", "import sys; import digitallife_v2.session; assert not any(n.startswith('phonelife') for n in sys.modules)"],
