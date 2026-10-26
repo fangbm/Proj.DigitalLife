@@ -12,7 +12,7 @@ from dataclasses import asdict, replace
 from .semantic_stability import trusted
 from .autonomy_policy import AutonomousActionGate
 from .budgets import LifeLimits, MeteredAPI, RequestBudget
-from .life_models import LifeContext, LifeDecision
+from .life_models import LifeContext, LifeDecision, GoalCandidate
 from .life_state import LifeState, clamp
 from .life_storage import control_mode, enable_life
 from .memory import LifeMemory
@@ -174,6 +174,15 @@ class AutonomousLife:
         value = spec if spec['kind'] not in {'observe', 'visual'} else {'description': candidate.description.strip().casefold(), **spec}
         return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
+    def repeated_goal_cooldown(self,candidate,now=None):
+        # Same 12 summaries, two occurrences and one-hour window as the dispatch
+        # admission rule. Expose its result before asking the brain to choose.
+        now=time.time() if now is None else now
+        signature=self.contract_key(candidate)
+        previous=[json.loads(r[0]) for r in self.store.conn.execute(f'SELECT summary FROM life_cycles WHERE {self.scope} AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 12',(*self.devices,self.kind))]
+        matches=sorted((p['finished_at'] for p in previous if p.get('contract_key')==signature and p.get('finished_at',0)>now-3600),reverse=True)
+        return max(0,matches[1]+3600-now) if len(matches)>=2 else 0
+
     async def plan(self, life):
         # A fresh observation is mandatory after any interrupted task, never old-action replay.
         obs = await life._observe(self.run_id)
@@ -203,9 +212,11 @@ class AutonomousLife:
             def allowed_scope(spec):
                 return ('package' not in spec or spec['package'] in self.gate.packages) and all(allowed_scope(s) for s in spec.get('checks',[]))
             permitted=permitted and allowed_scope(candidate['verification'])
+            repeat_wait=self.repeated_goal_cooldown(GoalCandidate.from_dict(candidate))
             unfinished.append({**candidate,'summary':candidate['description'][:160],'status':row['status'],
-                'remaining_action_budget':remaining,'can_continue':bool(remaining and foreground_ok and permitted),
-                'continuation_reason':'Persisted unfinished goal; remaining budget and current evidence checked',
+                'remaining_action_budget':remaining,'can_continue':bool(remaining and foreground_ok and permitted and repeat_wait<=0),
+                'continuation_reason':'REPEATED_GOAL_COOLDOWN' if repeat_wait>0 else 'Persisted unfinished goal; remaining budget and current evidence checked',
+                'repeat_cooldown_remaining_seconds':repeat_wait,
                 'current_capability_available':bool(foreground_ok and permitted)})
         state_view = self.state.wire()
         now=time.time()
@@ -300,9 +311,7 @@ class AutonomousLife:
                     self.gate.check_goal(selected, self.limits, {g['goal_id'] for g in unfinished})
                     if self.decision.kind == 'continue' and not selected.continuation_of:
                         raise PolicyDenied('Continue must reference a persisted unfinished goal')
-                    signature = self.contract_key(selected)
-                    previous = [json.loads(r[0]) for r in self.store.conn.execute(f'SELECT summary FROM life_cycles WHERE {self.scope} AND run_kind=? AND summary IS NOT NULL ORDER BY rowid DESC LIMIT 12', (*self.devices,self.kind))]
-                    if sum(p.get('contract_key') == signature and p.get('finished_at',0) > time.time()-3600 for p in previous) >= 2:
+                    if self.repeated_goal_cooldown(selected)>0:
                         decision = self.forced_rest('REPEATED_GOAL_COOLDOWN', 600)
                     else:
                         for candidate in self.decision.candidates:
