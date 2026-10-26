@@ -96,3 +96,23 @@
 ```powershell
 & 'D:\codex\Proj.DigitalLife\data\start-dedicated-device.ps1' -Command Start -Minutes 10 -Session data\find-x6-all-apps-fix-10m-02
 ```
+
+## 2026-10-26：第二次短测后的观察与标签导航修复
+
+已结束的 `find-x6-all-apps-fix-10m-02` 实跑603.201秒、7周期、19次模型请求、3条已确认命令（启动Settings、swipe、启动DevCheck）。冷却剩余均为0；中间3个休息周期由模型选择，冷却不再被休息延长。唯一验证成功是窄目标“打开DevCheck”的前台匹配，不能算浏览或点击成功；最后一周期因期限取消。尚无成功tap。swipe后为遮蔽占位图，无法凭它证实滚动进展。
+
+周期6的 `NOT_CLICKABLE` 来自不可点击的 `HorizontalScrollView …:id/tabs`，不是“电池”子标签。旧能力视图错误地把横向标签条当成垂直滚动区，却遗漏无resource-id的可点击子标签。现在只向模型提供真实、enabled/clickable、单一标签、结构绑定完整且通过原风险检查的子标签ID；横向容器既不能tap，也不能执行原协议的垂直swipe。不根据reason中的“电池”自动替换目标。两份已存历史XML离线重算均得到子标签bounds `[784,363,1036,531]`、中心 `(910,447)`。原生visible/editable缺失仍为null；这不是新的实机点击证据。
+
+旧观察规则会因任意目录项包含“密码/权限”等词遮蔽整页。改为结合实际编辑器、password标志、已知私密字段角色、明确页面标题和可见安全窗口判断；普通目录文字不能单独证明凭证表单。真实非搜索编辑器、密码字段、敏感搜索值及权限/凭证界面仍保守遮蔽，截图前完成判断，不保存其原始PNG/XML。明确隐藏的后台安全窗口不再单凭保留surface造成遮蔽；可见安全overlay、锁屏及原触摸遮挡检查仍有效。新增审计仅保存原因码、结构路径和XML哈希，不保存私密原文。**原遮蔽XML/窗口原文未保存，因此不能确定真实那一轮具体命中了什么；合成反例只证明旧实现的误判路径。** 未知自绘内容仍不能保证自动识别全部私人信息，歧义控件继续跳过。
+
+本次只改全App专用模式的 `app_exploration.py`、新增 `observation_privacy.py`；严格模式、物理输入最后检查、租约、未知分发屏障、预算和休息退避未改。新增10项离线回归，两个关键反例保留修复前失败日志。原测试文件与断言字节未变；940个静态旧测试方法另有动态生成/参数化用例，全量基线为970项。最终全量 **980/980 PASS**（单调耗时262.048秒），运行期间源码哈希未变。
+
+私有证据在 `data/find-x6-observation-nav-fix-dev-01/`：三份SQLite一致备份、`baseline.json`、`reproduction-before.log`、`new-regression-final.log`、`historical-target-replay.json`、`full-offline-final-r2.log`、`full-offline-final-r2-result.json` 和 `integrity.json`。原生活库、租约库、三次真实会话、密钥及旧fixture保持原字节。离线回放不调用ADB/API，也不算自然恢复或真机点击验收。
+
+下次由用户手动运行新目录，沿用同一生活库；本轮未启动设备会话：
+
+```powershell
+& 'D:\codex\Proj.DigitalLife\data\start-dedicated-device.ps1' -Command Start -Minutes 10 -Session data\find-x6-all-apps-fix-10m-03
+```
+
+同一Session使用 `-Command Status` / `-Command Stop`。保留模型自主选题和休息，不强制进入DevCheck或每周期点击；真实点击与持续浏览效果等待新实测证明。

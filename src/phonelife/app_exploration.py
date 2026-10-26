@@ -21,6 +21,7 @@ from .llm import APIGuiPlanner
 from .models import Action,ScreenObservation,action_schema,utc_now
 from .policy import ActionPolicy,PolicyDenied,validate_coordinates
 from .semantic import UIAutomatorBackend,normalize,SemanticObservation
+from .observation_privacy import assess_xml,assess_controls,search_editor,sensitive_window_reason
 
 PROVIDER='dedicated_all_app_xml/1'
 PACKAGE=re.compile(r'[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+')
@@ -150,14 +151,7 @@ def browsing_occlusion(metadata,action,foreground):
     return audit
 
 def sensitive_xml(xml):
-    if len(xml.encode())>2_000_000 or '<!DOCTYPE' in xml or '<!ENTITY' in xml:raise PolicyDenied('UNSAFE_XML')
-    try:root=ET.fromstring(xml)
-    except ET.ParseError:raise PolicyDenied('XML_PARSE_FAILED') from None
-    nodes=list(root.iter('node'))
-    # Forms are never forwarded to a model, even if their fields are not native
-    # password widgets. Also redact known permission/security surfaces.
-    page=' '.join(' '.join(n.get(k,'') for k in ('resource-id','text','content-desc','package')) for n in nodes)
-    return any(n.get('password')=='true' for n in nodes) or bool(FORM.search(page)) or bool(re.search(r'permissioncontroller|securitypermission|权限管理|应用权限',page,re.I))
+    return assess_xml(xml)['redacted']
 
 class AllAppRegistry(CapabilityRegistry):
     version='dedicated-all-app-risk/1'
@@ -190,7 +184,7 @@ class AllAppRegistry(CapabilityRegistry):
     @staticmethod
     def is_search(s,target):
         # Resource/description role + editor class, no auth/composition forms.
-        return (any(t in target.class_name for t in ('EditText','AutoCompleteTextView')) or target.editable is True) and bool(SEARCH.search(target.resource_id+' '+target.content_description)) and not any(c.password is True or FORM.search(node_words(c)) for c in s.controls)
+        return search_editor(target.class_name,target.resource_id,target.content_description,target.editable) and not assess_controls(s.controls)['redacted']
     def safe_target(self,s,target,scroll=False):
         self.page(s)
         if target not in s.controls:raise SkippedAction('TARGET_NOT_CURRENT')
@@ -206,7 +200,7 @@ class AllAppRegistry(CapabilityRegistry):
         cx,cy=(a+c)//2,(max(b,int(s.screen_height*.12))+min(d,int(s.screen_height*.88)))//2
         if not scroll and any(n!=target and n.clickable is True and n.visible is not False and n.control_id not in seen and n not in self.subtree(s,target) and
             n.bounds[0]<=cx<n.bounds[2] and n.bounds[1]<=cy<n.bounds[3] for n in s.controls):raise SkippedAction('OVERLAPPING_CLICKABLE_TARGET')
-        if any(c.password is True or FORM.search(node_words(c)) for c in s.controls):raise SkippedAction('SENSITIVE_PAGE')
+        if assess_controls(s.controls)['redacted']:raise SkippedAction('SENSITIVE_PAGE')
         negative=(target.resource_id=='android:id/button2' and target.class_name=='android.widget.Button' and
             target.text.strip().casefold() in {'no','cancel','not now','否','取消','稍后','暂不'} and
             any(n.resource_id=='android:id/alertTitle' for n in s.controls) and
@@ -216,6 +210,7 @@ class AllAppRegistry(CapabilityRegistry):
                 if HIGH_RISK.search(' '.join(node_words(n) for n in self.subtree(s,container))+' '+ ' '.join(node_words(n) for n in s.controls if 'alertTitle' in n.resource_id)):
                     if not negative:raise SkippedAction('HIGH_RISK_CONFIRMATION_CONTEXT')
         if scroll:
+            if 'HorizontalScrollView' in target.class_name:raise SkippedAction('HORIZONTAL_TAB_STRIP_IS_NOT_A_VERTICAL_SCROLL_REGION')
             if target.scrollable is not True or not any(t in target.class_name for t in ('RecyclerView','ScrollView','ListView')):raise SkippedAction('IDENTIFIED_SCROLL_REGION_REQUIRED')
             return
         children=self.subtree(s,target)
@@ -236,10 +231,15 @@ class AllAppRegistry(CapabilityRegistry):
         widget=any(t in target.class_name for t in ('Button','TextView','ImageView','Layout'))
         ancestry=[];p=nodes.get(target.parent)
         while p:ancestry.append(p);p=nodes.get(p.parent)
+        # A real enabled, clickable child of an identified tab strip is a tab;
+        # the strip itself stays non-clickable. Labels alone cannot create taps.
+        tab_strip=next((p for p in ancestry if ('HorizontalScrollView' in p.class_name and re.search(r'(?i)(?:^|/)tabs?$',p.resource_id)) or 'TabLayout' in p.class_name),None)
+        tab=(tab_strip is not None and target.class_name in {'android.widget.LinearLayout','android.widget.FrameLayout','com.google.android.material.tabs.TabLayout$TabView'} and
+            len({v.strip() for v in labels if v.strip()})==1)
         content_container=any(p.scrollable is True and READ_ROLE.search(p.resource_id.split(':')[-1]) for p in ancestry)
         content_item=bool(re.search(r'(?i)(?:^|[_/])(?:card|item|entry|title)(?:$|[_/])',roles)) and content_container and target.class_name.endswith('Layout') and any(n.class_name.endswith(('TextView','ImageView')) and (n.text or n.content_description) for n in children if n!=target)
         known_navigation=any(READ_LABEL.fullmatch(v.strip()) for v in labels) and 'Layout' in target.class_name
-        if not widget or not ((READ_ROLE.search(roles) or content_item) and any(v.strip() for v in labels) or known_navigation):
+        if not widget or not ((READ_ROLE.search(roles) or content_item) and any(v.strip() for v in labels) or known_navigation or tab):
             raise SkippedAction('AMBIGUOUS_CONTROL_EFFECT')
     def focused(self,s,target):
         return target.structural_path in s.raw.get('_focused_paths',[])
@@ -254,7 +254,9 @@ class AllAppRegistry(CapabilityRegistry):
                     'search_text_allowed':not scroll and self.is_search(s,target) and self.focused(s,target)})
         return {'observation_id':s.observation_id,'foreground_package':s.foreground_package,'foreground_activity':s.foreground_activity,
             'screenshot_sha256':s.screenshot_sha256,'evidence_quality':s.evidence_quality,'known_page_labels':[],
-            'controls':safe,'screen_redacted':s.failure_reason.endswith('REDACTED'),'failure_reason':s.failure_reason,'capabilities':self.wire()}
+            'controls':safe,'available_intents':sorted({'open_app','navigate_back','finish'}|{v['intent']for v in safe}|({'search_text'}if any(v['search_text_allowed']for v in safe)else set())),
+            'screen_redacted':s.failure_reason.endswith('REDACTED'),'failure_reason':s.failure_reason,
+            'observation_assessment':s.attempts[0].get('sensitivity',{})if s.attempts else {},'capabilities':self.wire()}
     def ground(self,candidate,s):
         kind=candidate.get('type');target=None
         if not isinstance(kind,str):raise GroundingError('INVALID_APP_ACTION','Known action type string required')
@@ -388,6 +390,7 @@ class AllAppSemanticProvider:
             result=normalize(raw,obs,fg,PROVIDER)
             if result.orientation!=phone._scene_rotation:raise PolicyDenied('XML_ROTATION_CHANGED')
         if not 0<=time.monotonic_ns()-obs.captured_monotonic_ns<=FRESH_NS:raise PolicyDenied('OBSERVATION_EXPIRED')
+        result=replace(result,attempts=({'source':'current_xml_and_scene','sensitivity':getattr(phone,'_sensitivity',{})},))
         phone.last_semantic=result
         return result
 
@@ -397,7 +400,7 @@ class AllAppPhone(DedicatedPhone):
     def __init__(self,contract,transport=None):
         super().__init__(contract,transport or AppTransport())
         self.catalog=AppCatalog();self.capabilities=AllAppRegistry(self.catalog);self.goal_gate=AllAppGoalGate(self.catalog)
-        self._cached_xml='';self._cached_scene={};self._redacted=False;self._cached_observation_id='';self._observation_failure=''
+        self._cached_xml='';self._cached_scene={};self._redacted=False;self._cached_observation_id='';self._observation_failure='';self._sensitivity={}
     def foreground_allowed(self,package):return package in self.catalog.installed
     async def observe(self):
         if self._unknown:raise PolicyDenied('PHYSICAL_UNKNOWN_DISPATCH_NEEDS_REVIEW')
@@ -408,12 +411,14 @@ class AllAppPhone(DedicatedPhone):
         self._observation_failure=''
         if not xml:
             redacted=True;self._observation_failure='GUI_XML_UNAVAILABLE_REDACTED'
+            self._sensitivity={'redacted':True,'reason_codes':['GUI_XML_UNAVAILABLE']}
         else:
-            redacted=sensitive_xml(xml)
+            self._sensitivity=assess_xml(xml);redacted=self._sensitivity['redacted']
             if redacted:self._observation_failure='SENSITIVE_PAGE_REDACTED'
-        for block in re.split(r'(?=\bWindow #\d+ Window\{)',self._window_metadata.get('windows','')):
-            if re.search(r'mViewVisibility=0x0\b',block) and 'mHasSurface=true' in block and re.search(r'permissioncontroller|securitypermission|biometric|credential|\bty=(?:TYPE_)?(?:KEYGUARD|KEYGUARD_DIALOG|2004|2009)\b',block,re.I):
-                redacted=True;self._observation_failure='SENSITIVE_PAGE_REDACTED'
+        window_reason=sensitive_window_reason(self._window_metadata,before['foreground'])
+        if window_reason:
+            redacted=True;self._observation_failure='SENSITIVE_PAGE_REDACTED'
+            self._sensitivity={**self._sensitivity,'redacted':True,'reason_codes':sorted(set(self._sensitivity.get('reason_codes',[]))|{window_reason})}
         if await self._scene()!=before:raise PolicyDenied('SCENE_CHANGED_DURING_XML')
         # Sensitive forms never reach a model. This is an explicit synthetic
         # redaction image, not fabricated live observation or success evidence.
@@ -545,7 +550,10 @@ class AllAppGui(APIGuiPlanner):
         'For readonly_fact contracts, finish achieved requests fixed independent fact reads; a dialog need not be touched. '
         'For observe/visual, finish achieved requests independent observation, never arbitrary business success. '
         'If blocked before the intended page, use uncertain and state what is missing. A supported negative dialog button, '
-        'back or open_app can escape blocked content; do not keep retrying a blocked subject without new evidence.')
+        'back or open_app can escape blocked content; do not keep retrying a blocked subject without new evidence. '
+        'Match each control intent exactly: a horizontal tab container is NOT a tap or vertical scroll target. '
+        'Choose the current tap_control ID of the desired clickable child tab. Never infer clicks from label text alone. '
+        'Redaction does not disable open_app/back.')
     semantic_protocol=('Use tap_control(control_id), scroll_region(scrollable_region_id,direction=toward_end|toward_start), '
         'navigate_back(), open_app(package_name), search_text(control_id,text,submit=boolean). Each requires type, reason and current observation_id. '
         'Search requires a currently focused empty positively identified search editor; tap it first. ASCII only, never a chat/login field. '
