@@ -34,6 +34,7 @@ class PhoneLife:
         self.semantic_provider, self.semantic_observation = semantic_provider, None
         self.capability_usage = {}
         self._semantic_recovery_used, self._transport_unknown = False, False
+        self._observation_scene_retry_used = False
         if semantic_provider:
             from .semantic_storage import enable_semantics
             from .capabilities import CapabilityRegistry
@@ -58,10 +59,32 @@ class PhoneLife:
         self.capability_usage[capability]=count+1
 
     async def _observe(self, run_id):
-        if self.semantic_provider:
-            self._use_capability('observe_screen')
-            self._use_capability('inspect_controls')
-        observation = await self.phone.observe()
+        while True:
+            if self.semantic_provider:
+                self._use_capability('observe_screen')
+                self._use_capability('inspect_controls')
+            try:
+                observation = await self.phone.observe()
+                break
+            except PolicyDenied as error:
+                if getattr(self.phone,'app_scope',None)!='installed_launchable':raise
+                from .app_exploration import ObservationSceneChanged
+                if not isinstance(error,ObservationSceneChanged):raise
+                owner=getattr(self,'_session_owner',None)
+                retry=bool(owner and self.semantic_provider and not self._observation_scene_retry_used and
+                    not self._transport_unknown and not getattr(self.phone,'_unknown',False) and
+                    all(self.capability_usage[c]<self.capabilities.entries[c].maximum_usage for c in ('observe_screen','inspect_controls')))
+                self.store.event(self.name,'observation_scene_changed',{'task_run_id':run_id,**error.assessment,
+                    'will_retry':retry,'maximum_recaptures_per_task':1,'input_dispatched':False,'old_actions_replayed':0})
+                if not retry:raise
+                self._observation_scene_retry_used=True
+                # Recollect the whole XML/PNG pair. Never retry a command or
+                # reuse the rejected observation/target. Original budgets apply.
+                await asyncio.sleep(.2)
+                if self._life_active:
+                    stopped=self.autonomy.operator_error()
+                    if stopped:raise stopped
+                self.leases.renew(self.name,owner,self.lease_seconds)
         self._observation_count += 1
         path = self.evidence.save(run_id, f"observation-{self._observation_count:04d}", observation)
         self.store.observation(run_id, observation, path)
@@ -326,6 +349,7 @@ class PhoneLife:
         wake_after, self._observation_count = 300, 0
         self.capability_usage = {}
         self._semantic_recovery_used, self._transport_unknown = False, False
+        self._observation_scene_retry_used = False
         self._session_owner=owner
         lease_errors, control_errors = [], []
         original_verifier, original_step_limit = self.verifier, self.step_limit

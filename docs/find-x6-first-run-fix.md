@@ -116,3 +116,21 @@
 ```
 
 同一Session使用 `-Command Status` / `-Command Stop`。保留模型自主选题和休息，不强制进入DevCheck或每周期点击；真实点击与持续浏览效果等待新实测证明。
+
+## 2026-10-26：第三次短测后的场景变化恢复
+
+`find-x6-all-apps-fix-10m-03` 到期600.063秒，唯一周期在14.415秒内因 `SCENE_CHANGED_DURING_XML` blocked。API请求0、动作候选0、实际输入0；583.390秒为故障退避。生命周期context/decision/reflection均为空。成功保存的桌面PNG和51节点XML发生于异常收尾，不能误称为主脑已经开始探索。旧记录没保存变化前后的场景字段，无法确定具体变化项，更不能归因于用户操作或UIAutomator。
+
+用户随后明确授权ADB诊断。匹配精确Find X6身份、持有原共享租约后，三次 `uiautomator dump /proc/self/fd/1` 前后检查均为同一桌面Activity、方向0、已解锁且亮屏；XML均51节点，未遮蔽，单次读取及后检约2.93–3.02秒。没有复现历史瞬时变化。修复后又以只读传输调用正式 `AllAppPhone → PhoneLife._observe → AllAppSemanticProvider` 路径一次，成功取得1240×2772真实PNG、51节点XML，未遮蔽，耗时8.340秒；未用到重采。未调用模型、未发GUI输入、未启动自主worker或Soak。诊断脚本第一次在设备读取前因构造参数遗漏而退出，失败结果保留，第二次修正仅为本地诊断脚本。
+
+已确认的代码缺口是：采集前后的Activity/方向变化直接抛出通用PolicyDenied；实体机不进入模拟器专用SemanticRecoveryController；异常收尾虽可成功采集，原周期仍结束并按原规则退避600秒。此次在全App专用适配器增加具体 `OBSERVATION_SCENE_CHANGED` 及字段白名单审计，`PhoneLife._observe` 对这一类异常最多额外完整重采一次，额度属于整个TaskRun，不随下一次观察重置。失败的XML/PNG不交模型、不沿用旧控件。每次尝试计入原观察/控件预算，重采前检查取消/控制和续租；预算或租约不足不能继续。锁屏、权限等其他拒绝不重试；未知分发不重试。输入适配器内的最终复核和动作分发路径未放宽，原600秒失败退避不缩短。
+
+两个合成用例在修复前均因GUI提议次数为0而失败，修复后可完整重新观察再提议。新增8项离线回归覆盖XML/PNG瞬变、持续变化有界停止、其他安全拒绝、严格模式隔离、预算、取消释放租约及未知动作不重发。原980项用例文件/断言保留，最终全量 **988/988 PASS**，单调耗时296.883秒，运行期间源码哈希未变。真实瞬变自动恢复、真实点击及后续自主探索仍为NOT OBSERVED；三次稳定读取和合成注入不能替代这些证据。
+
+私有证据目录 `data/find-x6-scene-fix-dev-01/` 保留三份SQLite一致备份、原件哈希、`adb-diagnostic.json`、`production-readonly-result.json`（脚本失败）、`production-readonly-result-02.json`（真实观察成功）、`reproduction-before.log`、`focused-02.log`、`full-offline-final.log`、`full-offline-final-result.json`及`integrity.json`。ADB诊断只写新目录；协调库仅进行有界租约的获取/释放，核对其所有表内容仍一致。原生活库、旧会话、DPAPI、人格和旧fixture不改写。真实原始截图/XML仅留本地私有目录，不随代码提交。
+
+下次自主测试仍由用户手动启动，使用新的会话目录：
+
+```powershell
+& 'D:\codex\Proj.DigitalLife\data\start-dedicated-device.ps1' -Command Start -Minutes 10 -Session data\find-x6-all-apps-fix-10m-04
+```

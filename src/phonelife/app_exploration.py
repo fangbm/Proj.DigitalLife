@@ -33,6 +33,15 @@ LAUNCHERS=('shell','cmd','package','query-activities','--brief',*LAUNCH_FLAGS)
 class SkippedAction(PolicyDenied):
     skip_action=True
 
+class ObservationSceneChanged(PolicyDenied):
+    code='OBSERVATION_SCENE_CHANGED'
+    def __init__(self,phase,before,after):
+        super().__init__('SCENE_CHANGED_DURING_'+phase.upper())
+        # Only bounded scene fields, never raw windows, input channels or UI text.
+        keys=('locked','interactive','orientation','foreground')
+        self.assessment={'phase':phase,'before':{k:before[k]for k in keys},'after':{k:after[k]for k in keys},
+            'changed_fields':[k for k in keys if before[k]!=after[k]],'reason_code':self.code}
+
 class AppTransport(ReadOnlyAdb):
     async def run(self,serial,args):
         check_serial(serial,physical=True)
@@ -419,13 +428,15 @@ class AllAppPhone(DedicatedPhone):
         if window_reason:
             redacted=True;self._observation_failure='SENSITIVE_PAGE_REDACTED'
             self._sensitivity={**self._sensitivity,'redacted':True,'reason_codes':sorted(set(self._sensitivity.get('reason_codes',[]))|{window_reason})}
-        if await self._scene()!=before:raise PolicyDenied('SCENE_CHANGED_DURING_XML')
+        after=await self._scene()
+        if after!=before:raise ObservationSceneChanged('xml',before,after)
         # Sensitive forms never reach a model. This is an explicit synthetic
         # redaction image, not fabricated live observation or success evidence.
         png=mock_png(720,1600,0) if redacted else await self.probe.transport.run(self.serial,('exec-out','screencap','-p'))
         obs=ScreenObservation.from_png(png,self.serial)
         await self._identity_online()
-        if await self._scene()!=before:raise PolicyDenied('SCENE_CHANGED_DURING_PNG')
+        after=await self._scene()
+        if after!=before:raise ObservationSceneChanged('png',before,after)
         self._cached_xml='' if redacted else xml;self._cached_scene=before;self._redacted=redacted;self._last_png=obs;self._cached_observation_id=obs.observation_id
         if not redacted:
             self.capture_dir.mkdir(exist_ok=True)
