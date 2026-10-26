@@ -1,0 +1,4 @@
+/data/
+/profiles/*.private.json
+*.png
+*.xml

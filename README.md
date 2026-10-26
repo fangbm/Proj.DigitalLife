@@ -1,3 +1,7 @@
+# Proj.DigitalLife V2
+
+V2 M1 已在独立 [`v2/`](v2/README.md) 中实现单步自主探索闭环与十分钟手动入口，当前为离线验证交付，尚未完成 V2 真机验收。下方 V1 说明和历史证据保留。
+
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
 用户首次真实一小时已结束：14周期、2次确认App启动、0个已验证目标。针对真实tap/swipe拒绝、finish与超长reason的修复及十分钟手动复测命令，见[本轮结果说明](docs/find-x6-first-run-fix.md)。修复验证为964项离线回归；本轮没有擅自启动手机。
