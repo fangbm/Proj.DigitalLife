@@ -5,7 +5,12 @@ ALIASES = {
     'android_version':('android version','android 版本','安卓版本'),
     'model':('device model','model','设备型号','型号'),
     'battery_percent':('battery percentage','battery percent','battery level','电量','电池百分比'),
-    'storage_free_kb':('free storage','available storage','storage free','可用存储','剩余存储'),
+    # Unit-bearing phrases belong only to this independently measured fact.
+    # KB is not a general filler word that other facts/claims may discard.
+    'storage_free_kb':('free storage in kb','available storage in kb','storage free in kb',
+        'free storage (kb)','available storage (kb)','storage free (kb)',
+        '可用存储（kb）','剩余存储（kb）','可用存储(kb)','剩余存储(kb)',
+        'free storage','available storage','storage free','可用存储','剩余存储'),
 }
 KNOWN_PAGES = {'about phone','about emulated device','android version','model & hardware','battery','storage',
                'display','system','memory','关于手机','关于模拟设备','android 版本','电池','存储','显示','系统','内存'}
