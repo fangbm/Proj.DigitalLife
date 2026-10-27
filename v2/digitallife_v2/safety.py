@@ -106,7 +106,8 @@ def guard(action, obs, apps, *, full_access=False):
     if visual:
         from .visual import crop_sha
         import hashlib
-        if (not full_access or kind!='tap' or visual.get('kind') not in {'ocr','vision','template'}
+        if (not full_access or kind not in {'tap','swipe'} or kind=='swipe' and visual.get('role')!='group_info_scroll'
+                or visual.get('kind') not in {'ocr','vision','template'}
                 or not c.kind.startswith('visual.') or c.package!=obs.foreground.split('/')[0]
                 or visual.get('bounds')!=list(c.bounds) or visual.get('source_png_sha256')!=obs.png_sha256
                 or not obs.png_path or hashlib.sha256(Path(obs.png_path).read_bytes()).hexdigest()!=obs.png_sha256

@@ -62,6 +62,29 @@ class SocialTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked,'CAPABILITY_NOT_ALLOWED'):
             self.policy.check(replace(binding,existing_contact=False),'group_post')
 
+    def test_explicit_group_test_time_is_temporary_exact_group_only(self):
+        late=datetime(2026,10,27,23,10,tzinfo=CHINA).timestamp()
+        group=replace(self.binding,kind='group',verified_at=late)
+        self.grant['groups']={'mode':'all_existing_groups','group_post':True};self.save()
+        with self.assertRaisesRegex(Blocked,'QUIET_HOURS'):self.policy.check(group,'group_post',late)
+
+        self.policy.group_test_window=(group.identity,late+300)
+        self.assertTrue(self.policy.check(group,'group_post',late))
+        with self.assertRaisesRegex(Blocked,'QUIET_HOURS'):self.policy.check(replace(group,peer='other-group'),'group_post',late)
+        with self.assertRaisesRegex(Blocked,'QUIET_HOURS'):self.policy.check(replace(self.binding,verified_at=late),'proactive_dm',late)
+        self.policy.group_test_window=(group.identity,late)
+        with self.assertRaisesRegex(Blocked,'QUIET_HOURS'):self.policy.check(group,'group_post',late)
+
+
+    def test_changed_wechat_fingerprint_cannot_escape_unknown_group_send(self):
+        self.grant['accounts']['com.tencent.mm']='wechat_account'
+        self.grant['groups']={'mode':'all_existing_groups','group_post':True};self.grant['quiet_hours']=['00:00','00:00'];self.save()
+        first=replace(self.binding,app='com.tencent.mm',account='wechat_account',peer='wxgroup:first',kind='group')
+        oid=self.social.prepare(self.policy,first,'group_post','one-at','Hello group','Actual group context',['frame-one'])
+        self.social.transition(oid,'prepared','typed');self.social.transition(oid,'typed','dispatch_attempted');self.social.transition(oid,'dispatch_attempted','delivery_unknown')
+        with self.assertRaisesRegex(Blocked,'ACCOUNT_GROUP_HAS_UNKNOWN_SEND'):
+            self.social.prepare(self.policy,replace(first,peer='wxgroup:newfingerprint'),'group_post','other-at','Different words','Actual group context',['frame-two'])
+
     def test_explicit_known_unsent_recovery_never_reopens_an_attempted_send(self):
         oid=self.typed();self.social.transition(oid,'typed','cancelled_before_send')
         self.social.resume_pre_send(self.policy,self.binding,oid,'fresh-draft-proof')

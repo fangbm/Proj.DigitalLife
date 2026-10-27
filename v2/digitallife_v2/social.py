@@ -77,6 +77,7 @@ class SocialPolicy:
     def __init__(self, config):
         self.config = config
         self.path = config.data / 'social.private.json'
+        self.group_test_window = None
 
     def read(self):
         if not self.path.exists():
@@ -126,7 +127,10 @@ class SocialPolicy:
             local = datetime.fromtimestamp(now, CHINA).strftime('%H:%M')
             start, end = quiet
             if start != end and ((start <= local < end) if start < end else (local >= start or local < end)):
-                raise Blocked('SOCIAL_QUIET_HOURS')
+                window=self.group_test_window
+                if not (kind=='group_post' and window and window[0]==binding.identity
+                        and 0<window[1]-now<=600):
+                    raise Blocked('SOCIAL_QUIET_HOURS')
         limits = value.get('limits', {})
         hard = {'hour': 10, 'day': 50, 'conversation_day': 5, 'cooldown_seconds': 30,
                 'proactive_cooldown_seconds': 172800}
@@ -211,6 +215,12 @@ class SocialStore:
             raise Blocked('SOCIAL_CONTACT_OPTED_OUT')
         if self.db.execute("SELECT 1 FROM social_outbox WHERE device=? AND binding_id=? AND status IN ('dispatch_attempted','delivery_unknown')", (self.store.serial, binding_id)).fetchone():
             raise Blocked('SOCIAL_THREAD_HAS_UNKNOWN_SEND')
+        current=self.db.execute('SELECT app,account,kind FROM social_bindings WHERE id=?',(binding_id,)).fetchone()
+        if current and current[0]=='com.tencent.mm' and current[2]=='group':
+            # A group QR can rotate. A fresh fingerprint must not bypass an
+            # unresolved send belonging to the same WeChat account's groups.
+            if self.db.execute("SELECT 1 FROM social_outbox o JOIN social_bindings b ON b.id=o.binding_id WHERE o.device=? AND b.app=? AND b.account=? AND b.kind='group' AND o.status IN ('dispatch_attempted','delivery_unknown')",(self.store.serial,current[0],current[1])).fetchone():
+                raise Blocked('SOCIAL_ACCOUNT_GROUP_HAS_UNKNOWN_SEND')
         clauses = "device=? AND status NOT IN ('cancelled_before_send') AND id!=?"
         params = (self.store.serial, exclude or '')
         for seconds, maximum in ((3600, limits['hour']), (86400, limits['day'])):

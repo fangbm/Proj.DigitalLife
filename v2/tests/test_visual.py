@@ -44,6 +44,14 @@ class VisualTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked,'SOURCE_UNVERIFIED'):
             guard({'type':'tap','control_id':c.control_id},obs,{},full_access=True)
 
+    def test_inferred_group_scroll_does_not_invent_native_scrollability(self):
+        obs=self.page('scroll')
+        c=add_control(obs,'',[50,180,670,1400],.95,'vision','group_info_scroll')
+        self.assertIsNone(c.scrollable)
+        self.assertEqual(guard({'type':'swipe','control_id':c.control_id,'direction':'up'},obs,{},full_access=True),c)
+        other=add_control(obs,'',[50,180,670,1400],.95,'vision','chat_editor')
+        with self.assertRaises(Blocked):guard({'type':'swipe','control_id':other.control_id,'direction':'up'},obs,{},full_access=True)
+
     def test_editor_hit_patch_keeps_full_grounding_and_rechecks_actual_click_pixels(self):
         before=self.page('editor')
         target=grounded_target(before,[90,190,270,280],.95,'chat_editor')

@@ -93,6 +93,7 @@ def verify_frame(observation,path):
 async def locate(loop,observation,role):
     roles={'tab_me':'微信底部导航的“我”按钮','chat_info':'私聊界面右上角三个点的聊天信息按钮',
            'profile_more':'联系人资料页右上角三个点的更多/资料设置按钮',
+           'group_info_scroll':'微信群聊天信息页可上下滚动的主体列表区域，不含顶部标题、状态栏或底部系统导航',
            'chat_editor':'聊天底部用于编辑消息正文的可触摸输入框。边框必须紧贴实际框体，尤其上边界不能包括上方聊天留白；不包含发送/表情/语音按钮。不是整条底部工具栏。'}
     if role not in roles or not loop.config.vision or not observation.png_path:
         raise Blocked('VISUAL_ROLE_OR_VISION_UNAVAILABLE')
@@ -145,6 +146,7 @@ class OcrClient:
             self.process.terminate()
             try:await asyncio.wait_for(self.process.wait(),2)
             except asyncio.TimeoutError:self.process.kill();await self.process.wait()
+
 
 
 def worker():

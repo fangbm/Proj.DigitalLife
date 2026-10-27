@@ -22,6 +22,13 @@ class SocialAgent:
         loop = self.loop
         loop.check_stop()
         binding, context, before = await self.ui.resolve(event=event, binding_id=binding_id)
+        if event and kind=='auto_reply' and binding.kind=='group':kind='group_post'
+        if (kind=='group_post' and getattr(loop,'run_kind',None)=='scripted'
+                and getattr(loop,'requested_group_test_now',False)):
+            self.policy.group_test_window=(binding.identity,loop.store.state['deadline'])
+            loop.store.event('explicit_group_test_window',{'binding_identity_sha256':digest('|'.join(binding.identity)),
+                'deadline':loop.store.state['deadline'],'source':'current_human_requested_group_acceptance',
+                'ordinary_quiet_hours_unchanged':True})
         limits = self.policy.check(binding, kind)
         bid = self.social.bind(binding)
         self.social.check_thread(bid, limits, time.time())
@@ -31,16 +38,27 @@ class SocialAgent:
         if event and context.get('event_matched') is not True:
             raise Blocked('SOCIAL_EVENT_NOT_MATCHED_TO_CURRENT_THREAD')
         required=getattr(loop,'social_acceptance_marker',None) if getattr(loop,'run_kind',None)=='scripted' else None
-        if required and (not incoming or required not in incoming[-1]):
+        target_ref=context.get('incoming_ref')
+        if kind=='group_post':
+            candidates=[m for m in context.get('messages',[]) if m.get('direction')=='incoming'
+                and (required in m['text'] if required else m.get('mentions_self'))]
+            if candidates:
+                target=candidates[-1];target_ref=incoming_reference(binding,target)
+                context['reply_target']=target;context['mentions_self']=target.get('mentions_self',False)
+                context['trigger_ref']=target_ref
+        target_text=context.get('reply_target',{}).get('text',incoming[-1] if incoming else '')
+        if required and required not in target_text:
             raise Blocked('SOCIAL_ACCEPTANCE_MARKER_NOT_IN_ACTUAL_THREAD')
+        if kind=='group_post' and getattr(loop,'group_acceptance_mention_required',False) and not context.get('mentions_self'):
+            raise Blocked('SOCIAL_GROUP_ACCEPTANCE_SELF_MENTION_REQUIRED')
         minute=getattr(loop,'social_acceptance_post_minute',None) if required else None
         if minute and context.get('messages',[])[-1].get('time_label')!=minute:
             raise Blocked('SOCIAL_ACCEPTANCE_NOTIFICATION_MINUTE_NOT_MATCHED')
-        if kind=='auto_reply':
+        if kind=='auto_reply' or kind=='group_post' and incoming:
             messages=context.get('messages',[])
             if not incoming or not messages or messages[-1].get('direction')!='incoming':
                 return {'outcome':'no_unanswered_incoming','binding_id':bid}
-            reference='incoming:'+context.get('incoming_ref','')
+            reference='incoming:'+(target_ref or '')
             previous=loop.store.db.execute('SELECT sources FROM social_outbox WHERE device=? AND binding_id=?',(loop.config.serial,bid)).fetchall()
             if any(reference in json.loads(row[0]) for row in previous):
                 return {'outcome':'incoming_already_recorded','binding_id':bid}
@@ -64,28 +82,38 @@ class SocialAgent:
                     or not isinstance(draft['sources'], list) or any(s not in offered for s in draft['sources'])
                     or draft['decision'] == 'send' and (not draft['text'] or not draft['motive'] or not draft['sources'])):
                 raise ValueError('SOCIAL_DRAFT_INVALID')
+        images=[]
+        if binding.kind=='group' and binding.app=='com.tencent.mm' and loop.config.vision and before.png_path:
+            images=[{'observation_id':before.observation_id,'png_path':before.png_path,'png_sha256':before.png_sha256}]
         draft = await loop.guarded(loop.brain.structured(DRAFT_SYSTEM,
             {'action_kind': kind, 'conversation': context, 'relationship': relation[0] if relation else '',
              'public_evidence': extra, 'offered_sources': sorted(offered),
-             'operator_test_context':getattr(loop,'social_acceptance_context',None) if getattr(loop,'run_kind',None)=='scripted' else None}, [], validate))
+             'operator_test_context':getattr(loop,'social_acceptance_context',None) if getattr(loop,'run_kind',None)=='scripted' else None}, images, validate))
         if draft['decision'] != 'send':
             loop.store.event('social_not_sending', {'binding_id': bid, 'decision': draft['decision']})
             return {'outcome': draft['decision'], 'binding_id': bid}
         # Binding can expire while the model is thinking. Refresh identity before
         # reserving quota and again immediately before the actual send.
         binding, before = await self.ui.refresh(binding)
-        trigger = context.get('trigger_ref') or context.get('incoming_ref') if kind == 'auto_reply' else digest('|'.join(sorted(draft['sources'])))
+        trigger = (context.get('trigger_ref') or context.get('incoming_ref')) if kind in {'auto_reply','group_post'} and context.get('incoming_ref') else digest('|'.join(sorted(draft['sources'])))
         if not trigger:
             raise Blocked('SOCIAL_TRIGGER_SOURCE_REQUIRED')
         references=draft['sources']+(['incoming:'+context['incoming_ref']] if context.get('incoming_ref') else [])
+        if target_ref and 'incoming:'+target_ref not in references:references.append('incoming:'+target_ref)
         oid = self.social.prepare(self.policy, binding, kind, trigger, draft['text'], draft['motive'], references)
         phase = 'prepared'
         def check_latest(observation):
             latest=[m for m in self.ui.messages(observation) if m['direction']=='incoming']
-            if latest and self.social.opt_out(bid,latest[-1]['text']):
+            texts=latest if kind=='group_post' else latest[-1:]
+            if any(self.social.opt_out(bid,m['text']) for m in texts):
                 raise Blocked('SOCIAL_CONTACT_OPTED_OUT')
             current=incoming_reference(binding,latest[-1]) if latest else None
             if context.get('incoming_ref') and current!=context['incoming_ref']:
+                if kind=='group_post' and target_ref:
+                    loop.store.event('group_context_advanced',{'binding_id':bid,'reply_target_ref':target_ref,
+                        'current_visible_incoming_ref':current,'observation_id':observation.observation_id,
+                        'same_group_identity_rechecked':True})
+                    return
                 raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
         try:
             check_latest(before)

@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock,patch
 from acceptance.social_reply_probe import Probe
+from acceptance.group_probe import Probe as GroupProbe
+from digitallife_v2.safety import Blocked
 from digitallife_v2.session import SessionStopped
 from digitallife_v2.store import LifeStore
 from test_m1 import config
@@ -32,3 +34,20 @@ class AcceptanceTests(unittest.IsolatedAsyncioTestCase):
         (self.store.directory/'M4_READY.json').write_text(json.dumps({'result':{'outbound_id':'not-a-sent-outbox'}}),encoding='utf-8')
         with self.assertRaisesRegex(SessionStopped,'M4_SEND_EVIDENCE_MISSING'):
             await self.probe.decide(None,{},[])
+
+    async def test_group_ui_block_stops_the_harness_instead_of_reopening_repeatedly(self):
+        probe=GroupProbe(self.cfg,self.store,self.loop,'com.tencent.mobileqq',None)
+        with patch('acceptance.group_probe.SocialAgent') as agent:
+            agent.return_value.run=AsyncMock(side_effect=Blocked('KNOWN_HEADER_AMBIGUITY'))
+            with self.assertRaisesRegex(SessionStopped,'GROUP_ACCEPTANCE_BLOCKED:KNOWN_HEADER_AMBIGUITY'):
+                await probe.decide(None,{},[])
+            agent.return_value.run.assert_awaited_once()
+
+    async def test_group_receipt_cannot_promote_an_offline_fixture_to_device_evidence(self):
+        from acceptance.group_receipt import load
+        from test_m1 import observation
+        obs=observation('fixture-source');self.store.event('observed',obs.summary())
+        path=self.store.directory/'receipt.json'
+        path.write_text(json.dumps({'account_observation':obs.observation_id,'group_observation':obs.observation_id,'message_observation':obs.observation_id}),encoding='utf-8')
+        with self.assertRaisesRegex(Blocked,'NOT_A_REAL_DEVICE_OBSERVATION'):
+            load(SimpleNamespace(config=self.cfg,store=self.store),path)

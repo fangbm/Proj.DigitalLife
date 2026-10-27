@@ -27,6 +27,23 @@ class EventRouteTests(unittest.TestCase):
         self.assertEqual(event_match_source({**self.event,'preview':'QQ Actual message'},self.incoming,False),'notification_preview_exact')
         self.assertIsNone(event_match_source({**self.event,'preview':'QQ A different message'},self.incoming,True))
 
+    def test_first_chat_line_is_not_part_of_the_wechat_header(self):
+        from dataclasses import replace
+        obs=observation('wx',foreground='com.tencent.mm/.LauncherUI')
+        title=replace(obs.controls[0],package='com.tencent.mm',text='Test Group(12)',bounds=(250,110,470,140))
+        first=replace(title,control_id='other',text='@Someone',bounds=(100,170,260,190))
+        obs.controls=[title,first]
+        self.assertEqual(AndroidSocialUI(SimpleNamespace(),'com.tencent.mm').chat_hint(obs),'Test Group(12)')
+
+    def test_status_bar_clock_is_not_a_message_timestamp(self):
+        from dataclasses import replace
+        obs=observation('wx',foreground='com.tencent.mm/.LauncherUI')
+        clock=replace(obs.controls[0],control_id='clock',text='23:45',bounds=(20,20,120,60))
+        text=replace(clock,control_id='body',text='A real bubble',bounds=(130,400,400,450))
+        obs.controls=[clock,text];obs.visual_controls={'body':{'bubble_hint':{'kind':'incoming_neutral','bounds':[100,380,430,480]}}}
+        messages=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm').messages(obs)
+        self.assertEqual(messages[0]['time_label'],'')
+
 
 class RoutePreflightTests(unittest.IsolatedAsyncioTestCase):
     async def test_missing_route_is_rejected_before_any_pending_dispatch(self):

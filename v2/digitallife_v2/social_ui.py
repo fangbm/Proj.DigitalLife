@@ -72,7 +72,7 @@ class AndroidSocialUI:
     def chat_hint(self,obs):
         if self.app==QQ:return self.one(obs,resource=QQ+':id/3o4').text
         if obs.foreground.split('/')[0]!=WX or self.wx_root(obs):raise Blocked('WECHAT_CHAT_NOT_OPEN')
-        header=[c for c in obs.controls if c.text and obs.height*.05<(c.bounds[1]+c.bounds[3])/2<obs.height*.115
+        header=[c for c in obs.controls if c.text and obs.height*.05<(c.bounds[1]+c.bounds[3])/2 and c.bounds[3]<=obs.height*.10
                 and obs.width*.15<(c.bounds[0]+c.bounds[2])/2<obs.width*.8]
         if len(header)!=1:raise Blocked('WECHAT_CHAT_HEADER_AMBIGUOUS')
         return header[0].text
@@ -130,6 +130,8 @@ class AndroidSocialUI:
             obs=await self.tap(obs,resource=QQ+':id/close')
         if self.one(obs,resource=QQ+':id/ivTitleName').text!='我的资料':
             raise Blocked('SOCIAL_SELF_ACCOUNT_ROLE_UNVERIFIED')
+        names=[c.text for c in obs.controls if c.resource==QQ+':id/ww3' and c.text]
+        if len(names)==1:self.account_display_name=names[0]
         match=re.fullmatch(r'QQ:\s*(\d{5,12})',self.one(obs,resource=QQ+':id/gmx').text)
         if not match:raise Blocked('SOCIAL_SELF_ACCOUNT_ID_UNAVAILABLE')
         return match[1]
@@ -141,7 +143,8 @@ class AndroidSocialUI:
             if len(rows)!=1:raise Blocked('SOCIAL_RECENT_THREAD_HINT_AMBIGUOUS_OR_MISSING')
             return await self.act({'type':'tap','control_id':rows[0].control_id},obs)
         control=self.visual_text(obs,'微信','bottom');obs=await self.act({'type':'tap','control_id':control.control_id},obs)
-        found=[c for c in obs.controls if c.text==hint and obs.height*.12<c.bounds[1]<obs.height*.85]
+        hints={hint,re.sub(r'[（(]\d+[）)]$','',hint)}
+        found=[c for c in obs.controls if c.text in hints and obs.height*.12<c.bounds[1]<obs.height*.85]
         if len(found)!=1:raise Blocked('SOCIAL_RECENT_THREAD_HINT_AMBIGUOUS_OR_MISSING')
         return await self.act({'type':'tap','control_id':found[0].control_id},obs)
 
@@ -162,8 +165,15 @@ class AndroidSocialUI:
 
     async def verify_peer(self, chat, account, hint, expected=None):
         self.composer(chat)
+        if self.app==QQ and (expected and expected.kind=='group' or any(c.resource==QQ+':id/3o2' for c in chat.controls)):
+            from .groups import verify_qq
+            return await verify_qq(self,chat,account,hint,expected)
         if self.app==WX:
             info=await self.visual_tap(chat,'chat_info')
+            if info.foreground.endswith('chatroom.ui.ChatroomInfoUI'):
+                from .groups import verify_wechat
+                return await verify_wechat(self,info,account,hint,expected)
+            if expected and expected.kind=='group':raise Blocked('WECHAT_GROUP_BECAME_DM')
             contact=self.visual_text(info,hint)
             profile=await self.act({'type':'tap','control_id':contact.control_id},info)
             if not profile.foreground.endswith('ContactInfoUI'):raise Blocked('WECHAT_CONTACT_PROFILE_ROLE_UNVERIFIED')
@@ -205,6 +215,7 @@ class AndroidSocialUI:
         self.sources=[]
         expected=None
         routed_from_other_app=False
+        initial_chat=None
         if binding_id:
             row=self.loop.store.db.execute('SELECT app,account,peer,kind,body FROM social_bindings WHERE id=? AND device=?',(binding_id,self.loop.config.serial)).fetchone()
             if not row:raise Blocked('SOCIAL_BINDING_NOT_OFFERED')
@@ -230,15 +241,48 @@ class AndroidSocialUI:
             if self.app not in APPS:raise Blocked('SOCIAL_APP_UNSUPPORTED')
             self.composer(chat)
             hint=self.chat_hint(chat)
+            initial_chat=chat
         account=await self.self_account()
         chat=await self.open_hint(hint)
         binding,chat=await self.verify_peer(chat,account,hint,expected)
+        required=getattr(self.loop,'social_acceptance_marker',None) if self.loop.run_kind=='scripted' else None
+        if binding.kind=='group' and required:
+            for _ in range(3):
+                if any(required in m['text'] for m in self.messages(chat)):break
+                chips=[c for c in chat.controls if '有人@我' in c.text and c.bounds[0]>chat.width*.6]
+                if len(chips)!=1:break
+                chat=await self.act({'type':'tap','control_id':chips[0].control_id},chat)
+            if (not any(required in m['text'] for m in self.messages(chat)) and initial_chat is not None
+                    and any(required in m['text'] for m in self.messages(initial_chat))):
+                # Context captured before account/group navigation is still an
+                # observed receipt, even if WeChat reopens at the latest chat.
+                # Inputs below are always refreshed; this frame is model data.
+                chat=initial_chat
+                self.loop.store.event('group_receipt_context_retained',{'observation_id':chat.observation_id,
+                    'fresh_group_identity_verified':True,'used_for_model_context_only':True})
+            receipt=getattr(self.loop,'group_receipt_context',None)
+            if not any(required in m['text'] for m in self.messages(chat)) and receipt:
+                if receipt['identity']!=binding.identity:raise Blocked('GROUP_RECEIPT_TARGET_MISMATCH')
+                old=receipt['observation']
+                normalize=lambda s:re.sub(r'[（(]\d+[）)]$','',s)
+                if normalize(self.chat_hint(old))!=normalize(hint):raise Blocked('GROUP_RECEIPT_TITLE_MISMATCH')
+                if not any(required in m['text'] for m in self.messages(old)):raise Blocked('GROUP_RECEIPT_MESSAGE_MISSING')
+                chat=old
+                self.loop.store.event('group_receipt_context_retained',{'observation_id':old.observation_id,
+                    'proof_observations':receipt['proof_observations'],'fresh_group_identity_verified':True,
+                    'used_for_model_context_only':True,'source':'actual_previously_observed_receipt'})
         messages=self.messages(chat)
         incoming=[m for m in messages if m['direction']=='incoming']
         match=event_match_source(event,incoming,routed_from_other_app)
-        context={'kind':'dm','messages':messages[-12:],'incoming_ref':incoming_reference(binding,incoming[-1]) if incoming else None,
+        context={'kind':binding.kind,'messages':messages[-12:],'incoming_ref':incoming_reference(binding,incoming[-1]) if incoming else None,
                  'trigger_ref':event['event_id'] if event else incoming_reference(binding,incoming[-1]) if incoming else None,
                  'event_matched':bool(match),'event_match_source':match}
+        if binding.kind=='group':
+            name=getattr(self,'group_own_name','')
+            for message in messages:
+                message['mentions_self']=bool(name and re.search(r'[@＠]\s*'+re.escape(name)+r'(?:\s|\u2005|[，,:：]|(?=M4-GROUP-)|$)',message['text']))
+            context['mentions_self']=bool(incoming and incoming[-1].get('mentions_self'))
+            context['mention_evidence']='visible_at_own_group_name' if context['mentions_self'] else None
         return binding,context,chat
 
     async def recheck(self,binding,expected_draft='',input_controller=None):
@@ -289,7 +333,8 @@ class AndroidSocialUI:
             ceiling=getattr(self,'editor_bounds',(0,int(obs.height*.87),0,0))[1]
             for c in sorted(obs.controls,key=lambda c:(c.bounds[1],c.bounds[0])):
                 if not c.text:continue
-                if re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}月\d{1,2}日)\s*\d{1,2}:\d{2})',c.text):stamp=c.text;continue
+                if (c.bounds[1]>obs.height*.11 and re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}月\d{1,2}日)\s*\d{1,2}:\d{2})',c.text)):
+                    stamp=c.text;continue
                 proof=obs.visual_controls.get(c.control_id,{});bubble=proof.get('bubble_hint')
                 if not bubble or c.bounds[1]<obs.height*.12 or c.bounds[3]>ceiling:continue
                 box=tuple(bubble['bounds']);direction='outgoing' if bubble['kind']=='outgoing_green' else 'incoming'
@@ -303,7 +348,7 @@ class AndroidSocialUI:
         result=[]
         stamp=''
         for c in obs.controls:
-            if not c.resource and c.text==c.description and re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}-\d{1,2})\s*\d{1,2}:\d{2})',c.text):
+            if c.bounds[1]>obs.height*.11 and not c.resource and c.text==c.description and re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}-\d{1,2})\s*\d{1,2}:\d{2})',c.text):
                 stamp=c.text
             if c.resource!=QQ+':id/mjm' or not c.text or c.covered:continue
             beside=[a for a in avatars if max(a.bounds[1],c.bounds[1])<min(a.bounds[3],c.bounds[3])]

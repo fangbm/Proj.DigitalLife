@@ -29,10 +29,13 @@ class Inspect:
             action = {'type': 'open_app', 'package_name': self.app}
         elif self.stage < len(self.selectors):
             field, value = self.selectors[self.stage]
-            if field=='visual':
+            if field in {'visual','visual_scroll'}:
                 from digitallife_v2.visual import locate
                 control=await locate(self.loop,observation,value);self.stage+=1
-                return {'intent':'explore','action':{'type':'tap','control_id':control.control_id},'note':'Explicit source-bound visual UI inspection'}
+                action={'type':'tap','control_id':control.control_id} if field=='visual' else {'type':'swipe','control_id':control.control_id,'direction':'up'}
+                from digitallife_v2.social_ui import AndroidSocialUI
+                await AndroidSocialUI(self.loop,self.app).act(action,observation)
+                return {'intent':'rest','action':{'type':'rest','seconds':1},'note':'Source-bound visual inspection completed internally'}
             if field == 'navigation':
                 self.stage += 1
                 return {'intent':'explore','action':{'type':'back'},'note':'Explicit source-bound back navigation inspection'}
@@ -66,7 +69,7 @@ def main():
         if selectors:
             raise ValueError('USE_ORDERED_STEPS_OR_SEPARATE_SELECTORS')
         selectors = [tuple(s.split('=', 1)) for s in args.step]
-        if any(len(s) != 2 or s[0] not in {'text','description','resource','navigation','visual'} or not s[1]
+        if any(len(s) != 2 or s[0] not in {'text','description','resource','navigation','visual','visual_scroll'} or not s[1]
                or s[0]=='navigation' and s[1]!='back' for s in selectors):
             raise ValueError('INVALID_INSPECTION_SELECTOR')
     if len(selectors) > 8:

@@ -116,6 +116,21 @@ class SocialAgentTests(unittest.IsolatedAsyncioTestCase):
             await SocialAgent(self.loop,self.ui).run('auto_reply')
         self.model.assert_not_awaited();self.input.insert.assert_not_awaited()
 
+    async def test_group_reply_targets_the_self_mention_even_with_later_group_chat(self):
+        self.binding=replace(self.binding,kind='group');self.grant['groups']={'mode':'all_existing_groups','group_post':True};self.save()
+        marker='M4-GROUP-FIXTURE';target={'direction':'incoming','text':'@Self '+marker,'mentions_self':True}
+        self.incoming='Later unrelated discussion'
+        context={'messages':[target,{'direction':'incoming','text':self.incoming}],
+            'incoming_ref':digest(self.binding.account+'|'+self.binding.peer+'|'+self.incoming)}
+        self.ui.resolve=AsyncMock(return_value=(self.binding,context,self.before));self.ui.refresh=AsyncMock(return_value=(self.binding,self.before));self.ui.recheck=AsyncMock(return_value=(self.binding,self.ready))
+        self.loop.run_kind='scripted';self.loop.social_acceptance_marker=marker;self.loop.group_acceptance_mention_required=True
+        result=await SocialAgent(self.loop,self.ui).run('group_post')
+        self.assertEqual(result['outcome'],'sent_observed')
+        self.assertEqual(self.model.call_args.args[1]['conversation']['reply_target']['text'],target['text'])
+        self.store.db.execute('UPDATE social_outbox SET created=created-31');self.store.db.commit()
+        again=await SocialAgent(self.loop,self.ui).run('group_post')
+        self.assertEqual(again['outcome'],'incoming_already_recorded');self.loop.send.assert_awaited_once()
+
     async def test_scripted_notification_link_requires_actual_incoming_minute(self):
         self.loop.run_kind='scripted';self.loop.social_acceptance_marker=self.incoming
         self.loop.social_acceptance_post_minute='22:02'
