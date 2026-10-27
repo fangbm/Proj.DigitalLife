@@ -65,7 +65,7 @@ class MemoryTests(unittest.IsolatedAsyncioTestCase):
         db.commit(); db.close()
         db = open_database(self.config.data)
         self.assertEqual(db.execute("SELECT status,run_kind FROM sessions").fetchone(), ("completed_duration", "legacy_unclassified"))
-        self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+        self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
         db.close()
         backups = list((self.config.data / "backups").glob("pre-m2-*.sqlite3"))
         self.assertEqual(len(backups), 1)

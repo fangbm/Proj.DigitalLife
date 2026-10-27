@@ -7,6 +7,7 @@ import sqlite3
 import time
 from .safety import Blocked
 from .memory import initialize
+from .events import initialize as initialize_events
 
 
 def open_database(data):
@@ -14,11 +15,19 @@ def open_database(data):
     data.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(data / "life.sqlite3")
     version = db.execute("PRAGMA user_version").fetchone()[0]
-    if version not in {0, 2}:
+    if version not in {0, 2, 3}:
         db.close()
         raise ValueError("UNSUPPORTED_V2_DATABASE_VERSION")
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("PRAGMA synchronous=FULL")
+    if version == 2:
+        backups = data / "backups"
+        backups.mkdir(exist_ok=True)
+        backup = sqlite3.connect(backups / f"pre-m3-{time.time_ns()}.sqlite3")
+        try:
+            db.backup(backup)
+        finally:
+            backup.close()
     db.executescript("""
     CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,serial TEXT,started REAL,ended REAL,status TEXT,reason TEXT);
     CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,session TEXT,at REAL,kind TEXT,payload TEXT);
@@ -35,7 +44,8 @@ def open_database(data):
                 backup.close()
         db.execute("ALTER TABLE sessions ADD COLUMN run_kind TEXT NOT NULL DEFAULT 'legacy_unclassified'")
     initialize(db)
-    db.execute("PRAGMA user_version=2")
+    initialize_events(db)
+    db.execute("PRAGMA user_version=3")
     db.commit()
     return db
 
@@ -57,6 +67,7 @@ class LifeStore:
         self.directory = Path(session)
         self.db = open_database(data)
         self.memory = None
+        self.inbound_context = None
         self.state = {"session": session, "serial": serial, "status": "starting", "started_at": time.time(),
                       "foreground": None, "last_action": None, "dispatched": 0, "blocked": 0,
                       "requests": 0, "input_tokens": 0, "output_tokens": 0, "cost": None,
@@ -77,8 +88,8 @@ class LifeStore:
                         (self.session, now, kind, json.dumps(payload, ensure_ascii=False)))
         self.db.commit()
         with (self.directory / "events.jsonl").open("a", encoding="utf-8") as f:
-            f.write(json.dumps({"at": datetime.fromtimestamp(now, timezone.utc).isoformat(),
-                                "source": "v2", "kind": kind, **payload}, ensure_ascii=False) + "\n")
+            f.write(json.dumps({**payload,"at": datetime.fromtimestamp(now, timezone.utc).isoformat(),
+                                "source": "v2", "kind": kind}, ensure_ascii=False) + "\n")
             f.flush()
             os.fsync(f.fileno())
         return cursor.lastrowid

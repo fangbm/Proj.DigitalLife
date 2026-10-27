@@ -27,7 +27,7 @@ def parse_decision(content):
         if not isinstance(content, str) or len(content) > 12000:
             raise ValueError()
         d = json.loads(content, object_pairs_hook=unique)
-        if not isinstance(d, dict) or set(d) - {"intent", "action", "note", "life"} or not {"intent", "action", "note"} <= set(d):
+        if not isinstance(d, dict) or set(d) - {"intent", "action", "note", "life", "event_response"} or not {"intent", "action", "note"} <= set(d):
             raise ValueError()
         if d["intent"] not in {"explore", "rest"} or not isinstance(d["note"], str) or len(d["note"]) > 400:
             raise ValueError()
@@ -37,12 +37,15 @@ def parse_decision(content):
                   "home": {"type"}, "recent_apps": {"type"},
                   "search": {"type", "control_id", "query"}, "rest": {"type", "seconds"}}
         fields["type_text"] = {"type", "control_id", "text"}
+        fields["watch_video"] = fields["read_article"] = {"type", "seconds"}
         if not isinstance(a, dict) or a.get("type") not in fields or set(a) != fields[a["type"]]:
             raise ValueError()
         for key in set(a) - {"type", "seconds"}:
             if not isinstance(a[key], str) or len(a[key]) > 256:
                 raise ValueError()
         if a["type"] == "rest" and (type(a["seconds"]) is not int or not 1 <= a["seconds"] <= 120):
+            raise ValueError()
+        if a["type"] in {"watch_video", "read_article"} and (type(a["seconds"]) is not int or not 5 <= a["seconds"] <= 60):
             raise ValueError()
         if a["type"] == "swipe" and a["direction"] not in {"up", "down"}:
             raise ValueError()
@@ -60,6 +63,13 @@ def parse_decision(content):
             if not isinstance(life, dict) or set(life) - set(limits):
                 raise ValueError()
             if any(not isinstance(value, str) or len(value) > limits[key] for key, value in life.items()):
+                raise ValueError()
+        if "event_response" in d:
+            event = d["event_response"]
+            if (not isinstance(event,dict) or set(event)!={"event_id","decision","note"}
+                    or not isinstance(event["event_id"],str) or not 1<=len(event["event_id"])<=64
+                    or event["decision"] not in {"read_only","reply_later","ignore","resume_activity","reply_now"}
+                    or not isinstance(event["note"],str) or len(event["note"])>200):
                 raise ValueError()
         return d
     except (ValueError, TypeError, KeyError) as e:
@@ -80,7 +90,7 @@ def guard(action, obs, apps, *, full_access=False):
         return None
     if obs.redacted or obs.incomplete:
         raise Blocked("SENSITIVE_OR_INCOMPLETE_PAGE")
-    if kind == "back":
+    if kind in {"back", "watch_video", "read_article"}:
         return None
     controls = [c for c in obs.controls if c.control_id == action.get("control_id")]
     if len(controls) != 1:

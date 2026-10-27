@@ -2,3 +2,4 @@
 /profiles/*.private.json
 *.png
 *.xml
+!/companion/AndroidManifest.xml

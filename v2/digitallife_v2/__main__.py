@@ -65,6 +65,10 @@ def main(argv=None):
             p.add_argument("--wait", type=float, default=15)
     p = sub.add_parser("memory", help="read-only local life state and bounded memory preview")
     p.add_argument("--profile", default="find-x6")
+    p = sub.add_parser('bridge-setup',help='explicitly install/provision the local notification companion')
+    p.add_argument('--profile',default='find-x6')
+    p.add_argument('--apk',required=True)
+    p.add_argument('--provision-only',action='store_true',help='verify already installed APK bytes, then provision without reinstall')
     args = parser.parse_args(argv)
     try:
         if args.command == "status":
@@ -75,7 +79,10 @@ def main(argv=None):
             result = stop(args.session, args.emergency, args.wait)
         else:
             config = Config.load(args.profile)
-            if args.command == "memory":
+            if args.command == 'bridge-setup':
+                from .bridge import setup
+                result=asyncio.run(setup(config,args.apk,args.provision_only))
+            elif args.command == "memory":
                 path = config.data / "life.sqlite3"
                 db = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
                 try:

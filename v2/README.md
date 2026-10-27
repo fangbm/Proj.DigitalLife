@@ -1,8 +1,8 @@
-# DigitalLife V2 · M2
+# DigitalLife V2 · M3 首个切片
 
-独立 Python 实现：观察 → 单个模型动作 → 风险检查 → 分发前复核 → 持久记录 → ADB 分发 → 再观察，并加入跨会话记忆、兴趣与精力状态。[M2 使用与边界](M2.md) · [M2 交付记录](M2-DELIVERY.md)。按用户最新要求不导入 V1 数据；V1 源码、数据库、证据和密钥保留，不导入 V1 运行模块。M3 尚未展开。
+独立 Python 实现：观察 → 单个模型动作 → 分发前复核 → 持久记录 → ADB 分发 → 再观察，保留 M2 的跨会话记忆、兴趣与精力状态，并加入有来源的视频/文章摘要与只读通知队列。[M3 使用与边界](M3.md) · [M3 交付记录](M3-DELIVERY.md) · [M2 历史交付](M2-DELIVERY.md)。按用户要求不导入 V1 数据；原源码、数据库、证据和密钥保留。
 
-**当前默认完整 UI 操作模式（2.0.0a3）**，遵循用户“手机所有权限都可以放开”的授权：取消控件名称限制、敏感页面遮蔽和多任务图片屏蔽，加入通用文本输入。细节与验证见 [FULL-ACCESS.md](FULL-ACCESS.md)。M2 原始的跨进程自主真机验证及修复记录见 [M2-DELIVERY.md](M2-DELIVERY.md)，M1 历史验收见 [DELIVERY.md](DELIVERY.md)。
+**当前版本 2.0.0a4，保留默认完整 UI 操作模式**，遵循用户“手机所有权限都可以放开”的授权。DeepSeek 官方 `deepseek-flash` 视觉已通过真实图片请求验证，现默认开启。真机视频采样和本机通知事件已有记录；社交发送、音频采集及长期运行未展开。M1 历史验收见 [DELIVERY.md](DELIVERY.md)。
 
 ## 手动运行
 
@@ -51,7 +51,10 @@ python -m digitallife_v2 memory --profile find-x6
 | 变量前缀均为 `DIGITALLIFE_V2_` | 默认值 / 含义 |
 |---|---|
 | `API_BASE`, `API_KEY`, `MODEL` | `https://api.deepseek.com` / 环境或启动脚本 / `deepseek-flash` |
-| `VISION` | `false`；默认只发真实 XML 控件摘要，明确 `vision_available=false` |
+| `VISION` | 官方 DeepSeek + `deepseek-flash` 默认 `true`，其他端点/模型默认 `false`；可显式覆盖 |
+| `IMAGE_TOKEN_RESERVE` | 每图预留：上述官方模型 1024，其他默认 4096 |
+| `CONTENT_SAMPLES`, `CONTENT_INTERVAL` | 最多 3 个样本、采样间等待 5 秒；另计实际设备采集耗时 |
+| `NOTIFICATION_PACKAGES` | 默认 `io.digitallife.companion`；配置已允许的通知来源包，逗号分隔 |
 | `FULL_ACCESS` | `true`；完整 UI 操作，保留全部页面内容和可点击控件；`false` 可使用原有限制模式 |
 | `MAX_INPUT_TOKENS`, `MAX_OUTPUT_TOKENS` | 16000 / 600；输入采用 UTF-8 字节上界加封装预留，输出由请求上限控制 |
 | `REQUESTS_HOUR`, `REQUESTS_DAY` | 60 / 200；在同一 V2 数据库中跨会话计数，失败请求也占额度 |
@@ -62,7 +65,7 @@ python -m digitallife_v2 memory --profile find-x6
 
 金额预算发送前按最大输入与输出预留，失败/用量缺失不会退还预留额度。无定价时只报告请求/token 用量，不把费用未知写成零。不能利用模型输出修改预算。输入摘要过大时减少控件与应用列表，应用按请求次数轮换展示，最终启动仍校验完整实时清单；不存在静态 App 白名单。
 
-仅在你已确认当前端点和模型实际支持图像输入时设置 `VISION=true`；请求将附带真实 PNG 的 `image_url`。图像预算预留 4096 token，需与提供商的 low-detail 图像计量相容；未核实的提供商继续使用默认 XML 模式。API 拒绝图像时不会冒充视觉成功。本轮真实 DeepSeek 请求使用 XML/文本模式，未验证该模型的视觉能力。
+当前官方 DeepSeek Flash 使用真实 PNG 的 `image_url`，high detail，每图最多 1024 token 的计量依据见 [官方图像文档](https://api-docs.deepseek.com/guides/vision/)。其他端点/模型仍需确认能力和图像预算后开启。`VISION=false` 时明确标记 `vision_available=false`；API 拒绝图像不会冒充视觉成功。M2 的文字模式历史记录保留。
 
 ## 操作和安全边界
 
@@ -84,7 +87,7 @@ UIAutomator 缺少 visible/editable 字段时保留未知。标签文字可以�
 
 私有数据默认位于忽略提交的 `v2/data/`：单份 `life.sqlite3`、会话 `events.jsonl`、原子更新的 `status.json`、PNG/XML。状态包含前台、最近动作、分发/拒绝次数、用量、错误、下一次唤醒及约两秒的心跳。`stale=true` 表示心跳超过 20 秒，不能据此认定进程已正常结束。源码不附带真实截图、设备标识、密钥或数据库。
 
-事件区分 `observed`、`pending`、`action_dispatched`、`changed/unchanged`、`blocked`、`unknown`。哈希变化只代表页面数据变化；所有业务 `achieved` 留空。时长到期使用 `completed_duration`，不能据此宣称探索成功。M2 的跨会话记忆、兴趣和休息延续见 [M2.md](M2.md)；目标不是可执行动作队列。V1 历史不导入，自动恢复、一小时与二十四小时仍留在 M3。
+事件区分 `observed`、`pending`、`action_dispatched`、`changed/unchanged`、`blocked`、`unknown`，另有内容摘要与通知记录。哈希变化只代表页面数据变化；所有业务 `achieved` 留空。时长到期使用 `completed_duration`，不能据此宣称探索成功。M2 的跨会话机制见 [M2.md](M2.md)；目标不是可执行动作队列。按新版路线，自动恢复、一小时与二十四小时留至 M6。
 
 手动十分钟后检查同一会话的真实事件和文件：
 
@@ -100,7 +103,7 @@ python -m unittest discover -s tests -v
 python -m pip wheel --no-deps --no-build-isolation --wheel-dir dist .
 ```
 
-测试仅用虚拟手机、临时 SQLite、模拟 ADB 返回和 loopback HTTP 服务；不会访问真实 ADB、DPAPI 或提供商。交付验证详情见 [M2-DELIVERY.md](M2-DELIVERY.md)。
+测试仅用虚拟手机、临时 SQLite、模拟 ADB 返回和 loopback HTTP 服务；不会访问真实 ADB、DPAPI 或提供商。当前交付验证详情见 [M3-DELIVERY.md](M3-DELIVERY.md)。
 
 已授权的定向真机专项可从 `v2/` 运行：
 

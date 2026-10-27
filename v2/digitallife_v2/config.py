@@ -33,6 +33,9 @@ class Config:
     max_cost: float | None = None
     input_price: float | None = None  # operator supplied per million tokens
     output_price: float | None = None
+    notification_packages: tuple = ("io.digitallife.companion",)
+    content_samples: int = 3
+    content_interval: int = 5
 
     def __post_init__(self):
         if (not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", self.serial)
@@ -54,6 +57,10 @@ class Config:
                   self.requests_day, self.max_actions, self.image_token_reserve):
             if type(n) is not int or n < 1:
                 raise ValueError("POSITIVE_LIMIT_REQUIRED")
+        if type(self.content_samples) is not int or type(self.content_interval) is not int or not 1 <= self.content_samples <= 4 or not 3 <= self.content_interval <= 30:
+            raise ValueError("INVALID_CONTENT_SAMPLING_LIMIT")
+        if len(self.notification_packages)>20 or any(not isinstance(p,str) or not re.fullmatch(r"[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+", p, re.ASCII) for p in self.notification_packages):
+            raise ValueError("INVALID_NOTIFICATION_PACKAGE")
         for n in (self.max_cost, self.input_price, self.output_price):
             if n is not None and (not math.isfinite(n) or n < 0):
                 raise ValueError("INVALID_PRICE_OR_COST")
@@ -74,15 +81,20 @@ class Config:
         def optional(key):
             v = env(key, "")
             return float(v) if v else None
+        endpoint = env("API_BASE", os.getenv("PHONE_LIFE_API_BASE", "https://api.deepseek.com")).rstrip("/")
+        model = env("MODEL", os.getenv("PHONE_LIFE_BRAIN_MODEL", "deepseek-flash"))
+        native_vision = urlsplit(endpoint).hostname == "api.deepseek.com" and model == "deepseek-flash"
         return cls(serial=p["serial"], identity=p["identity"],
                    adb=env("ADB", "adb"), data=Path(env("DATA", str(ROOT / "data"))),
-                   api_base=env("API_BASE", os.getenv("PHONE_LIFE_API_BASE", "https://api.deepseek.com")).rstrip("/"),
+                   api_base=endpoint,
                    api_key=env("API_KEY", os.getenv("PHONE_LIFE_API_KEY", "")),
-                   model=env("MODEL", os.getenv("PHONE_LIFE_BRAIN_MODEL", "deepseek-flash")),
-                   vision=env("VISION", "false").lower() == "true",
+                   model=model, vision=env("VISION", "true" if native_vision else "false").lower() == "true",
+                   image_token_reserve=int(env("IMAGE_TOKEN_RESERVE", "1024" if native_vision else "4096")),
                    full_access=env("FULL_ACCESS", "true").lower() == "true",
                    max_input_tokens=int(env("MAX_INPUT_TOKENS", "16000")),
                    max_output_tokens=int(env("MAX_OUTPUT_TOKENS", "600")),
                    requests_hour=int(env("REQUESTS_HOUR", "60")), requests_day=int(env("REQUESTS_DAY", "200")),
                    max_actions=int(env("MAX_ACTIONS", "80")), max_cost=optional("MAX_COST"),
-                   input_price=optional("INPUT_PRICE"), output_price=optional("OUTPUT_PRICE"))
+                   input_price=optional("INPUT_PRICE"), output_price=optional("OUTPUT_PRICE"),
+                   notification_packages=tuple(p.strip() for p in env("NOTIFICATION_PACKAGES", "io.digitallife.companion").split(",") if p.strip()),
+                   content_samples=int(env("CONTENT_SAMPLES", "3")), content_interval=int(env("CONTENT_INTERVAL", "5")))

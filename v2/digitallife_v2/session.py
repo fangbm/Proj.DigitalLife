@@ -11,6 +11,9 @@ from .memory import LifeMemory
 from .phone import PhoneController
 from .safety import Blocked, DeviceLock, UnknownDispatch, guard, rebind
 from .store import LifeStore
+from .events import EventHub
+from .bridge import NotificationBridge
+from .content import ContentPerception
 
 
 class SessionStopped(Exception):
@@ -31,6 +34,21 @@ class SessionLoop:
         self.run_kind = "autonomous" if phone_factory is PhoneController and brain_factory is LifeBrain else "scripted" if phone_factory is PhoneController else "fixture"
         self.action_ids = []
         self.last_result_event = None
+        self.bridge = None
+        self.hub = None
+        self.inbound_wake = asyncio.Event()
+
+    async def poll_notifications(self):
+        if self.bridge:
+            try:
+                if await self.bridge.poll(self.hub):self.inbound_wake.set()
+                self.store.update(inbox=self.hub.counts())
+            except (OSError,ValueError,asyncio.TimeoutError,EOFError):
+                self.store.update(notification_error='BRIDGE_POLL_UNAVAILABLE')
+
+    async def wait_for_event(self, seconds):
+        try:await asyncio.wait_for(self.inbound_wake.wait(),seconds)
+        except asyncio.TimeoutError:pass
 
     def check_stop(self):
         if (self.directory / "STOP").exists() or self.lock.emergency.exists():
@@ -47,6 +65,7 @@ class SessionLoop:
                 self.check_stop()
                 await asyncio.wait({task}, timeout=.15)
                 if self.store and time.monotonic() - heartbeat >= 2:
+                    await self.poll_notifications()
                     self.store.update()
                     heartbeat = time.monotonic()
             self.check_stop()
@@ -108,11 +127,18 @@ class SessionLoop:
         before = await self.guarded(self.phone.observe())
         self.observed(before)
         apps = await self.guarded(self.phone.catalog())
+        self.store.inbound_context = self.hub.next() if self.hub else None
         proposal = await self.guarded(self.brain.decide(before, apps, self.recent))
-        self.store.event("proposal", {"observation_id": before.observation_id, **proposal})
+        logged=proposal if not self.store.inbound_context else {**proposal,'note':'Ephemeral notification decision; private note omitted','life':{}}
+        if self.store.inbound_context and proposal.get('event_response'):
+            logged={**logged,'event_response':{**proposal['event_response'],'note':'Private notification reason omitted'}}
+        self.store.event("proposal", {"observation_id": before.observation_id, **logged})
         action = proposal["action"]
+        if self.hub:self.hub.resolve(self.store.inbound_context,proposal.get('event_response'))
         self.store.update(last_action=action, last_error=None)
         guard(action, before, apps, full_access=self.config.full_access)
+        if action['type'] in {'watch_video','read_article'}:
+            return await ContentPerception(self).run(proposal,before)
         if action["type"] == "rest":
             seconds = min(action["seconds"], max(0, self.deadline - time.monotonic()))
             self.store.event("rest", {"seconds": action["seconds"], "sleep_in_session": seconds})
@@ -120,8 +146,9 @@ class SessionLoop:
             if self.memory:
                 self.memory.begin_rest(action["seconds"])
             started = time.monotonic()
+            self.inbound_wake.clear()
             try:
-                await self.guarded(asyncio.sleep(seconds))
+                await self.guarded(self.wait_for_event(seconds))
             finally:
                 if self.memory:
                     elapsed = min(seconds, time.monotonic() - started)
@@ -158,7 +185,7 @@ class SessionLoop:
                 result = typed_result
         else:
             after, result = await self.send(command, action, fresh)
-        if self.memory:
+        if self.memory and not self.store.inbound_context:
             self.memory.record(proposal, before, after, self.action_ids, result, self.last_result_event,
                                getattr(self.brain, "offered_memory_ids", ()))
             self.store.update(life=self.memory.brief())
@@ -177,6 +204,20 @@ class SessionLoop:
             self.brain = self.brain_factory(self.config, self.store)
             status, reason = "stopped", "INTERRUPTED"
             try:
+                self.hub = EventHub(self.store,self.config.notification_packages)
+                if (self.config.data/'notification-bridge.private.json').exists() and self.run_kind!='fixture':
+                    bridge=NotificationBridge(self.config,self.phone)
+                    try:
+                        await self.guarded(bridge.connect(max(1,self.deadline-time.monotonic()-5)))
+                        self.bridge=bridge
+                        self.store.notification_client=bridge
+                        self.store.update(notification_bridge='connected')
+                    except (OSError,ValueError,asyncio.TimeoutError,EOFError):
+                        await bridge.close()
+                        self.store.update(notification_bridge='unavailable')
+                    except BaseException:
+                        await bridge.close()
+                        raise
                 if self.run_kind == "autonomous":
                     self.memory = self.store.memory = LifeMemory(self.store.db, self.config.serial,
                                                                   str(self.directory), self.store.event)
@@ -190,7 +231,7 @@ class SessionLoop:
                         self.store.update(next_wake=time.time() + remaining)
                         started = time.monotonic()
                         try:
-                            await self.guarded(asyncio.sleep(remaining))
+                            await self.guarded(self.wait_for_event(remaining))
                         finally:
                             elapsed = min(remaining, time.monotonic() - started)
                             completed = elapsed >= requested - .05
@@ -230,6 +271,9 @@ class SessionLoop:
                 status, reason = "failed", type(e).__name__
                 self.store.update(last_error=reason)
             finally:
+                if self.bridge:
+                    inactive=await self.bridge.close()
+                    self.store.update(notification_collection_inactive=inactive)
                 if self.lock.pending.exists():
                     status = "unknown"
                 self.store.event("session_ended", {"status": status, "reason": reason})

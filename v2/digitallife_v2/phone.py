@@ -36,7 +36,7 @@ class PhoneController:
         self.rotation = None
         self._recent_apps_requested = False
 
-    async def _adb(self, *args, dispatch=False):
+    async def _adb(self, *args, dispatch=False, timeout=12):
         """Only internal fixed builders call this method; cancellation kills own child."""
         proc = None
         try:
@@ -51,7 +51,7 @@ class PhoneController:
                     chunks.append(part)
                 return b"".join(chunks)
             out, _, _ = await asyncio.wait_for(asyncio.gather(
-                read(proc.stdout, 24_000_000), read(proc.stderr, 8192), proc.wait()), 12)
+                read(proc.stdout, 24_000_000), read(proc.stderr, 8192), proc.wait()), timeout)
             if proc.returncode:
                 raise Blocked("ADB_COMMAND_FAILED")
             return out
