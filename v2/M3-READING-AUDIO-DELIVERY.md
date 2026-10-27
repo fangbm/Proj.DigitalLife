@@ -1,6 +1,6 @@
 # M3 a5 增量交付
 
-日期：2026-10-27。版本 `2.0.0a5`，分支 `codex/v2-m3`，基于首个切片 `9c619dc3d19069ba27d299718e701b0c015ec910`。a4 历史证据保留于 [M3-DELIVERY.md](M3-DELIVERY.md)。
+日期：2026-10-27。版本 `2.0.0a5`，分支 `codex/v2-m3`，基于首个切片 `9c619dc3d19069ba27d299718e701b0c015ec910`。a4 历史证据保留于 [M3-DELIVERY.md](M3-DELIVERY.md)。长文纯文本读取及 QQ/主微信真实来信接收已通过，手机播放音频捕获仍待真机验收。
 
 ## 长文：真机文本路径已验收
 
@@ -28,11 +28,20 @@ Android MediaProjection 前台服务、指定应用 UID 的播放捕获、20 秒
 
 修复后重新构建、实机安装并核对字节：`find-x6-v2-m3-service-fix-install-20261027-11`，终态 `COMPANION_INSTALL_VERIFIED`。APK SHA-256 `2ebfa8fcd81c3eeee49b5160f4dea48647288fe0874582e722f919b5063d955d`。
 
-## QQ / 微信真实来信
+## QQ / 主微信真实来信：已验收
 
-用户选择两者均测。已确认两个包安装，启动 10 分钟只读接收窗口 `find-x6-v2-m3-qq-wechat-receive-20261027-12`。只将本窗口新收到、分别匹配 `DL-M3-QQ-1027` / `DL-M3-WX-1027` 的通知给真实模型判断；其他来信不送模型。无 UI 输入、无外发，通知预览不被当作联系人或账号身份。窗口到期 `GLOBAL_DEADLINE`，0 次 UI 输入、0 模型请求，未收到匹配短句；QQ/微信真实来信验收未通过，不能以本机测试通知替代。结束后采集租约与音频授权均已释放。用户稍晚确认已发送，但只读检查 Android 当前通知未发现两条短句。已开启第二个有限窗口 `find-x6-v2-m3-qq-wechat-receive-20261027-14`，并请保持测试手机在桌面后重发；第二窗口同样到期 `GLOBAL_DEADLINE`，0 UI 输入、0 模型请求、0 匹配来信，关闭后租约与 projection 均释放。未取得真实来信成功证据。
+用户确认测试账号为主微信，并从另一端发送两条测试短句。最终窗口 `data/sessions/find-x6-v2-m3-qq-wechat-receive-20261027-15` 在真实 NotificationListener 回调中收到 QQ 和主微信通知，均匹配本轮短句；调用真实模型分别判断，未打开聊天或发送内容。`SOCIAL_READY.json` 与 `events.jsonl`、SQLite 的入队/判断事件引用相同事件 ID。
 
-权限核对发现主用户 QQ 的 POST_NOTIFICATIONS 被关闭，已在用户既有完整手机授权范围内开启并读回 true。微信主用户已允许；另有用户 999 的应用分身安装，其通知权限关闭。测试账号是在主微信还是分身尚待用户确认，不能猜测或以主用户监听证明分身可用。未擅自复制账号、安装分身通知桥或触碰登录。
+| 来源 | 事件 ID | 模型判断 | 外发 |
+|---|---|---|---|
+| QQ `com.tencent.mobileqq` | `2778db389c8f8463347d2cf6a2e743ab26ba23dffcbefc8abb96a775d9c16231` | `read_only` | false |
+| 主微信 `com.tencent.mm` | `06173c1c183c3c65f9efa941273fc3c30ea8699be01a5b65eec755f3aef89456` | `reply_later` | false |
+
+终态 `SOCIAL_RECEIVE_ACCEPTANCE_DONE`，208.8 秒，2 次真实模型请求，输入 561 / 输出 152 token；0 UI 输入、0 拦截、无未知 pending。微信的稍后处理只记录队列意图，未发送回复，未证实联系人/账号身份；`context_complete=false` 与 sender identity unresolved 保留。结束后 `notification_collection_inactive=true`、`audio_projection_released=true`，没有后台自动续跑。
+
+本轮只把匹配测试短句的新通知给模型，其他来信不送模型。`PRIMARY_PROFILE_PROOF.json` 只读核对 QQ/主微信在用户 0 已安装且 POST_NOTIFICATIONS 均允许；用户确认主微信不等于技术上验证发送方身份，应用分身并未验收。
+
+先前窗口 12、14 均到期且没有匹配事件，原失败证据保留。权限检查发现 QQ 通知权限关闭，已在用户既有完整手机授权范围内开启并读回 true。微信主应用通知允许，应用分身关闭；用户随后确认使用主微信。最终窗口中 QQ 先通过，微信当时停在前台且 Android 没有生成通知，提示回桌面后重发，随后收到真实微信通知。未复制账号、安装分身通知桥或触碰登录，也未把本机测试通知替代 QQ/微信来信。
 
 ## 验证与范围
 
