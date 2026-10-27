@@ -22,6 +22,7 @@ async def doctor(config):
         apps = await phone.catalog()
         return {"device_identity": "matched", "foreground": foreground, "launchable_apps": len(apps),
                 "vision_configured": config.vision, "model": config.model,
+                "full_access": config.full_access,
                 "api_key_present": bool(config.api_key), "api_contacted": False,
                 "cost": "operator_pricing" if config.input_price is not None else "unknown"}
 

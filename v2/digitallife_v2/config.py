@@ -23,6 +23,7 @@ class Config:
     api_key: str = field(default="", repr=False)
     model: str = "deepseek-flash"
     vision: bool = False
+    full_access: bool = True
     image_token_reserve: int = 4096
     max_input_tokens: int = 16000
     max_output_tokens: int = 600
@@ -79,6 +80,7 @@ class Config:
                    api_key=env("API_KEY", os.getenv("PHONE_LIFE_API_KEY", "")),
                    model=env("MODEL", os.getenv("PHONE_LIFE_BRAIN_MODEL", "deepseek-flash")),
                    vision=env("VISION", "false").lower() == "true",
+                   full_access=env("FULL_ACCESS", "true").lower() == "true",
                    max_input_tokens=int(env("MAX_INPUT_TOKENS", "16000")),
                    max_output_tokens=int(env("MAX_OUTPUT_TOKENS", "600")),
                    requests_hour=int(env("REQUESTS_HOUR", "60")), requests_day=int(env("REQUESTS_DAY", "200")),

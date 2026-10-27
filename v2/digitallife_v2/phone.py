@@ -15,6 +15,18 @@ LAUNCH_FLAGS = ("-a", "android.intent.action.MAIN", "-c", "android.intent.catego
 COMPONENT = re.compile(r"([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)/([A-Za-z_.$][\w.$]*)", re.ASCII)
 
 
+def quoted_text(value):
+    """One literal argument for Android's remote shell, including apostrophes."""
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def fixed_text_argument(value):
+    if not isinstance(value, str) or len(value) > 1100 or not value.startswith("'") or not value.endswith("'"):
+        return False
+    decoded = value[1:-1].replace("'\"'\"'", "'")
+    return bool(re.fullmatch(r"[ -~]{1,800}", decoded)) and quoted_text(decoded) == value
+
+
 class PhoneController:
     def __init__(self, config, directory):
         self.config = config
@@ -105,7 +117,7 @@ class PhoneController:
                 continue
             if re.search(r"DROP_INPUT|TYPE_APPLICATION_OVERLAY|TYPE_SYSTEM_ALERT|\bty=(?:2038|2002|2003)\b", block):
                 raise Blocked("VISIBLE_INPUT_OVERLAY")
-            if re.search(r"permissioncontroller|securitypermission|biometric|credential", block, re.I):
+            if not self.config.full_access and re.search(r"permissioncontroller|securitypermission|biometric|credential", block, re.I):
                 raise Blocked("VISIBLE_SECURITY_WINDOW")
             # Reject positively shown foreign app windows above the focus. System bars
             # and the keyboard are checked geometrically against the intended target.
@@ -129,13 +141,14 @@ class PhoneController:
         raw = await self._text("exec-out", "uiautomator", "dump", "/proc/self/fd/1")
         incomplete = False
         try:
-            xml, controls, redacted, rotation = parse_xml(raw, oid)
+            xml, controls, redacted, rotation = parse_xml(raw, oid, full_access=self.config.full_access)
         except (ValueError, RecursionError):
             xml, controls, redacted, rotation, incomplete = "", [], True, 0, True
         if before != await self.scene() or before_rotation != self.rotation:
             raise Blocked("SCENE_CHANGED_DURING_OBSERVATION")
         self.check_windows(before)
-        redacted |= bool(re.search(r"permissioncontroller|securitypermission|credential|biometric", before, re.I))
+        if not self.config.full_access:
+            redacted |= bool(re.search(r"permissioncontroller|securitypermission|credential|biometric", before, re.I))
         # Do not acquire or persist a sensitive PNG/XML, and never send a placeholder as real imagery.
         if redacted:
             return Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial,
@@ -151,7 +164,8 @@ class PhoneController:
         # Check sensitivity again after acquiring PNG, before either artifact is persisted.
         try:
             new_xml, new_controls, new_redacted, new_rotation = parse_xml(
-                await self._text("exec-out", "uiautomator", "dump", "/proc/self/fd/1"), oid)
+                await self._text("exec-out", "uiautomator", "dump", "/proc/self/fd/1"), oid,
+                full_access=self.config.full_access)
         except (ValueError, RecursionError):
             return Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial,
                                before, 0, 0, rotation, [], True, True)
@@ -168,9 +182,9 @@ class PhoneController:
         pp, xp = self.directory / (oid + ".png"), self.directory / (oid + ".xml")
         pp.write_bytes(png)
         xp.write_text(xml, encoding="utf-8")
-        overview = self._recent_apps_requested or bool(
+        overview = not self.config.full_access and (self._recent_apps_requested or bool(
             re.search(r"launcher|quickstep|systemui|recents", before, re.I) and
-            re.search(r"recents.?view|recent_apps|overview|task.?view|recent.?task|task.?switch", xml, re.I))
+            re.search(r"recents.?view|recent_apps|overview|task.?view|recent.?task|task.?switch", xml, re.I)))
         return Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial, before,
             w, h, rotation, controls, False, False, str(pp), sha(png), str(xp), sha(xml.encode()),
             vision_allowed=not overview, image_withheld_reason="unclassified_task_preview_images" if overview else None)
@@ -204,7 +218,7 @@ class PhoneController:
             return ("shell", "am", "start", "-W", *LAUNCH_FLAGS, "-n", matches[0])
         if kind in {"back", "home", "recent_apps"}:
             return ("shell", "input", "keyevent", {"back": "4", "home": "3", "recent_apps": "187"}[kind])
-        if kind == "search":
+        if kind in {"search", "type_text"}:
             # Select only in the freshly verified focused search editor. The next
             # observation/recheck must still bind that editor before typing.
             return ("shell", "input", "keycombination", "113", "29")  # CTRL+A
@@ -228,7 +242,9 @@ class PhoneController:
             (command == ("shell", "input", "keycombination", "113", "29")) or
             (len(command) == 5 and command[2] == "tap" and all(s.isdigit() for s in command[3:])) or
             (len(command) == 8 and command[2] == "swipe" and all(s.isdigit() for s in command[3:])) or
-            (len(command) == 4 and command[2] == "text" and re.fullmatch(r"'[A-Za-z0-9% .,?_-]{1,240}'", command[3])))
+            (len(command) == 4 and command[2] == "text" and (
+                re.fullmatch(r"'[A-Za-z0-9% .,?_-]{1,240}'", command[3]) or
+                self.config.full_access and fixed_text_argument(command[3]))))
         if not (launch or input_command):
             raise Blocked("FIXED_DISPATCH_COMMAND_REQUIRED")
         await self._adb(*command, dispatch=True)
@@ -238,7 +254,7 @@ class PhoneController:
                 ("shell", "input", "keyevent", "3"), ("shell", "input", "keyevent", "4")}:
             self._recent_apps_requested = False
 
-    def search_editor(self, observation, old_target, expected_text=None):
+    def search_editor(self, observation, old_target, expected_text=None, *, kind="search"):
         candidates = [c for c in observation.controls if c.resource == old_target.resource and c.package == old_target.package
                       and c.kind == old_target.kind and c.focused is True]
         if len(candidates) != 1:
@@ -249,20 +265,21 @@ class PhoneController:
         if (not target.resource and target.bounds != old_target.bounds
                 or expected_text is not None and target.text != expected_text):
             raise Blocked("SEARCH_FOCUS_OR_TEXT_CHANGED")
-        guard({"type": "search", "control_id": target.control_id}, observation, {})
+        guard({"type": kind, "control_id": target.control_id}, observation, {}, full_access=self.config.full_access)
         return target
 
-    async def recheck_search(self, observation, old_target, expected_text):
+    async def recheck_search(self, observation, old_target, expected_text, *, kind="search"):
         await self.identity()
         if time.monotonic() - observation.monotonic > 10:
             raise Blocked("SEARCH_OBSERVATION_EXPIRED")
-        self.search_editor(observation, old_target, expected_text)
+        self.search_editor(observation, old_target, expected_text, kind=kind)
         _, controls, redacted, rotation = parse_xml(await self._text(
-            "exec-out", "uiautomator", "dump", "/proc/self/fd/1"), uuid.uuid4().hex)
+            "exec-out", "uiautomator", "dump", "/proc/self/fd/1"), uuid.uuid4().hex,
+            full_access=self.config.full_access)
         if redacted or rotation != observation.rotation:
             raise Blocked("SEARCH_FOCUS_OR_TEXT_CHANGED")
         fresh = replace(observation, controls=controls, monotonic=time.monotonic())
-        target = self.search_editor(fresh, old_target, expected_text)
+        target = self.search_editor(fresh, old_target, expected_text, kind=kind)
         if await self.scene() != observation.foreground:
             raise Blocked("SEARCH_SCENE_CHANGED")
         self.check_windows(observation.foreground, target.bounds)
@@ -271,6 +288,10 @@ class PhoneController:
         await self.recheck_search(selected, old_target, old_target.text)
         # Query is validated ASCII, remotely shell-quoted; no model metacharacters.
         return ("shell", "input", "text", "'" + action["query"].replace(" ", "%s") + "'")
+
+    async def prepare_input_text(self, selected, action, old_target):
+        await self.recheck_search(selected, old_target, old_target.text, kind="type_text")
+        return ("shell", "input", "text", quoted_text(action["text"].replace(" ", "%s")))
 
     async def prepare_search_submit(self, typed, action, old_target):
         await self.recheck_search(typed, old_target, action["query"])

@@ -26,9 +26,10 @@ from digitallife_v2.__main__ import main, stop
 
 
 def config(root):
+    # Preserve the original M1 policy regression under its explicit restricted mode.
     identity = {key: "test" for key in IDENTITY}
     identity.update({"ro.product.manufacturer": "OPPO", "ro.product.model": "PGFM10", "ro.kernel.qemu": ""})
-    return Config("OFFLINE_TEST_DEVICE", identity, data=Path(root) / "db", api_key="fake-offline-key")
+    return Config("OFFLINE_TEST_DEVICE", identity, data=Path(root) / "db", api_key="fake-offline-key", full_access=False)
 
 
 def observation(oid="one", foreground="com.reader/.Main", **kwargs):

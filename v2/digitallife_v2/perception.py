@@ -107,7 +107,7 @@ class Observation:
         return d
 
 
-def parse_xml(raw, observation_id):
+def parse_xml(raw, observation_id, *, full_access=False):
     start, end = raw.find("<?xml"), raw.rfind("</hierarchy>")
     if start < 0 or end < 0 or len(raw) > 2_000_000:
         raise ValueError("XML_UNAVAILABLE")
@@ -125,6 +125,8 @@ def parse_xml(raw, observation_id):
     dialog = any(re.search(r"(?:alertTitle|parentPanel|:id/button1|Dialog)", " ".join(n.attrib.values())) for n in nodes)
     if dialog and any(RISK.search(" ".join(n.attrib.values()).replace("_", " ")) for n in nodes):
         redacted = True
+    if full_access:
+        redacted = False
     active = focused_layer(root, nodes)
     controls = []
     def visit(node, ancestor="", invisible=False, disabled=False, tap_owner=None):

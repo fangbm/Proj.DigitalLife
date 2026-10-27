@@ -112,7 +112,7 @@ class SessionLoop:
         self.store.event("proposal", {"observation_id": before.observation_id, **proposal})
         action = proposal["action"]
         self.store.update(last_action=action, last_error=None)
-        guard(action, before, apps)
+        guard(action, before, apps, full_access=self.config.full_access)
         if action["type"] == "rest":
             seconds = min(action["seconds"], max(0, self.deadline - time.monotonic()))
             self.store.event("rest", {"seconds": action["seconds"], "sleep_in_session": seconds})
@@ -135,21 +135,27 @@ class SessionLoop:
         self.observed(fresh)
         if action["type"] in {"open_app", "home", "recent_apps"}:
             # An app switch may recover from a sensitive page; it still uses fresh device/window checks.
-            guard(action, fresh, apps)
+            guard(action, fresh, apps, full_access=self.config.full_access)
             target = None
         else:
-            target = rebind(action, before, fresh, apps)
+            target = rebind(action, before, fresh, apps, full_access=self.config.full_access)
         command = await self.guarded(self.phone.prepare(action, target, fresh))
-        if action["type"] == "search":
-            selected, _ = await self.send(command, {"type": "search_select", "control_id": action["control_id"]}, fresh)
+        if action["type"] in {"search", "type_text"}:
+            searching = action["type"] == "search"
+            selected, _ = await self.send(command, {"type": "search_select" if searching else "text_select", "control_id": action["control_id"]}, fresh)
             if selected.foreground != fresh.foreground:
                 raise Blocked("SEARCH_FOREGROUND_CHANGED_AFTER_SELECTION")
-            command = await self.guarded(self.phone.prepare_search_text(selected, action, target))
-            typed, _ = await self.send(command, action, selected)
+            builder = self.phone.prepare_search_text if searching else self.phone.prepare_input_text
+            command = await self.guarded(builder(selected, action, target))
+            typed, typed_result = await self.send(command, action, selected)
             if typed.foreground != fresh.foreground:
                 raise Blocked("SEARCH_FOREGROUND_CHANGED_AFTER_TYPING")
-            command = await self.guarded(self.phone.prepare_search_submit(typed, action, target))
-            after, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, typed)
+            if searching:
+                command = await self.guarded(self.phone.prepare_search_submit(typed, action, target))
+                after, result = await self.send(command, {"type": "search_submit", "query": action["query"]}, typed)
+            else:
+                after = typed
+                result = typed_result
         else:
             after, result = await self.send(command, action, fresh)
         if self.memory:
@@ -166,7 +172,7 @@ class SessionLoop:
             self.store = LifeStore(self.config.data, str(self.directory), self.config.serial, self.run_kind)
             self.store.update(status="running", deadline=time.time() + self.minutes * 60,
                               emergency_path=str(self.lock.emergency), pending_path=str(self.lock.pending),
-                              vision_configured=self.config.vision)
+                              vision_configured=self.config.vision, full_access=self.config.full_access)
             self.phone = self.phone_factory(self.config, self.directory / "screens")
             self.brain = self.brain_factory(self.config, self.store)
             status, reason = "stopped", "INTERRUPTED"
