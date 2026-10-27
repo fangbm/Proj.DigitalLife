@@ -24,16 +24,18 @@ def focused_window(windows, displays, full_access):
         return title, token
     # Android 16 system dialogs can expose a package-only focused window.
     # Keep its actual window token, rather than inventing an Activity identity.
-    if full_access and re.fullmatch(r'[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+', title, re.ASCII):
+    if full_access:
         blocks = re.split(r'(?=\bWindow #\d+ Window\{)', windows)
         matching = [b for b in blocks if re.search(r'Window\{' + re.escape(token) + r'\s', b.split('\n')[0])]
         if len(matching) == 1:
             block = matching[0]
-            if (re.search(r'\bpackage=' + re.escape(title) + r'\s', block)
+            owner = re.search(r'\bpackage=([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)\s', block, re.ASCII)
+            named_package = bool(re.fullmatch(r'[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+', title, re.ASCII))
+            if (owner and (not named_package or owner[1] == title or title.startswith(owner[1]+'.'))
                     and re.search(r'\bmOwnerUid=\d+\b', block)
                     and re.search(r'isOnScreen(?:\(\))?=true', block)
                     and re.search(r'isVisible(?:\(\))?=true|mSurfaceShown=true|Surface: shown=true', block)):
-                return title + '/@window:' + token, token
+                return owner[1] + '/@window:' + token, token
     raise Blocked('FOREGROUND_UNVERIFIED')
 
 
@@ -58,6 +60,7 @@ class PhoneController:
         self.rotation = None
         self._recent_apps_requested = False
         self.focus_window = None
+        self._ocr = None
 
     async def _adb(self, *args, dispatch=False, timeout=12):
         """Only internal fixed builders call this method; cancellation kills own child."""
@@ -151,15 +154,39 @@ class PhoneController:
             if bounds and re.search(r"\bty=(?:2011|INPUT_METHOD|2000|STATUS_BAR|2019|NAVIGATION_BAR)\b", block):
                 frame = re.search(r"\b(?:mFrame|frame)=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]", block)
                 if frame:
-                    a, b, c, d = map(int, frame.groups())
+                    regions=[tuple(map(int,frame.groups()))]
+                    # IME windows can fill the display while only their lower
+                    # touchable region consumes input. Use the concrete region,
+                    # retaining the whole-frame fallback when it is unavailable.
+                    if re.search(r'\bty=(?:2011|INPUT_METHOD|2000|STATUS_BAR|2019|NAVIGATION_BAR)\b',block):
+                        touch=re.search(r'touchable region=SkRegion\(([^\r\n]*)\)',block)
+                        if touch:
+                            parts=re.findall(r'\((-?\d+),(-?\d+),(-?\d+),(-?\d+)\)',touch[1])
+                            if ''.join('('+','.join(p)+')' for p in parts)==touch[1]:
+                                rectangles=[tuple(map(int,p)) for p in parts]
+                                if all(a<c and b<d for a,b,c,d in rectangles):regions=rectangles
                     x1, y1, x2, y2 = bounds
-                    if max(a, x1) < min(c, x2) and max(b, y1) < min(d, y2):
+                    if any(max(a,x1)<min(c,x2) and max(b,y1)<min(d,y2) for a,b,c,d in regions):
                         raise Blocked("TARGET_OCCLUDED_BY_SYSTEM_WINDOW")
 
     async def observe(self):
         await self.identity()
         before = await self.scene()
         before_rotation = self.rotation
+        if (self.config.full_access and getattr(self.config,'ocr_python',None)
+                and before.split('/')[0] in getattr(self.config,'visual_only_apps',())):
+            oid=uuid.uuid4().hex;png=await self._adb('exec-out','screencap','-p')
+            if not png.startswith(b'\x89PNG\r\n\x1a\n'):raise Blocked('INVALID_SCREEN_PNG')
+            with Image.open(BytesIO(png)) as image:
+                w,h=image.size
+                if max(w,h)>16384 or w*h>40000000:raise Blocked('SCREEN_TOO_LARGE')
+                image.verify()
+            if await self.scene()!=before or self.rotation!=before_rotation:raise Blocked('SCENE_CHANGED_DURING_OBSERVATION')
+            self.check_windows(before)
+            self.directory.mkdir(parents=True,exist_ok=True);pp=self.directory/(oid+'.png');pp.write_bytes(png)
+            observation=Observation(oid,datetime.now(timezone.utc).isoformat(),self.config.serial,before,w,h,before_rotation,[],
+                png_path=str(pp),png_sha256=sha(png),perception_source='screenshot_OCR_native_tree_verified_unavailable')
+            return await self.enrich_visual(observation,before_rotation)
         oid = uuid.uuid4().hex
         raw = await self._text("exec-out", "uiautomator", "dump", "/proc/self/fd/1")
         incomplete = False
@@ -208,20 +235,61 @@ class PhoneController:
         overview = not self.config.full_access and (self._recent_apps_requested or bool(
             re.search(r"launcher|quickstep|systemui|recents", before, re.I) and
             re.search(r"recents.?view|recent_apps|overview|task.?view|recent.?task|task.?switch", xml, re.I)))
-        return Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial, before,
+        observation = Observation(oid, datetime.now(timezone.utc).isoformat(), self.config.serial, before,
             w, h, rotation, controls, False, False, str(pp), sha(png), str(xp), sha(xml.encode()),
             vision_allowed=not overview, image_withheld_reason="unclassified_task_preview_images" if overview else None)
+        if (self.config.full_access and getattr(self.config,'ocr_python',None) and before.split('/')[0]=='com.tencent.mm'
+                and not any(c.package==before.split('/')[0] and c.enabled and (c.text or c.description or c.is_editor)
+                    and c.bounds[0]<c.bounds[2] and c.bounds[1]<c.bounds[3] for c in controls)):
+            observation=await self.enrich_visual(observation,before_rotation)
+        return observation
+
+    async def enrich_visual(self,observation,before_rotation):
+        from .visual import OcrClient
+        before=observation.foreground;oid=observation.observation_id
+        if self._ocr is None:
+            import json
+            template_path=self.config.data/'visual-templates.private.json';templates=[]
+            if template_path.exists() and template_path.stat().st_size<32768:
+                value=json.loads(template_path.read_text(encoding='utf-8'))
+                if value.get('serial')==self.config.serial:templates=value.get('templates',[])
+            self._ocr=OcrClient(self.config.ocr_python,templates)
+        observation=await self._ocr.read(observation)
+        if await self.scene()!=before or self.rotation!=before_rotation:
+            raise Blocked('SCENE_CHANGED_DURING_OCR')
+        checked=await self._adb('exec-out','screencap','-p')
+        if not checked.startswith(b'\x89PNG\r\n\x1a\n'):raise Blocked('VISUAL_RECHECK_IMAGE_UNAVAILABLE')
+        checked_path=self.directory/(oid+'-visual-check.png');checked_path.write_bytes(checked)
+        from .visual import verify_frame
+        observation=verify_frame(observation,checked_path)
+        if await self.scene()!=before or self.rotation!=before_rotation:
+            raise Blocked('SCENE_CHANGED_DURING_VISUAL_RECHECK')
+        return observation
+
+    async def close(self):
+        if self._ocr:await self._ocr.close()
 
     async def prepare(self, action, target, observation):
         """All pre-dispatch failures are known non-dispatches."""
         await self.identity()
         fg = await self.scene()
         region = target.bounds if target else None
+        if action['type'] == 'tap' and target:
+            x1, y1, x2, y2 = target.bounds
+            x, y = (x1+x2)//2, (y1+y2)//2
+            region = (x, y, x+1, y+1)
         if action["type"] == "swipe":
             a, b, c, d = swipe_region(observation, target)
             x = (a + c) // 2
             region = (x - 1, b + (d - b) // 4, x + 1, d - (d - b) // 4)
         self.check_windows(fg, region)
+        if target and target.control_id in getattr(observation,'visual_controls',{}):
+            blocks=re.split(r'(?=\bWindow #\d+ Window\{)',self.last_windows)
+            focused=next((b for b in blocks if self.focus_window and re.search(r'Window\{'+re.escape(self.focus_window)+r'\s',b.split('\n')[0])),None)
+            frame=re.search(r'\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]',focused or '')
+            if not frame:raise Blocked('VISUAL_FOCUSED_WINDOW_BOUNDS_UNVERIFIED')
+            a,b,c,d=map(int,frame.groups());x,y=region[:2]
+            if not a<=x<c or not b<=y<d:raise Blocked('VISUAL_TARGET_OUTSIDE_FOCUSED_WINDOW')
         if (fg != observation.foreground or time.monotonic() - observation.monotonic > 10
                 or (self.rotation is not None and self.rotation != observation.rotation)):
             raise Blocked("FINAL_SCENE_CHANGED_OR_EXPIRED")

@@ -3,3 +3,4 @@
 *.png
 *.xml
 !/companion/AndroidManifest.xml
+!/companion/res/xml/input_method.xml

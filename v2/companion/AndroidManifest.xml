@@ -12,7 +12,12 @@
     <activity android:name=".VideoActivity" android:exported="false"/>
     <activity android:name=".ReaderActivity" android:exported="false"/>
     <activity android:name=".SpeechActivity" android:exported="false"/>
+    <activity android:name=".InputActivity" android:exported="false"/>
     <service android:name=".AudioCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection"/>
+    <service android:name=".BridgeIme" android:label="DigitalLife 文字输入" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
+      <intent-filter><action android:name="android.view.InputMethod"/></intent-filter>
+      <meta-data android:name="android.view.im" android:resource="@xml/input_method"/>
+    </service>
     <service android:name=".BridgeListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
       <intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter>
     </service>

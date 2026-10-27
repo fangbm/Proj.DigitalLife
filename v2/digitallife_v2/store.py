@@ -9,6 +9,7 @@ from .safety import Blocked
 from .memory import initialize
 from .events import initialize as initialize_events
 from .reading import initialize as initialize_reading
+from .social import initialize as initialize_social
 
 
 def open_database(data):
@@ -16,15 +17,15 @@ def open_database(data):
     data.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(data / "life.sqlite3")
     version = db.execute("PRAGMA user_version").fetchone()[0]
-    if version not in {0, 2, 3, 4}:
+    if version not in {0, 2, 3, 4, 5}:
         db.close()
         raise ValueError("UNSUPPORTED_V2_DATABASE_VERSION")
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("PRAGMA synchronous=FULL")
-    if version in {2, 3}:
+    if version in {2, 3, 4}:
         backups = data / "backups"
         backups.mkdir(exist_ok=True)
-        prefix = 'pre-m3' if version == 2 else 'pre-reading'
+        prefix = {2:'pre-m3', 3:'pre-reading', 4:'pre-social'}[version]
         backup = sqlite3.connect(backups / f"{prefix}-{time.time_ns()}.sqlite3")
         try:
             db.backup(backup)
@@ -48,7 +49,8 @@ def open_database(data):
     initialize(db)
     initialize_events(db)
     initialize_reading(db)
-    db.execute("PRAGMA user_version=4")
+    initialize_social(db)
+    db.execute("PRAGMA user_version=5")
     db.commit()
     return db
 
@@ -68,6 +70,7 @@ class LifeStore:
         self.session = session
         self.serial = serial
         self.directory = Path(session)
+        self.data = Path(data)
         self.db = open_database(data)
         self.memory = None
         self.inbound_context = None

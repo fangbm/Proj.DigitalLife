@@ -51,6 +51,7 @@ class EventHub:
         self.db.commit()
         if cursor.rowcount:
             self.store.event("inbound_received", {"event_id": eid,"source_app":raw["package"],
+                "source_kind":raw.get('source_kind','callback'),
                 "context_complete":False,"target_identity":"unresolved","preview_sha256":hashlib.sha256(preview.encode()).hexdigest()})
             return eid
         return None

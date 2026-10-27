@@ -15,7 +15,9 @@ classes=BUILD/'classes'; classes.mkdir(exist_ok=True)
 run(JDK/'bin/javac.exe','-encoding','UTF-8','-source','8','-target','8','-bootclasspath',str(ANDROID)+os.pathsep+str(TOOLS/'core-lambda-stubs.jar'),'-d',classes,*ROOT.glob('src/**/*.java'))
 run(TOOLS/'d8.bat','--min-api','26','--lib',ANDROID,'--output',BUILD,*classes.glob('**/*.class'))
 unsigned=BUILD/'unsigned.apk'
-run(TOOLS/'aapt2.exe','link','-I',ANDROID,'--manifest',ROOT/'AndroidManifest.xml','--min-sdk-version','26','--target-sdk-version','35','-o',unsigned)
+resources=BUILD/'resources.zip'
+run(TOOLS/'aapt2.exe','compile','--dir',ROOT/'res','-o',resources)
+run(TOOLS/'aapt2.exe','link','-I',ANDROID,'--manifest',ROOT/'AndroidManifest.xml','--min-sdk-version','26','--target-sdk-version','35','-o',unsigned,resources)
 with zipfile.ZipFile(unsigned,'a') as archive:archive.write(BUILD/'classes.dex','classes.dex')
 aligned=BUILD/'aligned.apk';run(TOOLS/'zipalign.exe','-f','4',unsigned,aligned)
 key=BUILD/'development.keystore'

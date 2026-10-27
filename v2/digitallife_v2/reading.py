@@ -38,6 +38,8 @@ def normalize(text):
 
 
 def extract(observation, allow_fixture=False):
+    if getattr(observation,'visual_controls',{}):
+        return None  # OCR is not a full-text XML source.
     if observation.redacted or observation.incomplete:
         return None
     controls = observation.controls

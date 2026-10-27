@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
             startActivityForResult(intent,73);
         });box.addView(audio);
         Button speech = new Button(this); speech.setText("播放语音验收材料"); speech.setOnClickListener(v -> startActivity(new Intent(this,SpeechActivity.class))); box.addView(speech);
+        Button input = new Button(this); input.setText("测试中文输入"); input.setOnClickListener(v -> startActivity(new Intent(this,InputActivity.class))); box.addView(input);
         Button settings = new Button(this); settings.setText("打开系统通知监听设置");
         settings.setOnClickListener(v -> startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))); box.addView(settings);
         setContentView(box);

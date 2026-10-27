@@ -15,6 +15,7 @@ from .events import EventHub
 from .bridge import NotificationBridge
 from .content import ContentPerception
 from .reading import ReadingStore
+from .social import SocialPolicy, SocialStore, APPS as SOCIAL_APPS
 
 
 class SessionStopped(Exception):
@@ -82,6 +83,10 @@ class SessionLoop:
         self.store.update(foreground=observation.foreground)
 
     async def send(self, command, action, observation):
+        return await self.send_operation(lambda: self.phone.dispatch(command), action, observation)
+
+    async def send_operation(self, operation, action, observation):
+        """Journal one fixed internal operation; models never supply callables."""
         self.check_stop()
         if self.run_kind != "fixture" and self.deadline - time.monotonic() < 20:
             raise SessionStopped("OBSERVATION_TIME_RESERVE")
@@ -103,7 +108,7 @@ class SessionLoop:
             self.lock.pending.unlink()
             raise
         try:
-            await self.guarded(self.phone.dispatch(command))
+            await self.guarded(operation())
             self.store.event("action_dispatched", {"action_id": action_id, "action": action})
             self.store.update(dispatched=self.store.state["dispatched"] + 1)
             # A freshly opened system dialog can change focus during capture.
@@ -142,6 +147,11 @@ class SessionLoop:
         reading_source = 'v2_autonomous' if self.run_kind == 'autonomous' else 'live_scripted' if self.run_kind == 'scripted' else 'fixture'
         self.store.reading_context = ReadingStore(self.store, reading_source).context(before.foreground.split('/')[0])
         self.store.inbound_context = self.hub.next() if self.hub else None
+        policy=SocialPolicy(self.config).read()
+        social_enabled=policy.get('enabled') is True
+        self.store.social_context={'enabled':social_enabled,
+            'contacts_mode':policy.get('contacts',{}).get('mode'),
+            'targets':SocialStore(self.store).targets() if social_enabled else []}
         proposal = await self.guarded(self.brain.decide(before, apps, self.recent))
         logged=proposal if not self.store.inbound_context else {**proposal,'note':'Ephemeral notification decision; private note omitted','life':{}}
         if self.store.inbound_context and proposal.get('event_response'):
@@ -150,6 +160,34 @@ class SessionLoop:
         action = proposal["action"]
         if self.hub:self.hub.resolve(self.store.inbound_context,proposal.get('event_response'))
         self.store.update(last_action=action, last_error=None)
+        social_actions={'inspect_chat','reply_to_contact','initiate_dm','group_post'}
+        reply_event=self.store.inbound_context if social_enabled and proposal.get('event_response',{}).get('decision')=='reply_now' else None
+        if action['type'] in social_actions or reply_event:
+            if not social_enabled:raise Blocked('SOCIAL_DISABLED')
+            from .social_agent import SocialAgent
+            from .social_ui import AndroidSocialUI
+            ui=AndroidSocialUI(self,reply_event['source_app'] if reply_event else None)
+            try:
+                if action['type']=='inspect_chat':
+                    binding,context,observed=await ui.resolve()
+                    bid=SocialStore(self.store).bind(binding)
+                    return {'outcome':'social_identity_observed','binding_id':bid}
+                kind='auto_reply' if reply_event or action['type']=='reply_to_contact' else 'proactive_dm' if action['type']=='initiate_dm' else 'group_post'
+                result=await SocialAgent(self,ui).run(kind,event=reply_event,binding_id=action.get('binding_id'))
+                if reply_event:
+                    self.store.event('inbound_social_result',{'event_id':reply_event['event_id'],**result,
+                        'activity_resume':'abandoned_current_app_after_social_handling'})
+                return result
+            except Blocked as error:
+                if any(code in str(error) for code in ('DEVICE_OFFLINE','DEVICE_IDENTITY','REQUEST_BUDGET','TOKEN_LIMIT')):raise
+                self.store.event('social_deferred',{'reason':str(error)})
+                return {'outcome':'social_deferred','reason':str(error)}
+        if social_enabled and before.foreground.split('/')[0] in SOCIAL_APPS:
+            controls=[c for c in before.controls if c.control_id==action.get('control_id')]
+            if controls and ((action['type']=='type_text' and controls[0].is_editor and controls[0].resource.endswith('/input'))
+                    or action['type']=='tap' and (controls[0].resource.endswith('/send_btn')
+                        or before.foreground.split('/')[0]=='com.tencent.mm' and controls[0].text=='发送')):
+                raise Blocked('SOCIAL_COMPOSER_REQUIRES_SOCIAL_INTENT')
         guard(action, before, apps, full_access=self.config.full_access)
         if action['type'] in {'watch_video','read_article'}:
             return await ContentPerception(self).run(proposal,before)
@@ -174,6 +212,10 @@ class SessionLoop:
             return {"action": action, "outcome": "rested"}
         fresh = await self.guarded(self.phone.observe())
         self.observed(fresh)
+        if action['type']=='tap' and before.visual_controls.get(action.get('control_id'),{}).get('kind')=='vision':
+            from .visual import rebind_region
+            old=next(c for c in before.controls if c.control_id==action['control_id'])
+            rebind_region(before,fresh,old)
         if action["type"] in {"open_app", "home", "recent_apps"}:
             # An app switch may recover from a sensitive page; it still uses fresh device/window checks.
             guard(action, fresh, apps, full_access=self.config.full_access)
@@ -285,6 +327,9 @@ class SessionLoop:
                 status, reason = "failed", type(e).__name__
                 self.store.update(last_error=reason)
             finally:
+                if hasattr(self.phone,'close'):
+                    with suppress(OSError,ValueError,asyncio.TimeoutError):
+                        await self.phone.close()
                 if self.bridge:
                     inactive=await self.bridge.close()
                     self.store.update(notification_collection_inactive=inactive,

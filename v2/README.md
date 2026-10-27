@@ -1,8 +1,8 @@
-# DigitalLife V2 · M3 内容感知增量
+# DigitalLife V2 · M4 私信增量
 
-独立 Python 实现：观察 → 单个模型动作 → 分发前复核 → 持久记录 → ADB 分发 → 再观察，保留 M2 的跨会话记忆、兴趣与精力状态，并加入有来源的视频/文章摘要与只读通知队列。[M3 使用与边界](M3.md) · [M3 交付记录](M3-DELIVERY.md) · [M2 历史交付](M2-DELIVERY.md)。按用户要求不导入 V1 数据；原源码、数据库、证据和密钥保留。
+当前版本 **2.0.0a7**，在 M1/M2/M3 基础上新增 QQ、主微信私信发送与一次有真实公开视频来源的 QQ 主动联系。所有已有联系人允许自动回复和主动联系，所有已加入群默认允许群内发言；具体配置已按用户授权保存于本地。真实 QQ/微信私信气泡已观察，指定 QQ 真人连续对话已验收；群内 @ 和通用通知自动跳转尚未通过，**M4 仍在进行**。见 [M4 使用与边界](M4.md) · [M4 交付记录](M4-DELIVERY.md)。
 
-**当前版本 2.0.0a6，保留默认完整 UI 操作模式**，遵循用户“手机所有权限都可以放开”的授权。DeepSeek 官方 `deepseek-flash` 视觉已通过真实图片请求验证，现默认开启。真机视频采样、QQ 和主微信真实来信接收已验收，通知判断无外发；长文增加纯文本读取、跨页去重和中断续读；手机播放音频捕获、本地转写和真实模型总结也已验收；[a6 交付记录](M3-AUDIO-DELIVERY.md) 汇总 M3 最小验收达标及覆盖边界。社交发送及长期运行尚未展开。M1 历史验收见 [DELIVERY.md](DELIVERY.md)。
+默认完整手机 UI 操作与 DeepSeek `deepseek-flash` 视觉保持开启。M3 的真实视频摘要、长文文本读取/续读、QQ/微信通知判断和手机播放音频/本地转写验收保持；[M3 交付](M3-AUDIO-DELIVERY.md) 与 [M2 历史交付](M2-DELIVERY.md) 保留。按用户要求不导入 V1 数据；原源码、数据库、证据和密钥保留。
 
 ## 手动运行
 
@@ -54,7 +54,7 @@ python -m digitallife_v2 memory --profile find-x6
 | `VISION` | 官方 DeepSeek + `deepseek-flash` 默认 `true`，其他端点/模型默认 `false`；可显式覆盖 |
 | `IMAGE_TOKEN_RESERVE` | 每图预留：上述官方模型 1024，其他默认 4096 |
 | `CONTENT_SAMPLES`, `CONTENT_INTERVAL` | 最多 3 个样本、采样间等待 5 秒；另计实际设备采集耗时 |
-| `NOTIFICATION_PACKAGES` | 默认 `io.digitallife.companion`；配置已允许的通知来源包，逗号分隔 |
+| `NOTIFICATION_PACKAGES` | 默认 Companion；M4 启用时加入已绑定账号的 QQ/微信；环境变量可覆盖，逗号分隔 |
 | `FULL_ACCESS` | `true`；完整 UI 操作，保留全部页面内容和可点击控件；`false` 可使用原有限制模式 |
 | `MAX_INPUT_TOKENS`, `MAX_OUTPUT_TOKENS` | 16000 / 600；输入采用 UTF-8 字节上界加封装预留，输出由请求上限控制 |
 | `REQUESTS_HOUR`, `REQUESTS_DAY` | 60 / 200；在同一 V2 数据库中跨会话计数，失败请求也占额度 |

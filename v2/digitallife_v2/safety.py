@@ -38,6 +38,9 @@ def parse_decision(content):
                   "search": {"type", "control_id", "query"}, "rest": {"type", "seconds"}}
         fields["type_text"] = {"type", "control_id", "text"}
         fields["watch_video"] = fields["read_article"] = {"type", "seconds"}
+        fields['inspect_chat'] = {'type'}
+        for social_kind in ('reply_to_contact','initiate_dm','group_post'):
+            fields[social_kind] = {'type','binding_id'}
         if not isinstance(a, dict) or a.get("type") not in fields or set(a) != fields[a["type"]]:
             raise ValueError()
         for key in set(a) - {"type", "seconds"}:
@@ -78,6 +81,8 @@ def parse_decision(content):
 
 def guard(action, obs, apps, *, full_access=False):
     kind = action["type"]
+    if kind in {'inspect_chat','reply_to_contact','initiate_dm','group_post'}:
+        return None  # SocialAgent performs scope and fresh identity checks.
     if kind == "rest":
         return None
     if time.monotonic() - obs.monotonic > 45:
@@ -97,6 +102,19 @@ def guard(action, obs, apps, *, full_access=False):
         raise Blocked("CURRENT_CONTROL_REQUIRED")
     c = controls[0]
     x1, y1, x2, y2 = c.bounds
+    visual=getattr(obs,'visual_controls',{}).get(c.control_id)
+    if visual:
+        from .visual import crop_sha
+        import hashlib
+        if (not full_access or kind!='tap' or visual.get('kind') not in {'ocr','vision','template'}
+                or not c.kind.startswith('visual.') or c.package!=obs.foreground.split('/')[0]
+                or visual.get('bounds')!=list(c.bounds) or visual.get('source_png_sha256')!=obs.png_sha256
+                or not obs.png_path or hashlib.sha256(Path(obs.png_path).read_bytes()).hexdigest()!=obs.png_sha256
+                or crop_sha(obs.png_path,c.bounds)!=visual.get('crop_sha256')
+                or visual.get('confidence',0)<(.995 if visual.get('kind')=='template' else .9 if visual.get('kind')=='vision' else .5)
+                or not 0<=x1<x2<=obs.width or not 0<=y1<y2<=obs.height):
+            raise Blocked('VISUAL_TARGET_SOURCE_UNVERIFIED')
+        return c
     if (c.package != obs.foreground.split("/")[0] or c.enabled is not True or c.visible is False or c.covered
             or not (0 <= x1 < x2 <= obs.width and 0 <= y1 < y2 <= obs.height)
             or (not full_access and kind != "swipe" and (y1 < obs.height * .035 or y2 > obs.height * .96))):

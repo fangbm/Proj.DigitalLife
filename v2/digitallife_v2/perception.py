@@ -99,6 +99,9 @@ class Observation:
     monotonic: float = field(default_factory=time.monotonic)
     vision_allowed: bool = True
     image_withheld_reason: str | None = None
+    visual_controls: dict = field(default_factory=dict)
+    input_editor: dict = field(default_factory=dict)
+    perception_source: str = 'xml_and_screenshot'
 
     def summary(self):
         d = asdict(self)

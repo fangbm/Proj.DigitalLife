@@ -54,6 +54,15 @@ class M3Tests(unittest.IsolatedAsyncioTestCase):
         log=(self.directory/'events.jsonl').read_text(encoding='utf-8')
         self.assertNotIn('同样的内容',log)
 
+    def test_retained_snapshot_preserves_actual_post_time_and_deduplicates_callback(self):
+        raw={**self.incoming(),'posted_at':time.time()-120,'source_kind':'active_snapshot'}
+        eid=self.hub.ingest(raw)
+        self.assertEqual(self.hub.next()['posted_at'],raw['posted_at'])
+        self.assertIsNone(self.hub.ingest({**raw,'source_kind':'callback'}))
+        event=json.loads(self.store.db.execute("SELECT payload FROM events WHERE kind='inbound_received'").fetchone()[0])
+        self.assertEqual(event['source_kind'],'active_snapshot')
+        self.assertEqual(self.hub.counts(),{'pending':1})
+
     def test_reply_now_is_only_an_intent_never_an_outbound_action(self):
         self.hub.ingest(self.incoming());offered=self.hub.next()
         self.hub.resolve(offered,{'event_id':offered['event_id'],'decision':'reply_now','note':'稍后可答复'})

@@ -39,6 +39,8 @@ class Config:
     audio_enabled: bool = False
     asr_python: Path | None = None
     asr_model: Path | None = None
+    ocr_python: Path | None = None
+    visual_only_apps: tuple = ()
 
     def __post_init__(self):
         if (not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", self.serial)
@@ -98,6 +100,23 @@ class Config:
                 raise ValueError('AUDIO_CONFIGURATION_INVALID')
             if candidate.get('serial') == p['serial']:
                 audio_settings = candidate
+        notification_defaults=['io.digitallife.companion']
+        ocr_settings={}
+        ocr_path=data_path/'ocr.private.json'
+        if ocr_path.exists():
+            if ocr_path.stat().st_size>8192:raise ValueError('OCR_CONFIGURATION_INVALID')
+            candidate=json.loads(ocr_path.read_text(encoding='utf-8'))
+            if not isinstance(candidate,dict):raise ValueError('OCR_CONFIGURATION_INVALID')
+            if candidate.get('serial')==p['serial']:ocr_settings=candidate
+        social_path=data_path/'social.private.json'
+        if social_path.exists():
+            if social_path.stat().st_size>65536:raise ValueError('SOCIAL_POLICY_INVALID')
+            social_settings=json.loads(social_path.read_text(encoding='utf-8'))
+            if not isinstance(social_settings,dict):raise ValueError('SOCIAL_POLICY_INVALID')
+            if social_settings.get('serial')==p['serial'] and social_settings.get('enabled') is True:
+                accounts=social_settings.get('accounts',{})
+                if not isinstance(accounts,dict):raise ValueError('SOCIAL_POLICY_INVALID')
+                notification_defaults.extend(app for app in ('com.tencent.mobileqq','com.tencent.mm') if app in accounts)
         return cls(serial=p["serial"], identity=p["identity"],
                    adb=env("ADB", "adb"), data=Path(env("DATA", str(ROOT / "data"))),
                    api_base=endpoint,
@@ -110,8 +129,10 @@ class Config:
                    requests_hour=int(env("REQUESTS_HOUR", "60")), requests_day=int(env("REQUESTS_DAY", "200")),
                    max_actions=int(env("MAX_ACTIONS", "80")), max_cost=optional("MAX_COST"),
                    input_price=optional("INPUT_PRICE"), output_price=optional("OUTPUT_PRICE"),
-                   notification_packages=tuple(p.strip() for p in env("NOTIFICATION_PACKAGES", "io.digitallife.companion").split(",") if p.strip()),
+                   notification_packages=tuple(p.strip() for p in env("NOTIFICATION_PACKAGES", ','.join(notification_defaults)).split(",") if p.strip()),
                    content_samples=int(env("CONTENT_SAMPLES", "3")), content_interval=int(env("CONTENT_INTERVAL", "5")),
                    audio_enabled=env('AUDIO', 'true' if audio_settings.get('enabled') is True else 'false').lower()=='true',
                    asr_python=Path(env('ASR_PYTHON', audio_settings.get('asr_python',''))) if env('ASR_PYTHON',audio_settings.get('asr_python','')) else None,
-                   asr_model=Path(env('ASR_MODEL', audio_settings.get('asr_model',''))) if env('ASR_MODEL',audio_settings.get('asr_model','')) else None)
+                   asr_model=Path(env('ASR_MODEL', audio_settings.get('asr_model',''))) if env('ASR_MODEL',audio_settings.get('asr_model','')) else None,
+                   ocr_python=Path(env('OCR_PYTHON',ocr_settings.get('python',''))) if env('OCR_PYTHON',ocr_settings.get('python','')) else None,
+                   visual_only_apps=tuple(ocr_settings.get('visual_only_apps',[])))
