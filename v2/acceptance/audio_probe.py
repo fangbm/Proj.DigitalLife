@@ -12,8 +12,8 @@ from .reading_probe import provision
 
 
 class AudioProbe:
-    def __init__(self, config, store):
-        self.store=store;self.real=LifeBrain(config,store);self.stage=0;self.consent_clicked=False
+    def __init__(self, config, store, resume_prompt=False):
+        self.store=store;self.real=LifeBrain(config,store);self.stage=2 if resume_prompt else 0;self.consent_clicked=False
 
     async def structured(self,*args):
         return await self.real.structured(*args)
@@ -59,15 +59,15 @@ class AudioProbe:
         return {'intent':'explore','action':action,'note':'Explicit playback-audio acceptance using Android system consent'}
 
 
-async def run(config,directory,speech):
+async def run(config,directory,speech,resume_prompt=False):
     if not config.audio_enabled or not config.asr_python or not config.asr_model:raise ValueError('LOCAL_AUDIO_CONFIGURATION_REQUIRED')
     await provision(config,speech,'speech.wav')
-    return await SessionLoop(config,directory,minutes=7,brain_factory=AudioProbe).run()
+    return await SessionLoop(config,directory,minutes=7,brain_factory=lambda c,s:AudioProbe(c,s,resume_prompt)).run()
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--profile',default='find-x6');p.add_argument('--speech',default='data/m3-audio/speech.wav');args=p.parse_args()
-    result=asyncio.run(run(Config.load(args.profile),args.session,Path(args.speech).resolve()))
+    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--profile',default='find-x6');p.add_argument('--speech',default='data/m3-audio/speech.wav');p.add_argument('--resume-projection-prompt',action='store_true');args=p.parse_args()
+    result=asyncio.run(run(Config.load(args.profile),args.session,Path(args.speech).resolve(),args.resume_projection_prompt))
     print(json.dumps(result));return 0 if result['reason']=='AUDIO_ACCEPTANCE_DONE' else 2
 
 if __name__=='__main__':raise SystemExit(main())

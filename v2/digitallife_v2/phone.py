@@ -15,6 +15,28 @@ LAUNCH_FLAGS = ("-a", "android.intent.action.MAIN", "-c", "android.intent.catego
 COMPONENT = re.compile(r"([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)/([A-Za-z_.$][\w.$]*)", re.ASCII)
 
 
+def focused_window(windows, displays, full_access):
+    focuses = re.findall(r'mCurrentFocus=Window\{([a-fA-F0-9]+)\s+u\d+\s+([^}\r\n]+)\}', windows + '\n' + displays)
+    if not focuses or len(set(focuses)) != 1:
+        raise Blocked('FOREGROUND_UNVERIFIED')
+    token, title = focuses[0]
+    if COMPONENT.fullmatch(title):
+        return title, token
+    # Android 16 system dialogs can expose a package-only focused window.
+    # Keep its actual window token, rather than inventing an Activity identity.
+    if full_access and re.fullmatch(r'[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+', title, re.ASCII):
+        blocks = re.split(r'(?=\bWindow #\d+ Window\{)', windows)
+        matching = [b for b in blocks if re.search(r'Window\{' + re.escape(token) + r'\s', b.split('\n')[0])]
+        if len(matching) == 1:
+            block = matching[0]
+            if (re.search(r'\bpackage=' + re.escape(title) + r'\s', block)
+                    and re.search(r'\bmOwnerUid=\d+\b', block)
+                    and re.search(r'isOnScreen(?:\(\))?=true', block)
+                    and re.search(r'isVisible(?:\(\))?=true|mSurfaceShown=true|Surface: shown=true', block)):
+                return title + '/@window:' + token, token
+    raise Blocked('FOREGROUND_UNVERIFIED')
+
+
 def quoted_text(value):
     """One literal argument for Android's remote shell, including apostrophes."""
     return "'" + value.replace("'", "'\"'\"'") + "'"
@@ -35,6 +57,7 @@ class PhoneController:
         self.last_windows = ""
         self.rotation = None
         self._recent_apps_requested = False
+        self.focus_window = None
 
     async def _adb(self, *args, dispatch=False, timeout=12):
         """Only internal fixed builders call this method; cancellation kills own child."""
@@ -95,24 +118,24 @@ class PhoneController:
         self.last_windows = windows
         if not unlocked_awake(power, policy, displays):
             raise Blocked("SCREEN_LOCK_OR_POWER_UNSAFE")
-        focuses = re.findall(r"mCurrentFocus=Window\{[^}\r\n]*?\s([\w.]+/[\w.$]+)", windows + "\n" + displays)
-        if not focuses or len(set(focuses)) != 1:
-            raise Blocked("FOREGROUND_UNVERIFIED")
+        foreground, self.focus_window = focused_window(windows, displays, self.config.full_access)
         input_state = await self._text("shell", "dumpsys", "input")
         rotations = set(re.findall(r"Viewport INTERNAL:[^\r\n]*\bdisplayId=0,[^\r\n]*\borientation=([0-3])\b", input_state))
         rotations.update(re.findall(r"(?:SurfaceOrientation|surfaceOrientation)\s*[:=]\s*([0-3])", input_state))
         if len(rotations) != 1:
             raise Blocked("ORIENTATION_UNVERIFIED")
         self.rotation = int(next(iter(rotations)))
-        return focuses[0]
+        return foreground
 
     def check_windows(self, foreground, bounds=None):
         """Reject concrete shown overlays; background retained surfaces are insufficient."""
         blocks = re.split(r"(?=\bWindow #\d+ Window\{)", self.last_windows)
-        focus_index = next((i for i, b in enumerate(blocks) if foreground in b.split("\n")[0]), None)
+        focus_index = next((i for i, b in enumerate(blocks) if (
+            re.search(r'Window\{' + re.escape(self.focus_window) + r'\s', b.split('\n')[0])
+            if self.focus_window else foreground in b.split("\n")[0])), None)
         for index, block in enumerate(blocks):
-            shown = bool(re.search(r"isOnScreen\(\)=true", block) and
-                         re.search(r"isVisible\(\)=true|mSurfaceShown=true", block))
+            shown = bool(re.search(r"isOnScreen(?:\(\))?=true", block) and
+                         re.search(r"isVisible(?:\(\))?=true|mSurfaceShown=true|Surface: shown=true", block))
             if not shown:
                 continue
             if re.search(r"DROP_INPUT|TYPE_APPLICATION_OVERLAY|TYPE_SYSTEM_ALERT|\bty=(?:2038|2002|2003)\b", block):

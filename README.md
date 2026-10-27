@@ -1,6 +1,6 @@
 # Proj.DigitalLife V2
 
-V2 M3 已加入长文纯文本读取、跨页去重和中断续读；已有 DeepSeek Flash 真实视觉、带来源的视频/文章采样、Android 通知桥与只读事件判断。M1/M2、完整手机 UI 模式与不导入 V1 数据的要求保留。最新实现与验收边界见 [M3 增量记录](v2/M3-READING-AUDIO-DELIVERY.md)，运行见 [V2 入口](v2/README.md)。下方 V1 说明和历史证据保留。
+V2 M3 最小验收已达标：真实视频视觉摘要、长文纯文本读取/续读、QQ 与主微信真实来信判断，以及手机播放音频捕获和本地转写。M1/M2、完整手机 UI 模式与不导入 V1 数据的要求保留。最新实现与验收边界见 [M3 最新交付](v2/M3-AUDIO-DELIVERY.md)，运行见 [V2 入口](v2/README.md)。下方 V1 说明和历史证据保留。
 
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 

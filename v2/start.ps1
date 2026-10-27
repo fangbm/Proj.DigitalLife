@@ -5,12 +5,14 @@ param(
     [string]$Profile = 'find-x6',
     [string]$Python = 'python',
     [switch]$Emergency,
-    [switch]$EventsOnly
+    [switch]$EventsOnly,
+    [switch]$ResumeProjection
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive') -and -not $Session) { throw 'Session is required.' }
 if ($Emergency -and $Command -ne 'Stop') { throw 'Emergency applies only to Stop.' }
 if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to M3Probe.' }
+if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
 if ($Command -eq 'VisionProbe') { $v2Args = @('-u','-m','acceptance.vision_probe') }
 if ($Command -eq 'M3Probe') { $v2Args = @('-u','-m','acceptance.m3_content_events') }
@@ -18,6 +20,7 @@ if ($Command -eq 'ReadingProbe') { $v2Args = @('-u','-m','acceptance.reading_pro
 if ($Command -eq 'SocialReceive') { $v2Args = @('-u','-m','acceptance.social_receive') }
 if ($Command -eq 'AudioProbe') { $v2Args = @('-u','-m','acceptance.audio_probe') }
 if ($EventsOnly) { $v2Args += '--events-only' }
+if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -in @('Run','Doctor','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive')) { $v2Args += @('--profile',$Profile) }
 if ($Session) {
     if (-not [IO.Path]::IsPathRooted($Session)) { $Session = Join-Path $PSScriptRoot $Session }
