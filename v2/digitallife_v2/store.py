@@ -8,6 +8,7 @@ import time
 from .safety import Blocked
 from .memory import initialize
 from .events import initialize as initialize_events
+from .reading import initialize as initialize_reading
 
 
 def open_database(data):
@@ -15,15 +16,16 @@ def open_database(data):
     data.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(data / "life.sqlite3")
     version = db.execute("PRAGMA user_version").fetchone()[0]
-    if version not in {0, 2, 3}:
+    if version not in {0, 2, 3, 4}:
         db.close()
         raise ValueError("UNSUPPORTED_V2_DATABASE_VERSION")
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("PRAGMA synchronous=FULL")
-    if version == 2:
+    if version in {2, 3}:
         backups = data / "backups"
         backups.mkdir(exist_ok=True)
-        backup = sqlite3.connect(backups / f"pre-m3-{time.time_ns()}.sqlite3")
+        prefix = 'pre-m3' if version == 2 else 'pre-reading'
+        backup = sqlite3.connect(backups / f"{prefix}-{time.time_ns()}.sqlite3")
         try:
             db.backup(backup)
         finally:
@@ -45,7 +47,8 @@ def open_database(data):
         db.execute("ALTER TABLE sessions ADD COLUMN run_kind TEXT NOT NULL DEFAULT 'legacy_unclassified'")
     initialize(db)
     initialize_events(db)
-    db.execute("PRAGMA user_version=3")
+    initialize_reading(db)
+    db.execute("PRAGMA user_version=4")
     db.commit()
     return db
 

@@ -67,6 +67,8 @@ class NotificationBridge:
             try:
                 await self.request('DELETE','/session')
                 inactive=True
+                state=await self.request('GET','/status')
+                self.audio_projection_released=not state['audio_authorized'] if 'audio_authorized' in state else None
             except (OSError,ValueError,asyncio.TimeoutError,EOFError):pass
             try:await self.phone._adb('forward','--remove',f'tcp:{self.port}')
             except (OSError,ValueError,asyncio.TimeoutError):pass
@@ -97,6 +99,7 @@ async def setup(config, apk, provision_only=False):
             if proc.returncode is None:proc.kill();await proc.wait()
         if proc.returncode:raise Blocked('NOTIFICATION_TOKEN_PROVISION_FAILED')
         await phone._adb('shell','pm','grant',PACKAGE,'android.permission.POST_NOTIFICATIONS')
+        await phone._adb('shell','pm','grant',PACKAGE,'android.permission.RECORD_AUDIO')
         await phone._adb('shell','cmd','notification','allow_listener',COMPONENT)
         write_json(config.data/'notification-bridge.private.json',{'serial':config.serial,'token':token})
         bridge=NotificationBridge(config,phone)

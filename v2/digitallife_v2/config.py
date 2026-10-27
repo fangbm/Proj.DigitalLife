@@ -36,6 +36,9 @@ class Config:
     notification_packages: tuple = ("io.digitallife.companion",)
     content_samples: int = 3
     content_interval: int = 5
+    audio_enabled: bool = False
+    asr_python: Path | None = None
+    asr_model: Path | None = None
 
     def __post_init__(self):
         if (not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", self.serial)
@@ -84,6 +87,17 @@ class Config:
         endpoint = env("API_BASE", os.getenv("PHONE_LIFE_API_BASE", "https://api.deepseek.com")).rstrip("/")
         model = env("MODEL", os.getenv("PHONE_LIFE_BRAIN_MODEL", "deepseek-flash"))
         native_vision = urlsplit(endpoint).hostname == "api.deepseek.com" and model == "deepseek-flash"
+        data_path = Path(env('DATA', str(ROOT / 'data'))).resolve()
+        audio_settings = {}
+        audio_path = data_path / 'audio.private.json'
+        if audio_path.exists():
+            if audio_path.stat().st_size > 8192:
+                raise ValueError('AUDIO_CONFIGURATION_INVALID')
+            candidate = json.loads(audio_path.read_text(encoding='utf-8'))
+            if not isinstance(candidate, dict):
+                raise ValueError('AUDIO_CONFIGURATION_INVALID')
+            if candidate.get('serial') == p['serial']:
+                audio_settings = candidate
         return cls(serial=p["serial"], identity=p["identity"],
                    adb=env("ADB", "adb"), data=Path(env("DATA", str(ROOT / "data"))),
                    api_base=endpoint,
@@ -97,4 +111,7 @@ class Config:
                    max_actions=int(env("MAX_ACTIONS", "80")), max_cost=optional("MAX_COST"),
                    input_price=optional("INPUT_PRICE"), output_price=optional("OUTPUT_PRICE"),
                    notification_packages=tuple(p.strip() for p in env("NOTIFICATION_PACKAGES", "io.digitallife.companion").split(",") if p.strip()),
-                   content_samples=int(env("CONTENT_SAMPLES", "3")), content_interval=int(env("CONTENT_INTERVAL", "5")))
+                   content_samples=int(env("CONTENT_SAMPLES", "3")), content_interval=int(env("CONTENT_INTERVAL", "5")),
+                   audio_enabled=env('AUDIO', 'true' if audio_settings.get('enabled') is True else 'false').lower()=='true',
+                   asr_python=Path(env('ASR_PYTHON', audio_settings.get('asr_python',''))) if env('ASR_PYTHON',audio_settings.get('asr_python','')) else None,
+                   asr_model=Path(env('ASR_MODEL', audio_settings.get('asr_model',''))) if env('ASR_MODEL',audio_settings.get('asr_model','')) else None)

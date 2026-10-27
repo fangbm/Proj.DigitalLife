@@ -14,6 +14,7 @@ from .store import LifeStore
 from .events import EventHub
 from .bridge import NotificationBridge
 from .content import ContentPerception
+from .reading import ReadingStore
 
 
 class SessionStopped(Exception):
@@ -105,7 +106,18 @@ class SessionLoop:
             await self.guarded(self.phone.dispatch(command))
             self.store.event("action_dispatched", {"action_id": action_id, "action": action})
             self.store.update(dispatched=self.store.state["dispatched"] + 1)
-            after = await self.guarded(self.phone.observe())
+            # A freshly opened system dialog can change focus during capture.
+            # Retry only the read, never the dispatched input; all other failures
+            # retain the durable unknown-action barrier.
+            for attempt in range(3):
+                try:
+                    after = await self.guarded(self.phone.observe())
+                    break
+                except Blocked as error:
+                    if attempt == 2 or str(error) not in {'SCENE_CHANGED_DURING_OBSERVATION', 'FOREGROUND_UNVERIFIED'}:
+                        raise
+                    self.store.event('post_observation_retry', {'action_id': action_id, 'reason': str(error)})
+                    await self.guarded(asyncio.sleep(.3))
             self.observed(after)
         except BaseException:
             self.store.event("unknown", {"action_id": action_id, "reason": "DISPATCH_OR_POST_OBSERVATION_UNCERTAIN"})
@@ -127,6 +139,8 @@ class SessionLoop:
         before = await self.guarded(self.phone.observe())
         self.observed(before)
         apps = await self.guarded(self.phone.catalog())
+        reading_source = 'v2_autonomous' if self.run_kind == 'autonomous' else 'live_scripted' if self.run_kind == 'scripted' else 'fixture'
+        self.store.reading_context = ReadingStore(self.store, reading_source).context(before.foreground.split('/')[0])
         self.store.inbound_context = self.hub.next() if self.hub else None
         proposal = await self.guarded(self.brain.decide(before, apps, self.recent))
         logged=proposal if not self.store.inbound_context else {**proposal,'note':'Ephemeral notification decision; private note omitted','life':{}}
@@ -273,7 +287,8 @@ class SessionLoop:
             finally:
                 if self.bridge:
                     inactive=await self.bridge.close()
-                    self.store.update(notification_collection_inactive=inactive)
+                    self.store.update(notification_collection_inactive=inactive,
+                                      audio_projection_released=getattr(self.bridge,'audio_projection_released',None))
                 if self.lock.pending.exists():
                     status = "unknown"
                 self.store.event("session_ended", {"status": status, "reason": reason})

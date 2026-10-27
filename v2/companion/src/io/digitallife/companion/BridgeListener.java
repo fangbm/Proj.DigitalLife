@@ -12,6 +12,7 @@ import java.util.*;
 import org.json.*;
 
 public class BridgeListener extends NotificationListenerService {
+    private static volatile BridgeListener current;
     private ServerSocket server;
     private volatile boolean ready=false;
     private long activeUntil=0;
@@ -19,6 +20,7 @@ public class BridgeListener extends NotificationListenerService {
     private final LinkedHashMap<String,JSONObject> queue=new LinkedHashMap<>();
     @Override public void onCreate() {
         super.onCreate();
+        current=this;
         new Thread(() -> {
             try {
                 server=new ServerSocket();server.bind(new InetSocketAddress("127.0.0.1",8766));
@@ -29,7 +31,8 @@ public class BridgeListener extends NotificationListenerService {
     @Override public void onListenerConnected() { ready=true; }
     @Override public synchronized void onListenerDisconnected() {ready=false;clear();}
     @Override public synchronized void onDestroy() { clear();try {if(server!=null)server.close();}catch(IOException ignored){} super.onDestroy(); }
-    private void clear(){activeUntil=0;queue.clear();packages.clear();}
+    private void clear(){activeUntil=0;queue.clear();packages.clear();AudioCaptureService.stopAll();}
+    public static boolean sessionActive(){BridgeListener s=current;return s!=null && s.ready && SystemClock.elapsedRealtime()<s.activeUntil;}
     private boolean active(){if(SystemClock.elapsedRealtime()>=activeUntil){clear();return false;}return ready;}
     static String sha(String value) throws Exception {
         byte[] digest=MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
@@ -72,7 +75,7 @@ public class BridgeListener extends NotificationListenerService {
             active();
             String route=request[0]+" "+request[1];
             switch(route){
-            case "GET /status":response.put("listener_ready",ready).put("active",activeUntil>0).put("queued",queue.size());break;
+            case "GET /status":response.put("listener_ready",ready).put("active",activeUntil>0).put("queued",queue.size()).put("audio_authorized",AudioCaptureService.available());break;
             case "POST /session":
                 clear();int ttl=data.getInt("ttl_seconds");if(ttl<1||ttl>600)throw new IllegalArgumentException();
                 JSONArray allowed=data.getJSONArray("packages");if(allowed.length()>20)throw new IllegalArgumentException();
@@ -88,6 +91,9 @@ public class BridgeListener extends NotificationListenerService {
             }response.put("events",events);break;
             case "POST /ack":JSONArray keys=data.getJSONArray("keys");for(int i=0;i<Math.min(100,keys.length());i++)queue.remove(keys.getString(i));response.put("remaining",queue.size());break;
             case "POST /test_notification":if(!active()){status=409;response.put("error","inactive");}else{MainActivity.postTest(this);response.put("posted",true);}break;
+            case "POST /audio/start":if(!active()){status=409;response.put("error","inactive");}else{response=AudioCaptureService.startCapture(data.getString("package"),data.getInt("seconds"));}break;
+            case "POST /audio/status":if(!active()){status=409;response.put("error","inactive");}else{response=AudioCaptureService.result(data.getString("capture_id"),false);}break;
+            case "POST /audio/finish":if(!active()){status=409;response.put("error","inactive");}else{response=AudioCaptureService.result(data.getString("capture_id"),true);}break;
             default:status=404;response.put("error","not_found");
             }
         }

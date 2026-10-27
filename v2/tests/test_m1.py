@@ -431,6 +431,20 @@ class M1Tests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(FixturePhone.instances[-1].calls), 1)
         self.assertTrue((self.lockroot / "PENDING_ACTION.json").exists())
 
+    async def test_transient_post_focus_change_retries_read_without_replaying_input(self):
+        class TransitionPhone(FixturePhone):
+            changed = False
+            async def observe(self):
+                if self.calls and not self.changed:
+                    self.changed = True
+                    raise Blocked('SCENE_CHANGED_DURING_OBSERVATION')
+                return await super().observe()
+        result = await SessionLoop(self.config, self.root / 'transition', minutes=.04,
+            phone_factory=TransitionPhone, brain_factory=FixtureBrain).run()
+        self.assertNotEqual(result['status'], 'unknown')
+        self.assertEqual(len(FixturePhone.instances[-1].calls), 1)
+        self.assertFalse((self.lockroot / 'PENDING_ACTION.json').exists())
+
     async def test_fixed_dispatch_rejects_shell_and_unsafe_text(self):
         phone = PhoneController(self.config, self.root)
         phone._adb = AsyncMock()
