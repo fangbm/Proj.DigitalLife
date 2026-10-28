@@ -41,6 +41,7 @@ if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKi
 if ($Command -eq 'M4Listen') { $v2Args += @('--app',$SocialApp); if ($RouteMarker) { $v2Args += @('--marker',$RouteMarker) } }
 if ($Command -eq 'GroupProbe') { $v2Args += @('--app',$SocialApp); if ($GroupHint) { $v2Args += @('--route-hint',$GroupHint) }; if ($GroupReceipt) { $v2Args += @('--receipt',$GroupReceipt) }; if ($RequestedNow) { $v2Args += '--requested-now' } }
 if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($v2Step in $InspectStep) { $v2Args += @('--step',$v2Step) }; if ($InspectCurrent) { $v2Args += '--current' } }
+if ($Command -eq 'SocialInspect' -and $RouteMarker) { $v2Args += @('--read-marker',$RouteMarker) }
 if ($ResumeOutbound) { $v2Args += @('--resume-outbound',$ResumeOutbound) }
 if ($SocialBinding) { $v2Args += @('--binding-id',$SocialBinding) }
 if ($Command -in @('Run','Doctor','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','GroupProbe','SocialInspect')) { $v2Args += @('--profile',$Profile) }

@@ -67,6 +67,16 @@ class EventRouteTests(unittest.TestCase):
         ui.message_ceilings={'stale-frame':int(h*.94)}
         self.assertEqual(ui.messages(obs),[])
 
+    def test_a_bubble_crossing_the_read_boundary_is_never_read_as_a_partial_message(self):
+        from dataclasses import replace
+        obs=observation('partial',foreground='com.tencent.mm/.LauncherUI');h=obs.height
+        first=replace(obs.controls[0],control_id='line1',text='Only first line',bounds=(100,int(h*.80),300,int(h*.82)))
+        second=replace(first,control_id='line2',text='Second line',bounds=(100,int(h*.85),300,int(h*.87)))
+        obs.controls=[first,second];box=[85,int(h*.79),320,int(h*.88)]
+        obs.visual_controls={c.control_id:{'bubble_hint':{'kind':'incoming_neutral','bounds':box}} for c in obs.controls}
+        ui=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm');ui.message_ceilings[obs.observation_id]=int(h*.84)
+        self.assertEqual(ui.messages(obs),[])
+
 
 class RoutePreflightTests(unittest.IsolatedAsyncioTestCase):
     async def test_missing_route_is_rejected_before_any_pending_dispatch(self):

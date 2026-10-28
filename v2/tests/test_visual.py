@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from PIL import Image, ImageDraw
-from digitallife_v2.visual import add_control, rebind_region, verify_frame, grounded_target
+from digitallife_v2.visual import add_control, rebind_region, verify_frame, grounded_target, editor_surface_bounds
 from digitallife_v2.safety import Blocked, guard
 from test_m1 import observation
 
@@ -43,6 +43,19 @@ class VisualTests(unittest.TestCase):
         Image.new('RGB',(720,1600),'black').save(obs.png_path)
         with self.assertRaisesRegex(Blocked,'SOURCE_UNVERIFIED'):
             guard({'type':'tap','control_id':c.control_id},obs,{},full_access=True)
+
+    def test_editor_surface_corrects_a_proposal_that_cuts_a_message(self):
+        obs=self.page('surface')
+        picture=Image.new('RGB',(720,1600),(16,16,16));draw=ImageDraw.Draw(picture)
+        draw.rounded_rectangle((85,1320,580,1425),radius=10,fill=(43,43,43))
+        draw.rounded_rectangle((85,1480,580,1560),radius=10,fill=(41,41,41))
+        picture.save(obs.png_path);obs.png_sha256=hashlib.sha256(Path(obs.png_path).read_bytes()).hexdigest()
+        target=grounded_target(obs,[80,1400,610,1560],.95,'chat_editor')
+        self.assertEqual(editor_surface_bounds(obs,target),[85,1480,581,1561])
+
+    def test_editor_surface_rejects_a_component_leaking_into_the_canvas(self):
+        obs=self.page('leak');target=grounded_target(obs,[80,1400,610,1560],.95,'chat_editor')
+        self.assertIsNone(editor_surface_bounds(obs,target))
 
     def test_inferred_group_scroll_does_not_invent_native_scrollability(self):
         obs=self.page('scroll')

@@ -346,9 +346,18 @@ class AndroidSocialUI:
 
     async def ground_editor_bounds(self,obs):
         if obs.observation_id in self.message_ceilings:return
-        from .visual import locate
+        from .visual import locate,editor_surface_bounds
         area=await locate(self.loop,obs,'chat_editor')
-        self.editor_bounds=obs.visual_controls[area.control_id].get('grounded_bounds',area.bounds)
+        proposed=obs.visual_controls[area.control_id].get('grounded_bounds',area.bounds)
+        refined=editor_surface_bounds(obs,area)
+        crossing=any(p.get('bubble_hint') and p['bubble_hint']['bounds'][1]<proposed[1]<p['bubble_hint']['bounds'][3] for p in obs.visual_controls.values())
+        if refined is None and crossing:raise Blocked('WECHAT_EDITOR_BOUNDARY_OVERLAPS_MESSAGE')
+        self.editor_bounds=refined or proposed
+        if refined:
+            obs.visual_controls[area.control_id]['grounded_bounds']=refined
+            self.loop.store.event('visual_editor_boundary_refined',{'observation_id':obs.observation_id,
+                'source_png_sha256':obs.png_sha256,'proposed_bounds':list(proposed),'pixel_bounds':refined,
+                'method':'connected_neutral_surface_from_grounded_interior_patch'})
         self.message_ceilings[obs.observation_id]=self.editor_bounds[1]
 
     def messages(self,obs):
@@ -360,7 +369,7 @@ class AndroidSocialUI:
                 if (c.bounds[1]>obs.height*.11 and re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}月\d{1,2}日)\s*\d{1,2}:\d{2})',c.text)):
                     stamp=c.text;continue
                 proof=obs.visual_controls.get(c.control_id,{});bubble=proof.get('bubble_hint')
-                if not bubble or c.bounds[1]<obs.height*.12 or c.bounds[3]>ceiling:continue
+                if not bubble or c.bounds[1]<obs.height*.12 or bubble['bounds'][3]>ceiling:continue
                 box=tuple(bubble['bounds']);direction='outgoing' if bubble['kind']=='outgoing_green' else 'incoming'
                 if direction=='incoming' and box[0]>obs.width*.35:continue
                 key=(box,direction)

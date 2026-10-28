@@ -25,6 +25,38 @@ def rgb_crop_sha(picture,bounds):
     return hashlib.sha256(str(crop.size).encode()+crop.tobytes()).hexdigest()
 
 
+def editor_surface_bounds(observation,control):
+    """Refine a visual editor proposal from its grounded interior hit patch.
+
+    This reads a bounded connected surface, not text, and never dispatches.
+    A leaking/ambiguous component is rejected rather than enlarging a region.
+    """
+    from PIL import ImageDraw,ImageChops
+    proof=observation.visual_controls[control.control_id]
+    if proof.get('role')!='chat_editor':return None
+    data=Path(observation.png_path).read_bytes()
+    if hashlib.sha256(data).hexdigest()!=observation.png_sha256:raise Blocked('VISUAL_IMAGE_SOURCE_UNVERIFIED')
+    proposed=proof.get('grounded_bounds',control.bounds)
+    x=(control.bounds[0]+control.bounds[2])//2;y=(control.bounds[1]+control.bounds[3])//2
+    margin=max(64,proposed[3]-proposed[1])
+    top=max(0,proposed[1]-margin);bottom=min(observation.height,proposed[3]+margin)
+    with Image.open(observation.png_path) as picture:
+        source=picture.convert('RGB').crop((0,top,observation.width,bottom))
+    seed=(x,y-top);color=source.getpixel(seed)
+    if max(color)-min(color)>20:return None
+    filled=source.copy();ImageDraw.floodfill(filled,seed,(255,0,255),thresh=3)
+    difference=ImageChops.difference(source,filled);box=difference.getbbox()
+    if not box:return None
+    a,b,c,d=box
+    area=(c-a)*(d-b)
+    mask=difference.convert('L').point(lambda value:255 if value else 0)
+    density=mask.histogram()[255]/max(1,area)
+    if (a==0 or c==observation.width or b==0 or d==bottom-top
+            or c-a<observation.width*.25 or not 30<=d-b<=observation.height*.35
+            or density<.45):return None
+    return [a,b+top,c,d+top]
+
+
 def add_control(observation,text,bounds,confidence,kind='ocr',role=None,glyph=None,green=0,bubble=None):
     if (observation.redacted or not observation.png_path or not observation.png_sha256
             or hashlib.sha256(Path(observation.png_path).read_bytes()).hexdigest()!=observation.png_sha256):
