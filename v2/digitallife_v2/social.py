@@ -274,10 +274,14 @@ class SocialStore:
 
     def transition(self, outbound_id, expected, status, evidence=None):
         allowed = {('prepared','typed'),('prepared','cancelled_before_send'),('typed','cancelled_before_send'),
+                   ('prepared','card_ready'),('card_ready','cancelled_before_send'),('card_ready','dispatch_attempted'),
                    ('typed','dispatch_attempted'),('dispatch_attempted','sent_observed'),
                    ('dispatch_attempted','delivery_unknown')}
         if (expected, status) not in allowed:
             raise Blocked('SOCIAL_STATE_TRANSITION_INVALID')
+        if 'card_ready' in (expected,status):
+            payload=self.db.execute('SELECT kind,sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
+            if not payload or payload[0]!='group_video_share' or 'native:official-share-card' not in json.loads(payload[1]):raise Blocked('SOCIAL_NATIVE_CARD_PAYLOAD_REQUIRED')
         cursor = self.db.execute('UPDATE social_outbox SET status=?,evidence=?,attempted=CASE WHEN ?=\'dispatch_attempted\' THEN ? ELSE attempted END,observed=CASE WHEN ?=\'sent_observed\' THEN ? ELSE observed END WHERE id=? AND device=? AND status=?',
             (status, json.dumps(evidence or {}), status, time.time(), status, time.time(), outbound_id, self.store.serial, expected))
         self.db.commit()
@@ -288,7 +292,7 @@ class SocialStore:
     def before_send(self, policy, binding, outbound_id, now=None):
         now = time.time() if now is None else now
         row = self.db.execute('SELECT binding_id,kind,status,created FROM social_outbox WHERE id=? AND device=?', (outbound_id, self.store.serial)).fetchone()
-        if not row or row[2] != 'typed' or not 0 <= now-row[3] <= 300:
+        if not row or row[2] not in {'typed','card_ready'} or not 0 <= now-row[3] <= 300:
             raise Blocked('SOCIAL_SEND_NOT_PREPARED_OR_EXPIRED')
         bid = digest(self.store.serial + '\0' + '\0'.join(binding.identity))
         if bid != row[0]:

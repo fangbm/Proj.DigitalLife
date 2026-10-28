@@ -155,7 +155,13 @@ class AndroidSocialUI:
         control=self.visual_text(obs,'微信','bottom');obs=await self.act({'type':'tap','control_id':control.control_id},obs)
         hints={hint,re.sub(r'[（(]\d+[）)]$','',hint)}
         found=[c for c in obs.controls if c.text in hints and obs.height*.12<c.bounds[1]<obs.height*.85]
+        if not found:
+            # A new notification can reorder recent rows between OCR and its
+            # pixel recheck. Read again; never repeat the preceding tab input.
+            obs=await self.observe()
+            found=[c for c in obs.controls if c.text in hints and obs.height*.12<c.bounds[1]<obs.height*.85]
         if len(found)!=1:raise Blocked('SOCIAL_RECENT_THREAD_HINT_AMBIGUOUS_OR_MISSING')
+        self.recent_hint_observation=obs;self.recent_hint_control=found[0]
         return await self.act({'type':'tap','control_id':found[0].control_id},obs)
 
     def composer(self, obs):

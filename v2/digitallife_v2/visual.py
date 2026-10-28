@@ -131,7 +131,10 @@ def verify_frame(observation,path):
 
 
 async def locate(loop,observation,role):
-    roles={'tab_me':'微信底部导航的“我”按钮','chat_info':'私聊界面右上角三个点的聊天信息按钮',
+    roles={'floating_window_menu':'ColorOS应用浮窗最顶部黑色系统标题栏中央的三个横向圆点菜单，不是应用内的三个点。',
+           'floating_fullscreen':'ColorOS浮窗系统菜单中，带方框图标的“全屏”选项；不是分屏、最小化或关闭。',
+           'official_share_close':'微信官方分享浮窗中，“选择聊天”标题左侧圆形向下箭头关闭按钮；只定位这个浮窗关闭按钮，不是底层页面返回按钮。',
+           'tab_me':'微信底部导航的“我”按钮','chat_info':'私聊界面右上角三个点的聊天信息按钮',
            'bili_followed_author':'B站我的关注列表中已关注的作者名字或头像入口，用于进入作者空间。不是已关注/取关按钮，不是最近访问标题。多个作者时选择一个可见的已关注作者。',
            'bili_video_details':'B站视频简介中当前视频标题右侧的向下展开箭头，打开完整标题、简介和视频编号。不是推荐视频、点赞、投币、收藏或作者关注按钮。',
            'qq_share_search':'QQ外部分享的选择聊天页面顶部搜索输入框，用于输入已核对的目标群号查找目标。不是创建聊天、多选或分享到空间。',
@@ -140,6 +143,7 @@ async def locate(loop,observation,role):
            'bili_publish_comment':'B站评论编辑弹层右侧的粉色“发布”按钮，用于发布当前这条评论，不是转到动态、弹幕发送或表情。',
            'bili_comment_expand':'B站评论区内已有评论正文末尾的蓝色“展开”文字，只展开评论全文。不是回复、点赞、点踩或发布按钮。',
            'profile_more':'联系人资料页右上角三个点的更多/资料设置按钮',
+           'chat_history_scroll':'当前聊天页可上下滚动的消息历史主体区域，不含顶部标题、底部消息输入框、语音/发送/附件按钮或系统导航。只用于滚动阅读已有消息。',
            'group_info_scroll':'微信群聊天信息页可上下滚动的主体列表区域，不含顶部标题、状态栏或底部系统导航',
            'chat_editor':'聊天底部用于编辑消息正文的可触摸输入框。边框必须紧贴实际框体，尤其上边界不能包括上方聊天留白；不包含发送/表情/语音按钮。不是整条底部工具栏。'}
     if role not in roles or not loop.config.vision or not observation.png_path:

@@ -13,6 +13,20 @@ from test_m1 import config, observation
 import time
 
 
+class RecentRowRefreshTests(unittest.IsolatedAsyncioTestCase):
+    async def test_reordered_row_is_read_again_without_repeating_tab_input(self):
+        from dataclasses import replace
+        root=observation('root',foreground='com.tencent.mm/.LauncherUI')
+        missing=observation('moving',foreground=root.foreground);missing.controls=[]
+        fresh=observation('stable',foreground=root.foreground)
+        row=replace(fresh.controls[0],text='Fixture group',bounds=(200,500,500,550));fresh.controls=[row]
+        ui=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm');ui.root=AsyncMock(return_value=root)
+        ui.visual_text=lambda *args:root.controls[0];ui.act=AsyncMock(side_effect=[missing,'actual-chat']);ui.observe=AsyncMock(return_value=fresh)
+        self.assertEqual(await ui.open_hint('Fixture group'),'actual-chat')
+        ui.observe.assert_awaited_once();self.assertEqual(ui.act.await_count,2)
+        self.assertIs(ui.recent_hint_observation,fresh)
+
+
 class EventRouteTests(unittest.TestCase):
     def setUp(self):
         self.event={'preview':'QQ 已隐藏敏感通知内容','posted_at':datetime(2026,10,27,22,2,tzinfo=CHINA).timestamp()}

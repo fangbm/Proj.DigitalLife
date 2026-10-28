@@ -21,7 +21,7 @@ class RouteFixTests(unittest.IsolatedAsyncioTestCase):
    brain.structured=AsyncMock(return_value={'event_id':'actual-id','decision':'reply_later','note':'Later'})
    result=await brain.decide(observation(),{},[])
    args=brain.structured.call_args.args
-   self.assertEqual(args[1]['routing_capabilities'],{'inspect_original_notification_thread':enabled,'send_without_identity_check':False})
+   self.assertEqual(args[1]['routing_capabilities'],{'inspect_original_notification_thread':enabled,'inspect_known_public_comment_threads':False,'send_without_identity_check':False})
    self.assertEqual(result['event_response']['decision'],'reply_later')
    self.assertEqual('M4已启用' in args[0],enabled)
    prompt=brain.payload(observation(),{},[])['messages'][0]['content']

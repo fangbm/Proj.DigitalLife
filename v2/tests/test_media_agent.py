@@ -85,3 +85,36 @@ class MediaCommentAgentTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(Blocked,'NOT_KNOWN_UNSENT'):
                 await MediaAgent(self.loop).share_link(self.source,bid,fallback_reason='offline fixture',resume_outbound=oid)
             social_agent.assert_not_called()
+
+    async def test_official_share_failure_never_silently_sends_a_link(self):
+        with patch('digitallife_v2.native_card.NativeCardAgent.run',new=AsyncMock(side_effect=Blocked('SDK_UNAVAILABLE'))) as native,patch.object(MediaAgent,'share_link',new=AsyncMock()) as link:
+            with self.assertRaisesRegex(Blocked,'SDK_UNAVAILABLE'):await MediaAgent(self.loop).share(self.source,'fixture-binding')
+            native.assert_awaited_once();link.assert_not_awaited();self.loop.send.assert_not_awaited()
+
+    async def test_reply_uses_observed_thread_sources_and_publishes_once(self):
+        from dataclasses import replace
+        tid='thread:'+'b'*32
+        thread={'source_id':self.source,'video_id':self.binding.peer,'account':self.binding.account,'ui_thread_key':'123456789',
+            'thread_id':tid,'sender_name':'Other','text':'What is the benefit?','root_text':'Original source comment'}
+        binding=replace(self.binding,peer=self.binding.peer+':123456789',kind='comment_thread')
+        self.ui.resolve_reply=AsyncMock(return_value=(binding,{'actor_name':'Fixture AI'},self.before))
+        self.ui.focus_reply=AsyncMock(return_value=self.focused);self.ui.read_reply_after=AsyncMock(return_value=self.after)
+        self.ui.reply_evidence=lambda *args:{'new_own_reply_exact_text':True}
+        async def draft(system,data,images,validate):
+            self.assertEqual(data['reply_context']['thread_id'],tid)
+            value={'decision':'send','text':self.text,'motive':'Answer actual question','sources':[self.source,tid]};validate(value);return value
+        self.loop.brain.structured.side_effect=draft
+        with patch('digitallife_v2.bili_threads.ThreadSources.get',return_value=thread),patch('digitallife_v2.bilibili.BilibiliUI',return_value=self.ui),patch('digitallife_v2.media_agent.InputBridge',return_value=self.controller):
+            self.assertEqual((await MediaAgent(self.loop).reply(tid))['outcome'],'sent_observed')
+        self.loop.send.assert_awaited_once();self.ui.focus_reply.assert_awaited_once();self.ui.focus_comment.assert_not_awaited()
+        kind,sources=self.store.db.execute('SELECT kind,sources FROM social_outbox').fetchone()
+        self.assertEqual(kind,'reply_video_comment');self.assertIn(tid,sources)
+
+    async def test_notification_requires_full_actual_question_before_reply(self):
+        thread={'thread_id':'thread:'+'c'*32,'text':'What is the benefit of preserving a confirmation step?'}
+        self.ui.inspect_replies=AsyncMock(return_value=(thread,None,self.before))
+        with patch('digitallife_v2.bilibili.BilibiliUI',return_value=self.ui),patch.object(MediaAgent,'reply',new=AsyncMock(return_value={'outcome':'defer'})) as reply:
+            with self.assertRaisesRegex(Blocked,'NOT_MATCHED'):await MediaAgent(self.loop).reply_from_event({'event_id':'fixture','preview':'Unrelated notification'})
+            reply.assert_not_awaited()
+            await MediaAgent(self.loop).reply_from_event({'event_id':'fixture','preview':'Other replied: '+thread['text']})
+            reply.assert_awaited_once_with(thread['thread_id'])

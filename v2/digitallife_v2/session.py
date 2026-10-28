@@ -167,8 +167,9 @@ class SessionLoop:
             'targets':SocialStore(self.store).targets() if social_enabled else []}
         from .media import MediaPolicy,VideoSources,BILIBILI
         media=MediaPolicy(self.config);media_enabled=media.read().get('enabled') is True
+        from .bili_threads import ThreadSources
         self.store.media_context={'enabled':media_enabled,'sources':VideoSources(self.store).offered() if media_enabled else [],
-            'share_targets':media.targets(self.store) if media_enabled else []}
+            'share_targets':media.targets(self.store) if media_enabled else [],'reply_threads':ThreadSources(self.store).offered() if media_enabled else []}
         proposal = await self.guarded(self.brain.decide(before, apps, self.recent))
         logged=proposal if not self.store.inbound_context else {**proposal,'note':'Ephemeral notification decision; private note omitted','life':{}}
         if self.store.inbound_context and proposal.get('event_response'):
@@ -177,12 +178,25 @@ class SessionLoop:
         action = proposal["action"]
         if self.hub:self.hub.resolve(self.store.inbound_context,proposal.get('event_response'))
         self.store.update(last_action=action, last_error=None)
-        if action['type'] in {'post_video_comment','share_video_to_group'}:
+        media_event=self.store.inbound_context if media_enabled and proposal.get('event_response',{}).get('decision')=='reply_now' and self.store.inbound_context and self.store.inbound_context.get('source_app')==BILIBILI else None
+        if media_event:
+            from .media_agent import MediaAgent
+            try:return await MediaAgent(self).reply_from_event(media_event)
+            except Blocked as error:
+                self.store.event('media_notification_deferred',{'event_id':media_event['event_id'],'reason':str(error)})
+                if self.hub and 'INTENT_ALREADY_RECORDED' not in str(error):self.hub.defer_handling(media_event,str(error))
+                return {'outcome':'media_notification_deferred','reason':str(error)}
+        if action['type'] in {'post_video_comment','share_video_to_group','inspect_video_replies','reply_video_comment'}:
             if not media_enabled:raise Blocked('MEDIA_DISABLED')
             from .media_agent import MediaAgent
             try:
                 agent=MediaAgent(self)
-                return await agent.comment(action['source_id']) if action['type']=='post_video_comment' else await agent.share_link(action['source_id'],action['binding_id'],fallback_reason='native_share_target_identity_not_yet_supported')
+                if action['type']=='inspect_video_replies':
+                    from .bilibili import BilibiliUI
+                    thread,_,_=await BilibiliUI(self).inspect_replies(VideoSources(self.store).get(action['source_id']))
+                    return {'outcome':'public_reply_thread_observed','thread_id':thread['thread_id']}
+                if action['type']=='reply_video_comment':return await agent.reply(action['thread_id'])
+                return await agent.comment(action['source_id']) if action['type']=='post_video_comment' else await agent.share(action['source_id'],action['binding_id'])
             except Blocked as error:
                 self.store.event('media_deferred',{'reason':str(error)});return {'outcome':'media_deferred','reason':str(error)}
         if media_enabled and before.foreground.split('/')[0] in {BILIBILI,*SOCIAL_APPS}:
@@ -363,6 +377,10 @@ class SessionLoop:
                 reason = "INTERRUPTED"
             except Exception as e:
                 status, reason = "failed", type(e).__name__
+                import traceback
+                trace=traceback.extract_tb(e.__traceback__)
+                self.store.event('session_failure',{'error_type':type(e).__name__,'errno':getattr(e,'errno',None),'winerror':getattr(e,'winerror',None),
+                    'location':{'file':Path(trace[-1].filename).name,'function':trace[-1].name,'line':trace[-1].lineno} if trace else None})
                 self.store.update(last_error=reason)
             finally:
                 if hasattr(self.phone,'close'):

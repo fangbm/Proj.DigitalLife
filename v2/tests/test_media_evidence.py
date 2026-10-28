@@ -67,3 +67,21 @@ class UnknownCommentReviewTests(unittest.TestCase):
         with self.assertRaises(Blocked):self.social.reconcile_comment(oid,self.binding,self.source,proof)
         with self.assertRaises(Blocked):self.social.reconcile_comment(oid,replace(self.binding,account='98765432'),self.source,self.proof())
         self.assertEqual(self.store.db.execute('SELECT status FROM social_outbox WHERE id=?',(oid,)).fetchone()[0],'delivery_unknown')
+
+
+class NativeReplyEvidenceTests(unittest.TestCase):
+    def setUp(self):
+        self.ui=BilibiliUI(SimpleNamespace());self.root='Original parent comment with source evidence';self.question='What is the benefit of user confirmation?';self.answer='It preserves control and allows checking the proposed changes before applying them.'
+        self.ui.reply_route={'root_text':self.root,'sender_name':'Other','text':self.question}
+    def screen(self,oid,answer=False,wrong_parent=False,wrong_recipient=False):
+        o=observation(oid,foreground=BILIBILI+'/.UnitedBizDetailsActivity');o.controls=[]
+        fields=[('title','评论详情',100),('user_name','AI',150),('primary_message','Another parent' if wrong_parent else self.root,200),('reply_button','回复',250),('user_name','Other',350),('primary_message',self.question,400),('reply_button','回复',450)]
+        if answer:fields += [('user_name','AI',550),('primary_message','回复 '+('Wrong' if wrong_recipient else 'Other')+': '+self.answer+'\u200b 收起',600),('reply_button','回复',750)]
+        for rid,text,y in fields:o.controls.append(Control(oid+':'+str(len(o.controls)),BILIBILI,BILIBILI+':id/'+rid,text,'','android.widget.TextView',(20,y,700,y+30),False,False,True,False,True,False))
+        return o
+    def test_real_reply_decoration_is_distinguished_from_message_text(self):
+        proof=self.ui.reply_evidence(self.screen('before'),self.screen('after',True),self.answer,'AI')
+        self.assertTrue(proof['new_own_reply_exact_text']);self.assertTrue(proof['same_original_parent'])
+    def test_wrong_parent_or_recipient_cannot_confirm_a_reply(self):
+        for kwargs in ({'wrong_parent':True},{'wrong_recipient':True}):
+            self.assertIsNone(self.ui.reply_evidence(self.screen('before'),self.screen('after',True,**kwargs),self.answer,'AI'))

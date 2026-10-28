@@ -46,6 +46,8 @@ def parse_decision(content):
         for social_kind in ('reply_to_contact','initiate_dm','group_post'):
             fields[social_kind] = {'type','binding_id'}
         fields['post_video_comment']={'type','source_id'}
+        fields['inspect_video_replies']={'type','source_id'}
+        fields['reply_video_comment']={'type','thread_id'}
         fields['share_video_to_group']={'type','source_id','binding_id'}
         if not isinstance(a, dict) or a.get("type") not in fields or set(a) != fields[a["type"]]:
             raise ValueError()
@@ -87,7 +89,7 @@ def parse_decision(content):
 
 def guard(action, obs, apps, *, full_access=False):
     kind = action["type"]
-    if kind in {'inspect_chat','reply_to_contact','initiate_dm','group_post','post_video_comment','share_video_to_group'}:
+    if kind in {'inspect_chat','reply_to_contact','initiate_dm','group_post','post_video_comment','share_video_to_group','inspect_video_replies','reply_video_comment'}:
         return None  # SocialAgent performs scope and fresh identity checks.
     if kind == "rest":
         return None
@@ -112,7 +114,7 @@ def guard(action, obs, apps, *, full_access=False):
     if visual:
         from .visual import crop_sha
         import hashlib
-        if (not full_access or kind not in {'tap','swipe'} or kind=='swipe' and visual.get('role')!='group_info_scroll'
+        if (not full_access or kind not in {'tap','swipe'} or kind=='swipe' and visual.get('role') not in {'group_info_scroll','chat_history_scroll'}
                 or visual.get('kind') not in {'ocr','vision','template'}
                 or not c.kind.startswith('visual.') or c.package!=obs.foreground.split('/')[0]
                 or visual.get('bounds')!=list(c.bounds) or visual.get('source_png_sha256')!=obs.png_sha256

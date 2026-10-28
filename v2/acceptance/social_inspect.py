@@ -61,6 +61,40 @@ class Inspect:
                         write_json(self.store.directory/'M5_COMPOSER_CONTROL_READY.json',{'source':'LIVE_EMPTY_COMMENT_COMPOSER_READ_ONLY',
                             'dynamic_repost_verified_off':True,'publication_attempted':False,'outgoing_sends':0})
                         await ui.act({'type':'back'},obs)
+                elif self.app=='tv.danmaku.bili' and value=='bili_reply_controls':
+                    from digitallife_v2.bilibili import BilibiliUI
+                    from digitallife_v2.bili_threads import comment_rows
+                    ui=BilibiliUI(self.loop);obs=await ui.observe();rows=comment_rows(ui,obs)
+                    if len(rows)<2:raise SessionStopped('MEDIA_REPLY_ROW_REQUIRED')
+                    await ui.act({'type':'tap','control_id':rows[-1]['reply_control'].control_id},obs)
+                elif self.app=='tv.danmaku.bili' and value=='bili_reply_context':
+                    from digitallife_v2.bilibili import BilibiliUI
+                    from digitallife_v2.media import VideoSources
+                    source=VideoSources(self.store).get(VideoSources(self.store).offered()[0]['source_id'])
+                    thread,_,_=await BilibiliUI(self.loop).inspect_replies(source)
+                    write_json(self.store.directory/'M5_THREAD_READY.json',{'thread_id':thread['thread_id'],'source_id':source['source_id'],'source':'ACTUAL_PUBLIC_REPLY_PARENT_AND_SENDER_UID','outgoing_sends':0})
+                elif self.app in {'tv.danmaku.bili','com.tencent.mobileqq'} and value=='native_qq_preview':
+                    from digitallife_v2.media import MediaPolicy,VideoSources
+                    from digitallife_v2.native_share import NativeShareUI
+                    source=VideoSources(self.store).get(VideoSources(self.store).offered()[0]['source_id'])
+                    targets=[x for x in MediaPolicy(self.loop.config).targets(self.store) if x['app']=='com.tencent.mobileqq']
+                    if len(targets)!=1:raise SessionStopped('MEDIA_SINGLE_QQ_TARGET_REQUIRED')
+                    _,obs=await NativeShareUI(self.loop).prepare_qq(source,targets[0]['binding_id'])
+                    self.app='com.tencent.mobileqq'
+                elif self.app=='tv.danmaku.bili' and value=='native_wx_picker':
+                    from digitallife_v2.media import VideoSources
+                    from digitallife_v2.native_share import NativeShareUI
+                    source=VideoSources(self.store).get(VideoSources(self.store).offered()[0]['source_id'])
+                    await NativeShareUI(self.loop).open_wechat_picker(source)
+                    self.app='com.tencent.mm'
+                elif self.app in {'tv.danmaku.bili','com.tencent.mm','com.tencent.mobileqq'} and value=='native_wx_preview':
+                    from digitallife_v2.media import MediaPolicy,VideoSources
+                    from digitallife_v2.native_share import NativeShareUI
+                    source=VideoSources(self.store).get(VideoSources(self.store).offered()[0]['source_id'])
+                    targets=[x for x in MediaPolicy(self.loop.config).targets(self.store) if x['app']=='com.tencent.mm']
+                    if len(targets)!=1:raise SessionStopped('MEDIA_SINGLE_WECHAT_TARGET_REQUIRED')
+                    await NativeShareUI(self.loop).prepare_wechat(source,targets[0]['binding_id'])
+                    self.app='com.tencent.mm'
                 else:raise SessionStopped('MEDIA_INSPECTION_KIND_NOT_ALLOWED')
                 self.stage+=1
                 return {'intent':'rest','action':{'type':'rest','seconds':1},'note':'Explicit read-only M5 UI inspection, no publication or recipient send'}

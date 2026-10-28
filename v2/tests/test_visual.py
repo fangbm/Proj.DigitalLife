@@ -70,6 +70,8 @@ class VisualTests(unittest.TestCase):
         c=add_control(obs,'',[50,180,670,1400],.95,'vision','group_info_scroll')
         self.assertIsNone(c.scrollable)
         self.assertEqual(guard({'type':'swipe','control_id':c.control_id,'direction':'up'},obs,{},full_access=True),c)
+        history=add_control(obs,'',[50,180,670,1400],.95,'vision','chat_history_scroll')
+        self.assertEqual(guard({'type':'swipe','control_id':history.control_id,'direction':'down'},obs,{},full_access=True),history)
         other=add_control(obs,'',[50,180,670,1400],.95,'vision','chat_editor')
         with self.assertRaises(Blocked):guard({'type':'swipe','control_id':other.control_id,'direction':'up'},obs,{},full_access=True)
 

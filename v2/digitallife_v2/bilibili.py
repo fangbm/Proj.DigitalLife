@@ -153,9 +153,65 @@ class BilibiliUI(AndroidSocialUI):
 
     async def focus_comment(self,obs):return await self.select(obs,resource='input')
 
+    async def inspect_replies(self,source,expected=None):
+        from .bili_threads import comment_rows,normalized,ThreadSources
+        binding,_,comments=await self.resolve_comment(source)
+        roots=self.loop.store.db.execute("SELECT id,text FROM social_outbox WHERE device=? AND binding_id=? AND kind='post_video_comment' AND status='sent_observed' ORDER BY created DESC",(self.loop.config.serial,__import__('hashlib').sha256((self.loop.config.serial+'\0'+'\0'.join(binding.identity)).encode()).hexdigest())).fetchall()
+        candidates=[]
+        for row in comment_rows(self,comments):
+            prefix=normalized(re.sub(r'(?:\.{3}|…)\s*展开.*$','',row['text']))
+            for root in roots:
+                if row['author']==self.actor['name'] and len(prefix)>=30 and normalized(root[1]).startswith(prefix):candidates.append((root,row))
+        if len(candidates)!=1:raise Blocked('BILI_OWN_ROOT_COMMENT_NOT_UNIQUE')
+        root,row=candidates[0]
+        previews=[c for c in self.controls(comments,'secondary_message') if c.bounds[1]>row['name_control'].bounds[1]]
+        if len(previews)!=1:raise Blocked('BILI_REPLY_PREVIEW_UNAVAILABLE')
+        detail=await self.act({'type':'tap','control_id':previews[0].control_id},comments)
+        def target_rows(obs):
+            rows=comment_rows(self,obs)
+            if not self.controls(obs,'title',text='评论详情') or not rows or normalized(rows[0]['text'])!=normalized(root[1]) or rows[0]['author']!=self.actor['name']:
+                raise Blocked('BILI_REPLY_PARENT_CHANGED')
+            targets=[r for r in rows[1:] if r['author']!=self.actor['name']]
+            if expected:targets=[r for r in targets if normalized(r['text'])==normalized(expected['text']) and r['author']==expected['sender_name']]
+            if not targets:raise Blocked('BILI_NO_INCOMING_PUBLIC_REPLY')
+            return targets[-1]
+        incoming=target_rows(detail)
+        profile=await self.act({'type':'tap','control_id':incoming['name_control'].control_id},detail)
+        try:uid,name=self.profile_uid(profile)
+        except Blocked as error:
+            if str(error)!='BILI_PROFILE_UID_UNAVAILABLE':raise
+            profile=await self.select(profile,resource='header_info_no_verify_expand_button');uid,name=self.profile_uid(profile)
+        if name!=incoming['author'] or expected and uid!=expected['sender_uid']:raise Blocked('BILI_REPLY_SENDER_CHANGED')
+        after=await self.act({'type':'back'},profile);incoming=target_rows(after)
+        if expected:
+            thread=expected
+            if root[0]!=thread['root_outbound_id']:raise Blocked('BILI_REPLY_ROOT_CHANGED')
+        else:
+            thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],uid,name,incoming['text'],self.actor,(detail,after),profile)
+            thread=ThreadSources(self.loop.store).get(thread_id)
+        self.reply_route={'thread_id':thread['thread_id'],'sender_name':name,'text':incoming['text'],'root_text':root[1]}
+        self.comment_route.update(opened=time.monotonic(),followed=binding.existing_contact)
+        return thread,incoming,after
+
+    async def resolve_reply(self,source,thread):
+        thread,incoming,after=await self.inspect_replies(source,thread)
+        self.comment_route['thread_key']=thread['ui_thread_key']
+        binding=VideoBinding(BILIBILI,self.actor['id'],source['video_id']+':'+thread['ui_thread_key'],'comment_thread',self.comment_route['followed'],
+            tuple(self.sources),time.time(),'v2_autonomous' if self.loop.run_kind=='autonomous' else 'live_scripted',source['title'])
+        return binding,{'visible_comments':[thread['root_text'],thread['sender_name']+': '+thread['text']],'actor_name':self.actor['name'],'reply':thread},after
+
+    async def focus_reply(self,obs):
+        from .bili_threads import comment_rows,normalized
+        route=self.reply_route;rows=[r for r in comment_rows(self,obs) if r['author']==route['sender_name'] and normalized(r['text'])==normalized(route['text'])]
+        if len(rows)!=1:raise Blocked('BILI_REPLY_TARGET_AMBIGUOUS')
+        after=await self.act({'type':'tap','control_id':rows[0]['reply_control'].control_id},obs)
+        editors=self.controls(after,'edit')
+        if len(editors)!=1 or route['sender_name'] not in editors[0].text:raise Blocked('BILI_REPLY_EDITOR_TARGET_UNVERIFIED')
+        return after
+
     async def read_comments(self,obs,expand=False):
         """Bili renders comment rows outside the accessibility tree on this build."""
-        if not self.controls(obs,'comment_container'):return obs
+        if not self.controls(obs,'comment_container') and not self.controls(obs,'title',text='评论详情'):return obs
         from .visual import OcrClient,add_control
         if not self.loop.config.ocr_python:raise Blocked('MEDIA_COMMENT_OCR_UNAVAILABLE')
         reader=OcrClient(self.loop.config.ocr_python)
@@ -177,9 +233,33 @@ class BilibiliUI(AndroidSocialUI):
     def verify_comment_route(self,obs,binding,source):
         route=getattr(self,'comment_route',{})
         if (obs.foreground!=route.get('activity') or source['source_id']!=route.get('source_id')
-                or binding.peer!=route.get('video_id') or not self.actor or binding.account!=self.actor['id']
+                or binding.peer.split(':')[0]!=route.get('video_id') or not self.actor or binding.account!=self.actor['id']
                 or time.monotonic()-route.get('opened',0)>120 or len(self.controls(obs,'edit'))!=1):
             raise Blocked('BILI_COMMENT_ROUTE_CHANGED')
+        if binding.kind=='comment_thread' and binding.peer.split(':')[1]!=route.get('thread_key'):raise Blocked('BILI_REPLY_ROUTE_CHANGED')
+
+    def reply_evidence(self,before,after,text,actor_name):
+        from .bili_threads import comment_rows,normalized
+        if after.foreground!=before.foreground or self.controls(after,'edit') or not self.controls(after,'title',text='评论详情'):return None
+        rows=comment_rows(self,after)
+        root_visible=any(normalized(c.text)==normalized(self.reply_route['root_text']) for c in self.controls(after,'primary_message'))
+        targets=[r for r in rows if r['author']==self.reply_route['sender_name'] and normalized(r['text'])==normalized(self.reply_route['text'])]
+        target_visible=bool(targets)
+        if targets and any(c.bounds[1]<targets[0]['body_control'].bounds[1] for c in self.controls(after,'primary_message')) and not root_visible:return None
+        if not root_visible and not target_visible:return None
+        expected=normalized('回复 '+self.reply_route['sender_name']+': '+text)
+        count=lambda obs:sum(r['author']==actor_name and normalized(r['text'])==expected for r in comment_rows(self,obs))
+        if count(after)>count(before):return {'observation_id':after.observation_id,'png_sha256':after.png_sha256,'xml_sha256':after.xml_sha256,'text_sha256':digest(text),
+            'same_original_parent':True,'parent_text_currently_present':root_visible,'verified_incoming_question_currently_present':target_visible,
+            'new_own_reply_exact_text':True,'actor_label_observed':True,'composer_closed':True,'server_delivery_or_read_claimed':False}
+
+    async def read_reply_after(self,obs):
+        messages=self.controls(obs,'primary_message')
+        if messages and '展开' in messages[-1].text:
+            lists=self.controls(obs,'cmt3_recycler')
+            if len(lists)!=1:raise Blocked('BILI_REPLY_LIST_UNAVAILABLE')
+            obs=await self.act({'type':'swipe','control_id':lists[0].control_id,'direction':'up'},obs)
+        return await self.read_comments(obs,expand=True)
 
     async def check_dynamic_off(self,obs):
         from types import SimpleNamespace

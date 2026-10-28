@@ -117,6 +117,14 @@ class Config:
                 accounts=social_settings.get('accounts',{})
                 if not isinstance(accounts,dict):raise ValueError('SOCIAL_POLICY_INVALID')
                 notification_defaults.extend(app for app in ('com.tencent.mobileqq','com.tencent.mm') if app in accounts)
+        media_path=data_path/'media.private.json'
+        if media_path.exists():
+            if media_path.stat().st_size>65536:raise ValueError('MEDIA_POLICY_INVALID')
+            media_settings=json.loads(media_path.read_text(encoding='utf-8'))
+            if not isinstance(media_settings,dict) or not isinstance(media_settings.get('comments',{}),dict) or not isinstance(media_settings.get('accounts',{}),dict):raise ValueError('MEDIA_POLICY_INVALID')
+            if (media_settings.get('serial')==p['serial'] and media_settings.get('enabled') is True
+                    and media_settings.get('comments',{}).get('reply_video_comment') is True and media_settings.get('accounts',{}).get('tv.danmaku.bili')):
+                notification_defaults.append('tv.danmaku.bili')
         return cls(serial=p["serial"], identity=p["identity"],
                    adb=env("ADB", "adb"), data=Path(env("DATA", str(ROOT / "data"))),
                    api_base=endpoint,

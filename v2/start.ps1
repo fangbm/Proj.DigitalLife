@@ -17,8 +17,9 @@ param(
     [string]$GroupReceipt='',
     [string]$RouteMarker='',
     [switch]$RequestedNow,
-    [ValidateSet('watch','comment','share','review')][string]$MediaKind='watch',
-    [string]$SourceId=''
+    [ValidateSet('watch','comment','share','link','review','reply','native')][string]$MediaKind='watch',
+    [string]$SourceId='',
+    [string]$ThreadId=''
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
@@ -43,6 +44,7 @@ if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKind) }
 if ($Command -eq 'M4Listen') { $v2Args += @('--app',$SocialApp); if ($RouteMarker) { $v2Args += @('--marker',$RouteMarker) } }
 if ($Command -eq 'M5Probe') { $v2Args += @('--kind',$MediaKind); if ($SourceId) { $v2Args += @('--source-id',$SourceId) } }
+if ($Command -eq 'M5Probe' -and $ThreadId) { $v2Args += @('--thread-id',$ThreadId) }
 if ($Command -eq 'GroupProbe') { $v2Args += @('--app',$SocialApp); if ($GroupHint) { $v2Args += @('--route-hint',$GroupHint) }; if ($GroupReceipt) { $v2Args += @('--receipt',$GroupReceipt) }; if ($RequestedNow) { $v2Args += '--requested-now' } }
 if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($v2Step in $InspectStep) { $v2Args += @('--step',$v2Step) }; if ($InspectCurrent) { $v2Args += '--current' } }
 if ($Command -eq 'SocialInspect' -and $RouteMarker) { $v2Args += @('--read-marker',$RouteMarker) }

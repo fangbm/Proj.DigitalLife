@@ -214,17 +214,23 @@ class MediaPolicy:
 
 
 class MediaStore(SocialStore):
-    def reconcile_comment(self,outbound_id,binding,source_id,evidence):
+    def reconcile_comment(self,outbound_id,binding,source_id,evidence,*,reply=False):
         """Explicit read-only review of one earlier attempt; never re-dispatch."""
         row=self.db.execute('SELECT binding_id,kind,status,attempted,text_hash,sources,evidence FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
         bid=digest(self.store.serial+'\0'+'\0'.join(binding.identity))
         source=VideoSources(self.store).get(source_id)
-        if (not row or row[0]!=bid or row[1]!='post_video_comment' or row[2]!='delivery_unknown' or row[3] is None
-                or source_id not in json.loads(row[5]) or binding.peer!=source['video_id']
+        if (not row or row[0]!=bid or row[1]!=('reply_video_comment' if reply else 'post_video_comment') or row[2]!='delivery_unknown' or row[3] is None
+                or source_id not in json.loads(row[5]) or binding.peer.split(':')[0]!=source['video_id']
                 or evidence.get('text_sha256')!=row[4] or not evidence.get('actor_label_observed')
-                or not evidence.get('composer_closed') or not evidence.get('new_comment_exact_normalized_OCR')
+                or not evidence.get('composer_closed') or not evidence.get('new_own_reply_exact_text' if reply else 'new_comment_exact_normalized_OCR')
                 or not evidence.get('png_sha256') or not evidence.get('original_before_observation_id')):
             raise Blocked('MEDIA_UNKNOWN_REVIEW_EVIDENCE_INSUFFICIENT')
+        if reply:
+            from .bili_threads import ThreadSources
+            threads=[s for s in json.loads(row[5]) if s.startswith('thread:')]
+            if len(threads)!=1 or not evidence.get('same_original_parent'):raise Blocked('MEDIA_REPLY_THREAD_CHANGED')
+            thread=ThreadSources(self.store).get(threads[0])
+            if binding.peer!=source['video_id']+':'+thread['ui_thread_key']:raise Blocked('MEDIA_REPLY_THREAD_CHANGED')
         binding.validate(row[3])
         proof={**evidence,'original_unknown_evidence':json.loads(row[6] or '{}'),'review_session':self.store.session}
         cursor=self.db.execute("UPDATE social_outbox SET status='sent_observed',observed=?,evidence=? WHERE id=? AND device=? AND status='delivery_unknown'",(time.time(),json.dumps(proof),outbound_id,self.store.serial))
@@ -250,13 +256,25 @@ class MediaStore(SocialStore):
             if binding.peer.split(':')[0]!=source['video_id']:raise Blocked('MEDIA_SOURCE_THREAD_MISMATCH')
             if policy.read().get('comments',{}).get('following_only',True) and not source['followed']:raise Blocked('MEDIA_UPLOADER_NOT_FOLLOWED')
         if kind=='reply_video_comment' and not thread_sources:raise Blocked('MEDIA_REPLY_CONTEXT_MISSING')
+        if kind=='reply_video_comment':
+            from .bili_threads import ThreadSources
+            if len(thread_sources)!=1:raise Blocked('MEDIA_REPLY_CONTEXT_MISSING')
+            thread=ThreadSources(self.store).get(thread_sources[0])
+            if (thread['source_id']!=source_id or thread['account']!=binding.account
+                    or binding.peer!=source['video_id']+':'+thread['ui_thread_key']):raise Blocked('MEDIA_REPLY_THREAD_CHANGED')
         trigger=source['video_id']+(':'+binding.peer.split(':')[1] if kind=='reply_video_comment' else '')
         return self.prepare(policy,binding,kind,trigger,text,motive,[source_id,*thread_sources])
 
     def before_media_send(self,policy,binding,outbound_id):
-        row=self.db.execute('SELECT sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
+        row=self.db.execute('SELECT sources,kind FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
         if not row:raise Blocked('MEDIA_SEND_NOT_PREPARED')
         sources=[s for s in json.loads(row[0]) if s.startswith('video:')]
         if len(sources)!=1:raise Blocked('MEDIA_SOURCE_UNVERIFIED')
         VideoSources(self.store).get(sources[0])
+        if row[1]=='reply_video_comment':
+            from .bili_threads import ThreadSources
+            threads=[s for s in json.loads(row[0]) if s.startswith('thread:')]
+            if len(threads)!=1:raise Blocked('MEDIA_REPLY_CONTEXT_MISSING')
+            thread=ThreadSources(self.store).get(threads[0])
+            if binding.peer!=thread['video_id']+':'+thread['ui_thread_key']:raise Blocked('MEDIA_REPLY_THREAD_CHANGED')
         return self.before_send(policy,binding,outbound_id)
