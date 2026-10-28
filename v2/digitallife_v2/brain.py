@@ -75,6 +75,13 @@ group_post(binding_id) 仅用于另有群权限的绑定群。只能选 social_c
 通知 reply_now 是进入上下文核对流程的意图，未核对身份前不代表可以直接发送。
 """
 
+M5_SYSTEM='''
+media_context.enabled=true时，允许post_video_comment(source_id)或share_video_to_group(source_id,binding_id)。
+source_id只选media_context.sources中实际采样并核对公开视频编号的来源；binding_id只选media_context.share_targets。
+公开视频评论需要具体内容依据，不夸大观看范围；分享要有适合该群的话题。可以不评论、不分享。只选意图，正文和发送由独立链路再次决定。
+先进入实际B站视频页再watch_video，才能生成新的视频来源。普通tap/type_text/search不能代替评论发布或视频群分享，不能猜URL或新增权限。
+'''
+
 
 class LifeBrain:
     def __init__(self, config, store, transport=None):
@@ -100,6 +107,7 @@ class LifeBrain:
     def payload(self, obs, apps, recent, correction=None):
         system = (FULL_ACCESS_SYSTEM if self.config.full_access else SYSTEM) + M3_SYSTEM
         system += M4_SYSTEM if getattr(self.store,'social_context',{}).get('enabled') else M3_READ_ONLY_SYSTEM
+        if getattr(self.store,'media_context',{}).get('enabled'):system+=M5_SYSTEM
         # The local journal has full bounded controls; only relevant affordances enter the prompt.
         view = obs.summary()
         controls = []
@@ -144,9 +152,13 @@ class LifeBrain:
             if len(page_text) >= 20:
                 break
         text_key='page_text_from_ocr' if getattr(obs,'visual_controls',{}) else 'page_text_from_xml'
+        media=getattr(self.store,'media_context',{'enabled':False})
+        media={**media,'sources':[dict(s) for s in media.get('sources',[])],
+               'share_targets':[dict(t) for t in media.get('share_targets',[])]}
         data = {"observation": view, text_key: page_text,
                 "reading_progress": getattr(self.store, 'reading_context', None),
                 "social_context": getattr(self.store, 'social_context', {'enabled':False}),
+                "media_context": media,
                 "inbound_event": getattr(self.store, "inbound_context", None),
                 "operation_mode": "full_access" if self.config.full_access else "restricted",
                 "launchable_apps": packages, "launchable_app_count": len(apps), "recent": recent[-5:],
@@ -168,6 +180,10 @@ class LifeBrain:
                 data["launchable_apps"].pop()
             elif data["recent"]:
                 data["recent"].pop(0)
+            elif len(media['sources'])>1:
+                media['sources'].pop()
+            elif len(media['share_targets'])>1:
+                media['share_targets'].pop()
             elif data.get("continuity", {}).get("relevant"):
                 data["continuity"]["relevant"].pop()
             elif len(data.get("continuity", {}).get("recent", [])) > 1:
@@ -175,6 +191,8 @@ class LifeBrain:
             else:
                 raise Blocked("INPUT_TOKEN_BUDGET_EXCEEDED")
         self.last_continuity = data.get("continuity")
+        self.last_media_sources={s['source_id'] for s in media['sources']}
+        self.last_media_targets={t['binding_id'] for t in media['share_targets']}
         self.offered_memory_ids = [m["memory_id"] for k in ("recent", "relevant")
                                    for m in data.get("continuity", {}).get(k, [])]
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
@@ -230,6 +248,10 @@ class LifeBrain:
                 if choice.get("finish_reason") != "stop":
                     raise Blocked("MODEL_OUTPUT_TRUNCATED")
                 proposal = parse_decision(choice["message"]["content"])
+                if proposal['action']['type'] in {'post_video_comment','share_video_to_group'}:
+                    media=getattr(self.store,'media_context',{})
+                    if (not media.get('enabled') or proposal['action']['source_id'] not in self.last_media_sources):raise Blocked('MEDIA_SOURCE_NOT_OFFERED')
+                    if proposal['action']['type']=='share_video_to_group' and proposal['action']['binding_id'] not in self.last_media_targets:raise Blocked('MEDIA_GROUP_NOT_OFFERED')
                 if proposal['action']['type'] in {'reply_to_contact','initiate_dm','group_post'}:
                     offered_targets={t['binding_id'] for t in getattr(self.store,'social_context',{}).get('targets',[])}
                     if proposal['action']['binding_id'] not in offered_targets:

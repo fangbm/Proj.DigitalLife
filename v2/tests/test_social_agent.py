@@ -58,6 +58,41 @@ class SocialAgentTests(unittest.IsolatedAsyncioTestCase):
 
     def status(self):return self.store.db.execute('SELECT status FROM social_outbox').fetchone()[0]
 
+    def share_fixture(self):
+        from digitallife_v2.media import MediaPolicy
+        self.binding=replace(self.binding,kind='group')
+        (self.cfg.data/'media.private.json').write_text(json.dumps({'version':1,'serial':self.cfg.serial,'enabled':True,
+            'accounts':{self.binding.app:self.binding.account},'shares':{'group_video_share':True,'allowed_groups':[self.binding.app+'/'+self.binding.peer]},'quiet_hours':['00:00','00:00']}),encoding='utf-8')
+        context=self.ui.resolve.return_value[1]
+        self.ui.resolve.return_value=(self.binding,context,self.before)
+        self.ui.refresh.return_value=(self.binding,self.before);self.ui.recheck.return_value=(self.binding,self.ready)
+        self.ui.composer=lambda obs:obs.controls[0]
+        return MediaPolicy(self.cfg)
+
+    async def test_public_video_share_is_not_a_reply_to_a_clipped_last_message(self):
+        policy=self.share_fixture()
+        self.ui.messages=lambda obs:[{'direction':'incoming','text':self.incoming}] if obs is self.before else []
+        result=await SocialAgent(self.loop,self.ui,policy=policy).run('group_video_share',evidence=[{'source_id':'video:fixture','public':True}])
+        self.assertEqual(result['outcome'],'sent_observed');self.loop.send.assert_awaited_once()
+
+    async def test_known_unsent_share_can_resume_with_independently_verified_group(self):
+        from digitallife_v2.social import SocialStore
+        policy=self.share_fixture();agent=SocialAgent(self.loop,self.ui,policy=policy)
+        oid=SocialStore(self.store).prepare(policy,self.binding,'group_video_share','BV1234567890','中文回复','Public source fixture',['incoming:old-reference','video:fixture'])
+        agent.social.transition(oid,'prepared','typed');agent.social.transition(oid,'typed','cancelled_before_send')
+        self.ui.messages=lambda obs:[]
+        result=await agent.resume_known_unsent(oid)
+        self.assertEqual(result['outcome'],'sent_observed');self.loop.send.assert_awaited_once();self.model.assert_not_awaited()
+
+    async def test_visible_group_optout_still_blocks_a_video_share_resume(self):
+        from digitallife_v2.social import SocialStore
+        policy=self.share_fixture();agent=SocialAgent(self.loop,self.ui,policy=policy)
+        oid=SocialStore(self.store).prepare(policy,self.binding,'group_video_share','BV1234567890','中文回复','Public source fixture',['video:fixture'])
+        agent.social.transition(oid,'prepared','cancelled_before_send')
+        self.ui.messages=lambda obs:[{'direction':'incoming','text':'不要再联系我'},{'direction':'incoming','text':'Other discussion'}]
+        with self.assertRaisesRegex(Blocked,'OPTED_OUT'):await agent.resume_known_unsent(oid)
+        self.loop.send.assert_not_awaited();self.assertEqual(self.status(),'cancelled_before_send')
+
     async def test_wechat_each_pre_send_context_read_has_its_own_grounded_editor(self):
         self.binding=replace(self.binding,app='com.tencent.mm')
         self.grant['accounts']={'com.tencent.mm':self.binding.account};self.save()

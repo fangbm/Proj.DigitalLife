@@ -133,8 +133,12 @@ class SessionLoop:
             self.store.event('cancelled_before_dispatch',{'action_id':action_id,'reason':str(error)})
             self.lock.pending.unlink()
             raise
-        except BaseException:
-            self.store.event("unknown", {"action_id": action_id, "reason": "DISPATCH_OR_POST_OBSERVATION_UNCERTAIN"})
+        except BaseException as error:
+            import traceback
+            trace=traceback.extract_tb(error.__traceback__)
+            self.store.event("unknown", {"action_id": action_id, "reason": "DISPATCH_OR_POST_OBSERVATION_UNCERTAIN",
+                'error_type':type(error).__name__,'errno':getattr(error,'errno',None),'winerror':getattr(error,'winerror',None),
+                'location':({'file':Path(trace[-1].filename).name,'function':trace[-1].name,'line':trace[-1].lineno} if trace else None)})
             raise UnknownDispatch("DISPATCH_OR_POST_OBSERVATION_UNCERTAIN") from None
         changed = (observation.foreground != after.foreground or
                    (observation.png_sha256 is not None and after.png_sha256 is not None
@@ -161,6 +165,10 @@ class SessionLoop:
         self.store.social_context={'enabled':social_enabled,
             'contacts_mode':policy.get('contacts',{}).get('mode'),
             'targets':SocialStore(self.store).targets() if social_enabled else []}
+        from .media import MediaPolicy,VideoSources,BILIBILI
+        media=MediaPolicy(self.config);media_enabled=media.read().get('enabled') is True
+        self.store.media_context={'enabled':media_enabled,'sources':VideoSources(self.store).offered() if media_enabled else [],
+            'share_targets':media.targets(self.store) if media_enabled else []}
         proposal = await self.guarded(self.brain.decide(before, apps, self.recent))
         logged=proposal if not self.store.inbound_context else {**proposal,'note':'Ephemeral notification decision; private note omitted','life':{}}
         if self.store.inbound_context and proposal.get('event_response'):
@@ -169,6 +177,21 @@ class SessionLoop:
         action = proposal["action"]
         if self.hub:self.hub.resolve(self.store.inbound_context,proposal.get('event_response'))
         self.store.update(last_action=action, last_error=None)
+        if action['type'] in {'post_video_comment','share_video_to_group'}:
+            if not media_enabled:raise Blocked('MEDIA_DISABLED')
+            from .media_agent import MediaAgent
+            try:
+                agent=MediaAgent(self)
+                return await agent.comment(action['source_id']) if action['type']=='post_video_comment' else await agent.share_link(action['source_id'],action['binding_id'],fallback_reason='native_share_target_identity_not_yet_supported')
+            except Blocked as error:
+                self.store.event('media_deferred',{'reason':str(error)});return {'outcome':'media_deferred','reason':str(error)}
+        if media_enabled and before.foreground.split('/')[0] in {BILIBILI,*SOCIAL_APPS}:
+            selected=[c for c in before.controls if c.control_id==action.get('control_id')]
+            if selected:
+                c=selected[0]
+                publish=action['type']=='tap' and (c.text.strip() in {'发布','一键发送','发送'} or c.description.strip()=='发送')
+                comment_input=(before.foreground.split('/')[0]==BILIBILI and action['type'] in {'type_text','search'} and c.resource in {BILIBILI+':id/edit',BILIBILI+':id/input'})
+                if publish or comment_input:raise Blocked('MEDIA_PUBLICATION_REQUIRES_SEMANTIC_INTENT')
         social_actions={'inspect_chat','reply_to_contact','initiate_dm','group_post'}
         reply_event=self.store.inbound_context if social_enabled and proposal.get('event_response',{}).get('decision')=='reply_now' else None
         if action['type'] in social_actions or reply_event:
@@ -200,6 +223,11 @@ class SessionLoop:
                 raise Blocked('SOCIAL_COMPOSER_REQUIRES_SOCIAL_INTENT')
         guard(action, before, apps, full_access=self.config.full_access)
         if action['type'] in {'watch_video','read_article'}:
+            if action['type']=='watch_video' and media_enabled and before.foreground.split('/')[0]==BILIBILI and 'UnitedBizDetailsActivity' in before.foreground:
+                from .bilibili import BilibiliUI
+                try:return await BilibiliUI(self).watch(action['seconds'])
+                except Blocked as error:
+                    self.store.event('media_source_unavailable',{'reason':str(error)});return {'outcome':'media_source_unavailable','reason':str(error)}
             return await ContentPerception(self).run(proposal,before)
         if action["type"] == "rest":
             seconds = min(action["seconds"], max(0, self.deadline - time.monotonic()))

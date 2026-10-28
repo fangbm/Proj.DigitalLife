@@ -92,10 +92,20 @@ class PhoneController:
     async def _text(self, *args):
         return (await self._adb(*args)).decode("utf-8", "replace")
 
+    async def _read_batch(self,*commands):
+        """Fresh independent reads only; drain siblings on failure/cancellation."""
+        tasks=[asyncio.create_task(self._text(*command)) for command in commands]
+        try:return await asyncio.gather(*tasks)
+        finally:
+            for task in tasks:
+                if not task.done():task.cancel()
+            await asyncio.gather(*tasks,return_exceptions=True)
+
     async def identity(self):
         if (await self._text("get-state")).strip() != "device":
             raise Blocked("DEVICE_OFFLINE")
-        values = {key: (await self._text("shell", "getprop", key)).strip() for key in IDENTITY}
+        properties=await self._read_batch(*[("shell","getprop",key) for key in IDENTITY])
+        values = {key:value.strip() for key,value in zip(IDENTITY,properties)}
         if values != self.config.identity:
             raise Blocked("DEVICE_IDENTITY_CHANGED")
         return values
@@ -114,15 +124,14 @@ class PhoneController:
         return self.apps
 
     async def scene(self):
-        power = await self._text("shell", "dumpsys", "power")
-        policy = await self._text("shell", "dumpsys", "window", "policy")
-        windows = await self._text("shell", "dumpsys", "window", "windows")
-        displays = await self._text("shell", "dumpsys", "window", "displays")
+        power,policy,windows,displays,input_state=await self._read_batch(
+            ("shell","dumpsys","power"),("shell","dumpsys","window","policy"),
+            ("shell","dumpsys","window","windows"),("shell","dumpsys","window","displays"),
+            ("shell","dumpsys","input"))
         self.last_windows = windows
         if not unlocked_awake(power, policy, displays):
             raise Blocked("SCREEN_LOCK_OR_POWER_UNSAFE")
         foreground, self.focus_window = focused_window(windows, displays, self.config.full_access)
-        input_state = await self._text("shell", "dumpsys", "input")
         rotations = set(re.findall(r"Viewport INTERNAL:[^\r\n]*\bdisplayId=0,[^\r\n]*\borientation=([0-3])\b", input_state))
         rotations.update(re.findall(r"(?:SurfaceOrientation|surfaceOrientation)\s*[:=]\s*([0-3])", input_state))
         if len(rotations) != 1:

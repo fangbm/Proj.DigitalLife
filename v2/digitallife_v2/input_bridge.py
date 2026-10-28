@@ -50,12 +50,13 @@ class InputBridge:
             except (OSError, ValueError, TimeoutError):
                 loop.store.update(ime_recovery_required=True)
 
-    async def insert(self, observation, outbound_id, text):
+    async def insert(self, observation, outbound_id, text, *, operation_kind='social_type_text'):
+        if operation_kind not in {'social_type_text','media_target_search_text','video_comment_text'}:raise Blocked('SEMANTIC_INPUT_KIND_REQUIRED')
         loop = self.loop
         editors = [c for c in observation.controls if c.is_editor and c.focused and c.enabled
                    and c.package == observation.foreground.split('/')[0] and not c.covered]
-        visual_editor=not editors and observation.foreground.split('/')[0]=='com.tencent.mm' and bool(observation.visual_controls)
-        if visual_editor:
+        independent_editor=(not editors and observation.foreground.split('/')[0]=='com.tencent.mm' and bool(observation.visual_controls)) or operation_kind=='video_comment_text'
+        if independent_editor:
             await self.observe_editor(observation)
             if observation.input_editor.get('text_sha256')!=digest(''):
                 raise Blocked('SOCIAL_EXISTING_DRAFT_OR_UNVERIFIED_EDITOR')
@@ -72,9 +73,9 @@ class InputBridge:
                 'package': package, 'text': text})
             if result.get('committed') is not True or result.get('request_id') != request_id:
                 raise Blocked('UNICODE_COMMIT_UNCONFIRMED')
-        after, _ = await loop.send_operation(commit, {'type': 'social_type_text', 'outbound_id': outbound_id,
+        after, _ = await loop.send_operation(commit, {'type': operation_kind, 'outbound_id': outbound_id,
             'text_sha256': digest(text), 'request_id': request_id}, observation)
-        if visual_editor:
+        if independent_editor:
             await self.observe_editor(after)
             if after.input_editor.get('text_sha256')!=digest(text):raise Blocked('SOCIAL_TYPED_TEXT_NOT_OBSERVED')
         else:

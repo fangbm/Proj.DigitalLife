@@ -57,6 +57,14 @@ class VisualTests(unittest.TestCase):
         obs=self.page('leak');target=grounded_target(obs,[80,1400,610,1560],.95,'chat_editor')
         self.assertIsNone(editor_surface_bounds(obs,target))
 
+    def test_multiline_draft_glyph_at_seed_does_not_hide_editor_surface(self):
+        obs=self.page('draft-glyph');picture=Image.new('RGB',(720,1600),(16,16,16));draw=ImageDraw.Draw(picture)
+        draw.rounded_rectangle((85,1300,580,1560),radius=10,fill=(41,41,41))
+        draw.rectangle((208,1537,216,1543),fill=(220,220,220))
+        picture.save(obs.png_path);obs.png_sha256=hashlib.sha256(Path(obs.png_path).read_bytes()).hexdigest()
+        target=grounded_target(obs,[80,1380,610,1560],.95,'chat_editor')
+        self.assertEqual(editor_surface_bounds(obs,target),[85,1300,581,1561])
+
     def test_inferred_group_scroll_does_not_invent_native_scrollability(self):
         obs=self.page('scroll')
         c=add_control(obs,'',[50,180,670,1400],.95,'vision','group_info_scroll')

@@ -23,6 +23,7 @@ public class BridgeListener extends NotificationListenerService {
     private final LinkedHashMap<String,PendingIntent> routes=new LinkedHashMap<>();
     private final Map<String,String> routeSources=new HashMap<>();
     private final Set<String> attemptedRoutes=new HashSet<>();
+    private JSONObject publicShare;
     @Override public void onCreate() {
         super.onCreate();
         current=this;
@@ -36,7 +37,20 @@ public class BridgeListener extends NotificationListenerService {
     @Override public void onListenerConnected() { ready=true; }
     @Override public synchronized void onListenerDisconnected() {ready=false;clear();}
     @Override public synchronized void onDestroy() { clear();try {if(server!=null)server.close();}catch(IOException ignored){} super.onDestroy(); }
-    private void clear(){activeUntil=0;queue.clear();routes.clear();routeSources.clear();attemptedRoutes.clear();packages.clear();BridgeIme.invalidate();AudioCaptureService.stopAll();}
+    private void clear(){activeUntil=0;queue.clear();routes.clear();routeSources.clear();attemptedRoutes.clear();packages.clear();publicShare=null;BridgeIme.invalidate();AudioCaptureService.stopAll();}
+    public static void acceptPublicShare(String text,String subject,String referrer){
+        BridgeListener s=current;if(s==null)return;
+        synchronized(s){
+            if(!s.active() || text==null || text.length()>6000)return;
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("https://(?:b23\\.tv/[A-Za-z0-9]+|(?:www\\.|m\\.)?bilibili\\.com/video/BV[A-Za-z0-9]{10}/?)(?:\\?[^\\s<>\"，。]*)?").matcher(text);
+            String url=null;while(m.find()){if(url!=null && !url.equals(m.group()))return;url=m.group();}
+            if(url==null)return;
+            try{s.publicShare=new JSONObject().put("receipt_id",java.util.UUID.randomUUID().toString())
+                .put("url",url).put("subject",clip(subject,300)).put("referrer",clip(referrer,200))
+                .put("received_elapsed",SystemClock.elapsedRealtime()).put("source","Android_ACTION_SEND_actual_share_intent");}
+            catch(Exception ignored){}
+        }
+    }
     public static boolean sessionActive(){BridgeListener s=current;return s!=null && s.ready && SystemClock.elapsedRealtime()<s.activeUntil;}
     private boolean active(){if(SystemClock.elapsedRealtime()>=activeUntil){clear();return false;}return ready;}
     static String sha(String value) throws Exception {
@@ -141,6 +155,12 @@ public class BridgeListener extends NotificationListenerService {
             active();
             String route=request[0]+" "+request[1];
             switch(route){
+            case "GET /share/latest":
+                if(!active() || publicShare==null){response.put("available",false);}
+                else{response=new JSONObject(publicShare.toString());response.put("available",true).put("age_seconds",(SystemClock.elapsedRealtime()-publicShare.getLong("received_elapsed"))/1000.0);response.remove("received_elapsed");}break;
+            case "POST /share/ack":
+                if(publicShare!=null && publicShare.getString("receipt_id").equals(data.getString("receipt_id")))publicShare=null;
+                response.put("cleared",publicShare==null);break;
             case "GET /status":response.put("listener_ready",ready).put("active",activeUntil>0).put("queued",queue.size()).put("audio_authorized",AudioCaptureService.available()).put("ime_active",BridgeIme.available());break;
             case "POST /session":
                 clear();int ttl=data.getInt("ttl_seconds");if(ttl<1||ttl>600)throw new IllegalArgumentException();

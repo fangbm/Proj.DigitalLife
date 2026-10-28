@@ -14,9 +14,10 @@ DRAFT_SYSTEM = '''你是数字生命，正在和已经通过真实界面核对�
 
 
 class SocialAgent:
-    def __init__(self, loop, ui):
+    def __init__(self, loop, ui, *, policy=None, social=None, draft_system=None):
         self.loop, self.ui = loop, ui
-        self.policy, self.social = SocialPolicy(loop.config), SocialStore(loop.store)
+        self.policy, self.social = policy or SocialPolicy(loop.config), social or SocialStore(loop.store)
+        self.draft_system=draft_system or DRAFT_SYSTEM
 
     async def run(self, kind, *, event=None, binding_id=None, evidence=None):
         loop = self.loop
@@ -85,7 +86,7 @@ class SocialAgent:
         images=[]
         if binding.kind=='group' and binding.app=='com.tencent.mm' and loop.config.vision and before.png_path:
             images=[{'observation_id':before.observation_id,'png_path':before.png_path,'png_sha256':before.png_sha256}]
-        draft = await loop.guarded(loop.brain.structured(DRAFT_SYSTEM,
+        draft = await loop.guarded(loop.brain.structured(self.draft_system,
             {'action_kind': kind, 'conversation': context, 'relationship': relation[0] if relation else '',
              'public_evidence': extra, 'offered_sources': sorted(offered),
              'operator_test_context':getattr(loop,'social_acceptance_context',None) if getattr(loop,'run_kind',None)=='scripted' else None}, images, validate))
@@ -105,10 +106,16 @@ class SocialAgent:
         async def check_latest(observation):
             if binding.app=='com.tencent.mm':await self.ui.ground_editor_bounds(observation)
             latest=[m for m in self.ui.messages(observation) if m['direction']=='incoming']
-            texts=latest if kind=='group_post' else latest[-1:]
+            texts=latest if kind in {'group_post','group_video_share'} else latest[-1:]
             if any(self.social.opt_out(bid,m['text']) for m in texts):
                 raise Blocked('SOCIAL_CONTACT_OPTED_OUT')
             current=incoming_reference(binding,latest[-1]) if latest else None
+            if kind=='group_video_share':
+                # A source-bound proactive share is not a reply to the last
+                # incoming row. A growing composer can occlude that row.
+                loop.store.event('media_share_visible_context_checked',{'binding_id':bid,'observation_id':observation.observation_id,
+                    'visible_incoming_count':len(latest),'last_incoming_is_not_share_trigger':True})
+                return
             if context.get('incoming_ref') and current!=context['incoming_ref']:
                 if kind=='group_post' and target_ref:
                     loop.store.event('group_context_advanced',{'binding_id':bid,'reply_target_ref':target_ref,
@@ -172,15 +179,25 @@ class SocialAgent:
             raise Blocked('SOCIAL_DRAFT_NOT_KNOWN_UNSENT')
         bid,text,trigger,sources=row[:4]
         binding,context,ready=await self.ui.resolve(binding_id=bid)
-        incoming=[m for m in self.ui.messages(ready) if m['direction']=='incoming']
-        if not incoming or self.social.opt_out(bid,incoming[-1]['text']):raise Blocked('SOCIAL_CONTEXT_OR_CONTACT_OPTED_OUT')
-        recorded=[s[9:] for s in json.loads(sources) if s.startswith('incoming:')]
-        current=incoming_reference(binding,incoming[-1])
-        legacy=digest(binding.account+'|'+binding.peer+'|'+incoming[-1]['text'])
-        if (recorded and current not in recorded) or (not recorded and trigger not in {current,legacy}):
-            raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
         limits=self.policy.check(binding,row[6])
+        sharing=row[6]=='group_video_share'
+        incoming=[m for m in self.ui.messages(ready) if m['direction']=='incoming']
+        if (not incoming and not sharing) or any(self.social.opt_out(bid,m['text']) for m in (incoming if sharing else incoming[-1:])):raise Blocked('SOCIAL_CONTEXT_OR_CONTACT_OPTED_OUT')
+        recorded=[s[9:] for s in json.loads(sources) if s.startswith('incoming:')]
+        current=incoming_reference(binding,incoming[-1]) if incoming else None
+        legacy=digest(binding.account+'|'+binding.peer+'|'+incoming[-1]['text']) if incoming else None
+        if not sharing and ((recorded and current not in recorded) or (not recorded and trigger not in {current,legacy})):
+            raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
         self.social.check_thread(bid,limits,time.time(),outbound_id)
+        def check_latest(observation):
+            latest=[m for m in self.ui.messages(observation) if m['direction']=='incoming']
+            if any(self.social.opt_out(bid,m['text']) for m in (latest if sharing else latest[-1:])):
+                raise Blocked('SOCIAL_CONTACT_OPTED_OUT')
+            if sharing:
+                loop.store.event('media_share_visible_context_checked',{'binding_id':bid,'observation_id':observation.observation_id,
+                    'visible_incoming_count':len(latest),'last_incoming_is_not_share_trigger':True})
+            elif not latest or incoming_reference(binding,latest[-1])!=current:
+                raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
         controller=InputBridge(loop)
         try:
             if binding.app=='com.tencent.mm':
@@ -198,9 +215,7 @@ class SocialAgent:
                     ready=await controller.insert(ready,outbound_id,text)
                 self.ui.verify_composer(ready,text)
                 binding,ready=await self.ui.recheck(binding,expected_draft=text,input_controller=controller)
-                latest=[m for m in self.ui.messages(ready) if m['direction']=='incoming']
-                if not latest or incoming_reference(binding,latest[-1])!=current or self.social.opt_out(bid,latest[-1]['text']):
-                    raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
+                check_latest(ready)
                 self.social.resume_pre_send(self.policy,binding,outbound_id,ready.observation_id)
                 target=self.ui.send_control(ready);action={'type':'tap','control_id':target.control_id}
                 fresh=await loop.guarded(loop.phone.observe());loop.observed(fresh)
@@ -208,9 +223,7 @@ class SocialAgent:
                 if binding.app=='com.tencent.mm':await controller.observe_editor(fresh)
                 self.ui.verify_composer(fresh,text)
                 if binding.app=='com.tencent.mm':await self.ui.ground_editor_bounds(fresh)
-                latest=[m for m in self.ui.messages(fresh) if m['direction']=='incoming']
-                if not latest or incoming_reference(binding,latest[-1])!=current or self.social.opt_out(bid,latest[-1]['text']):
-                    raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
+                check_latest(fresh)
                 command=await loop.guarded(loop.phone.prepare(action,target,fresh));loop.check_stop()
                 self.social.before_send(self.policy,binding,outbound_id)
                 self.social.transition(outbound_id,'typed','dispatch_attempted',{'observation_id':fresh.observation_id})

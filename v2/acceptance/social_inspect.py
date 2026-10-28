@@ -10,7 +10,7 @@ from digitallife_v2.config import Config
 from digitallife_v2.session import SessionLoop, SessionStopped
 from digitallife_v2.store import write_json
 
-APPS = {'qq': 'com.tencent.mobileqq', 'wechat': 'com.tencent.mm'}
+APPS = {'qq': 'com.tencent.mobileqq', 'wechat': 'com.tencent.mm', 'bilibili':'tv.danmaku.bili'}
 
 
 class Inspect:
@@ -32,6 +32,38 @@ class Inspect:
             action = {'type': 'open_app', 'package_name': self.app}
         elif self.stage < len(self.selectors):
             field, value = self.selectors[self.stage]
+            if field=='media':
+                if self.app=='com.tencent.mobileqq' and value=='qq_group_search':
+                    from digitallife_v2.native_share import NativeShareUI
+                    await NativeShareUI(self.loop).search_qq_group()
+                elif self.app=='tv.danmaku.bili' and value=='bili_comment_context':
+                    from digitallife_v2.bilibili import BilibiliUI
+                    from digitallife_v2.media import VideoSources,MediaPolicy
+                    from digitallife_v2.social import digest
+                    sources=VideoSources(self.store).offered()
+                    if not sources:raise SessionStopped('MEDIA_WATCHED_SOURCE_REQUIRED')
+                    source=VideoSources(self.store).get(sources[0]['source_id'])
+                    binding,context,_=await BilibiliUI(self.loop).resolve_comment(source)
+                    MediaPolicy(self.loop.config).check(binding,'post_video_comment')
+                    write_json(self.store.directory/'M5_CONTEXT_READY.json',{'source':'LIVE_SELF_UID_WATCHED_VIDEO_COMMENT_PANEL_NO_SEND',
+                        'source_id':source['source_id'],'account_sha256':digest(binding.account),'outgoing_sends':0})
+                elif self.app=='tv.danmaku.bili' and value=='bili_comment_controls':
+                    from digitallife_v2.bilibili import BilibiliUI
+                    from digitallife_v2.input_bridge import InputBridge
+                    from digitallife_v2.social import digest
+                    ui=BilibiliUI(self.loop);obs=await ui.observe()
+                    if not ui.controls(obs,'edit'):obs=await ui.focus_comment(obs)
+                    controller=InputBridge(self.loop)
+                    async with controller.temporary():
+                        obs=await ui.observe();await controller.observe_editor(obs)
+                        if obs.input_editor.get('text_sha256')!=digest(''):raise SessionStopped('MEDIA_EXISTING_DRAFT_NOT_TOUCHED')
+                        await ui.check_dynamic_off(obs);await ui.publish_control(obs)
+                        write_json(self.store.directory/'M5_COMPOSER_CONTROL_READY.json',{'source':'LIVE_EMPTY_COMMENT_COMPOSER_READ_ONLY',
+                            'dynamic_repost_verified_off':True,'publication_attempted':False,'outgoing_sends':0})
+                        await ui.act({'type':'back'},obs)
+                else:raise SessionStopped('MEDIA_INSPECTION_KIND_NOT_ALLOWED')
+                self.stage+=1
+                return {'intent':'rest','action':{'type':'rest','seconds':1},'note':'Explicit read-only M5 UI inspection, no publication or recipient send'}
             if field in {'visual','visual_scroll'}:
                 from digitallife_v2.visual import locate
                 control=await locate(self.loop,observation,value);self.stage+=1
@@ -92,12 +124,13 @@ def main():
         if selectors:
             raise ValueError('USE_ORDERED_STEPS_OR_SEPARATE_SELECTORS')
         selectors = [tuple(s.split('=', 1)) for s in args.step]
-        if any(len(s) != 2 or s[0] not in {'text','description','resource','navigation','visual','visual_scroll'} or not s[1]
+        if any(len(s) != 2 or s[0] not in {'text','description','resource','navigation','visual','visual_scroll','media'} or not s[1]
                or s[0]=='navigation' and s[1]!='back' for s in selectors):
             raise ValueError('INVALID_INSPECTION_SELECTOR')
     if len(selectors) > 8:
         raise ValueError('BOUNDED_INSPECTION_REQUIRED')
-    loop=SessionLoop(Config.load(args.profile), args.session, minutes=3,
+    minutes=10 if any(field=='media' for field,_ in selectors) else 3
+    loop=SessionLoop(Config.load(args.profile), args.session, minutes=minutes,
         brain_factory=lambda c, s: Inspect(c, s, APPS[args.app], selectors, args.current,loop,args.read_marker))
     result=asyncio.run(loop.run())
     print(json.dumps(result))

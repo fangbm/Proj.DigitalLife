@@ -62,9 +62,13 @@ class Binding:
         return (self.app, self.account, self.peer, self.kind)
 
     def validate(self, now=None):
+        self.validate_common(now)
+        if self.app not in APPS or self.kind not in {'dm','group'}:
+            raise Blocked('SOCIAL_IDENTITY_UNVERIFIED_OR_EXPIRED')
+
+    def validate_common(self,now=None):
         now = time.time() if now is None else now
-        if (self.app not in APPS or self.kind not in {'dm', 'group'}
-                or type(self.verified_at) not in (int,float) or not math.isfinite(self.verified_at)
+        if (type(self.verified_at) not in (int,float) or not math.isfinite(self.verified_at)
                 or not all(isinstance(s, str) and re.fullmatch(r'[A-Za-z0-9_@.:-]{3,160}', s) for s in (self.account, self.peer))
                 or type(self.existing_contact) is not bool or not isinstance(self.route_hint,str) or len(self.route_hint)>100
                 or not self.observations or any(not isinstance(s, str) or not s for s in self.observations)
@@ -158,7 +162,7 @@ class SocialStore:
         return bid
 
     def targets(self, limit=8):
-        rows = self.db.execute('SELECT b.id,b.app,b.kind,b.body,r.opted_out FROM social_bindings b LEFT JOIN social_relations r ON r.binding_id=b.id WHERE b.device=? ORDER BY b.updated DESC LIMIT ?',
+        rows = self.db.execute("SELECT b.id,b.app,b.kind,b.body,r.opted_out FROM social_bindings b LEFT JOIN social_relations r ON r.binding_id=b.id WHERE b.device=? AND b.kind IN ('dm','group') ORDER BY b.updated DESC LIMIT ?",
             (self.store.serial, limit)).fetchall()
         return [{'binding_id': r[0], 'app': r[1], 'kind': r[2], 'scope': 'previously_verified_needs_fresh_UI',
                  'source_type': json.loads(r[3])['source_type']} for r in rows if not r[4]]

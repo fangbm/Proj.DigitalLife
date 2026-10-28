@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sqlite3
 import time
+import uuid
 from .safety import Blocked
 from .memory import initialize
 from .events import initialize as initialize_events
@@ -57,12 +58,21 @@ def open_database(data):
 
 def write_json(path, value):
     path = Path(path)
-    temporary = path.with_suffix(".tmp")
+    temporary = path.with_name(path.name+'.'+uuid.uuid4().hex+'.tmp')
     with temporary.open("w", encoding="utf-8") as f:
         json.dump(value, f, ensure_ascii=False)
         f.flush()
         os.fsync(f.fileno())
-    temporary.replace(path)
+    # Windows readers may briefly deny rename/delete sharing on status.json.
+    # Preserve atomic replacement and the old file, with a bounded retry only
+    # for this transient filesystem condition. Never replay a device action.
+    for attempt in range(11):
+        try:
+            temporary.replace(path)
+            break
+        except PermissionError:
+            if attempt==10:raise
+            time.sleep(.025)
 
 
 class LifeStore:

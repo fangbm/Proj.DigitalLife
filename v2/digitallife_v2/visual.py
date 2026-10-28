@@ -42,19 +42,27 @@ def editor_surface_bounds(observation,control):
     top=max(0,proposed[1]-margin);bottom=min(observation.height,proposed[3]+margin)
     with Image.open(observation.png_path) as picture:
         source=picture.convert('RGB').crop((0,top,observation.width,bottom))
-    seed=(x,y-top);color=source.getpixel(seed)
-    if max(color)-min(color)>20:return None
-    filled=source.copy();ImageDraw.floodfill(filled,seed,(255,0,255),thresh=3)
-    difference=ImageChops.difference(source,filled);box=difference.getbbox()
-    if not box:return None
-    a,b,c,d=box
-    area=(c-a)*(d-b)
-    mask=difference.convert('L').point(lambda value:255 if value else 0)
-    density=mask.histogram()[255]/max(1,area)
-    if (a==0 or c==observation.width or b==0 or d==bottom-top
-            or c-a<observation.width*.25 or not 30<=d-b<=observation.height*.35
-            or density<.45):return None
-    return [a,b+top,c,d+top]
+    # A multiline draft can put the original point on a text glyph. Inspect
+    # adjacent pixels locally; only one bounded surface containing that same
+    # grounded point may qualify. These are read seeds, never touch targets.
+    candidates=set()
+    for dx,dy in ((0,0),(-12,0),(12,0),(0,-12),(0,12),(-12,-12),(12,-12),(-12,12),(12,12)):
+        seed=(x+dx,y-top+dy)
+        if not 0<=seed[0]<source.width or not 0<=seed[1]<source.height:continue
+        if any(a<=seed[0]<c and b<=seed[1]<d for a,b,c,d in candidates):continue
+        color=source.getpixel(seed)
+        if max(color)-min(color)>20:continue
+        filled=source.copy();ImageDraw.floodfill(filled,seed,(255,0,255),thresh=3)
+        difference=ImageChops.difference(source,filled);box=difference.getbbox()
+        if not box:continue
+        a,b,c,d=box;area=(c-a)*(d-b)
+        density=difference.convert('L').point(lambda value:255 if value else 0).histogram()[255]/max(1,area)
+        if (a==0 or c==observation.width or b==0 or d==bottom-top
+                or c-a<observation.width*.25 or not 30<=d-b<=observation.height*.35 or density<.45
+                or not a<=x<c or not b<=y-top<d):continue
+        candidates.add(box)
+    if len(candidates)!=1:return None
+    a,b,c,d=candidates.pop();return [a,b+top,c,d+top]
 
 
 def add_control(observation,text,bounds,confidence,kind='ocr',role=None,glyph=None,green=0,bubble=None):
@@ -124,6 +132,13 @@ def verify_frame(observation,path):
 
 async def locate(loop,observation,role):
     roles={'tab_me':'微信底部导航的“我”按钮','chat_info':'私聊界面右上角三个点的聊天信息按钮',
+           'bili_followed_author':'B站我的关注列表中已关注的作者名字或头像入口，用于进入作者空间。不是已关注/取关按钮，不是最近访问标题。多个作者时选择一个可见的已关注作者。',
+           'bili_video_details':'B站视频简介中当前视频标题右侧的向下展开箭头，打开完整标题、简介和视频编号。不是推荐视频、点赞、投币、收藏或作者关注按钮。',
+           'qq_share_search':'QQ外部分享的选择聊天页面顶部搜索输入框，用于输入已核对的目标群号查找目标。不是创建聊天、多选或分享到空间。',
+           'bili_video_home':'B站视频播放器上方左侧的房子形返回首页按钮，不是推荐视频卡片、返回上层或分享按钮。',
+           'bili_dynamic_checkbox':'B站评论编辑弹层中“转到动态”文字左边的小圆形勾选框本身。边界紧贴圆圈，不包括文字、表情或整行工具栏。本次只定位，不点击。',
+           'bili_publish_comment':'B站评论编辑弹层右侧的粉色“发布”按钮，用于发布当前这条评论，不是转到动态、弹幕发送或表情。',
+           'bili_comment_expand':'B站评论区内已有评论正文末尾的蓝色“展开”文字，只展开评论全文。不是回复、点赞、点踩或发布按钮。',
            'profile_more':'联系人资料页右上角三个点的更多/资料设置按钮',
            'group_info_scroll':'微信群聊天信息页可上下滚动的主体列表区域，不含顶部标题、状态栏或底部系统导航',
            'chat_editor':'聊天底部用于编辑消息正文的可触摸输入框。边框必须紧贴实际框体，尤其上边界不能包括上方聊天留白；不包含发送/表情/语音按钮。不是整条底部工具栏。'}

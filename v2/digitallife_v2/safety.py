@@ -45,6 +45,8 @@ def parse_decision(content):
         fields['inspect_chat'] = {'type'}
         for social_kind in ('reply_to_contact','initiate_dm','group_post'):
             fields[social_kind] = {'type','binding_id'}
+        fields['post_video_comment']={'type','source_id'}
+        fields['share_video_to_group']={'type','source_id','binding_id'}
         if not isinstance(a, dict) or a.get("type") not in fields or set(a) != fields[a["type"]]:
             raise ValueError()
         for key in set(a) - {"type", "seconds"}:
@@ -85,7 +87,7 @@ def parse_decision(content):
 
 def guard(action, obs, apps, *, full_access=False):
     kind = action["type"]
-    if kind in {'inspect_chat','reply_to_contact','initiate_dm','group_post'}:
+    if kind in {'inspect_chat','reply_to_contact','initiate_dm','group_post','post_video_comment','share_video_to_group'}:
         return None  # SocialAgent performs scope and fresh identity checks.
     if kind == "rest":
         return None
