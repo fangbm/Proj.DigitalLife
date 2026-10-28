@@ -15,6 +15,7 @@ param(
     [switch]$InspectCurrent,
     [string]$GroupHint='',
     [string]$GroupReceipt='',
+    [string]$RouteMarker='',
     [switch]$RequestedNow
 )
 $ErrorActionPreference = 'Stop'
@@ -37,7 +38,7 @@ if ($Command -eq 'AudioProbe') { $v2Args = @('-u','-m','acceptance.audio_probe')
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKind) }
-if ($Command -eq 'M4Listen') { $v2Args += @('--app',$SocialApp) }
+if ($Command -eq 'M4Listen') { $v2Args += @('--app',$SocialApp); if ($RouteMarker) { $v2Args += @('--marker',$RouteMarker) } }
 if ($Command -eq 'GroupProbe') { $v2Args += @('--app',$SocialApp); if ($GroupHint) { $v2Args += @('--route-hint',$GroupHint) }; if ($GroupReceipt) { $v2Args += @('--receipt',$GroupReceipt) }; if ($RequestedNow) { $v2Args += '--requested-now' } }
 if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($v2Step in $InspectStep) { $v2Args += @('--step',$v2Step) }; if ($InspectCurrent) { $v2Args += '--current' } }
 if ($ResumeOutbound) { $v2Args += @('--resume-outbound',$ResumeOutbound) }

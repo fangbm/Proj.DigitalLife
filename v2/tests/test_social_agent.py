@@ -58,6 +58,26 @@ class SocialAgentTests(unittest.IsolatedAsyncioTestCase):
 
     def status(self):return self.store.db.execute('SELECT status FROM social_outbox').fetchone()[0]
 
+    async def test_wechat_each_pre_send_context_read_has_its_own_grounded_editor(self):
+        self.binding=replace(self.binding,app='com.tencent.mm')
+        self.grant['accounts']={'com.tencent.mm':self.binding.account};self.save()
+        for page in (self.before,self.ready,self.fresh,self.after):
+            page.foreground='com.tencent.mm/.Chat'
+            page.controls=[replace(c,package='com.tencent.mm') for c in page.controls]
+        context=self.ui.resolve.return_value[1]
+        self.ui.resolve.return_value=(self.binding,context,self.before)
+        self.ui.refresh.return_value=(self.binding,self.before);self.ui.recheck.return_value=(self.binding,self.ready)
+        grounded=set()
+        async def ground(obs):grounded.add(obs.observation_id)
+        def messages(obs):
+            self.assertIn(obs.observation_id,grounded)
+            return [{'direction':'incoming','text':self.incoming}]
+        self.ui.ground_editor_bounds=AsyncMock(side_effect=ground);self.ui.messages=messages
+        self.input.observe_editor=AsyncMock();self.ui.enrich_editor=AsyncMock(return_value=self.after)
+        result=await SocialAgent(self.loop,self.ui).run('auto_reply')
+        self.assertEqual(result['outcome'],'sent_observed');self.assertEqual(grounded,{'before','ready','fresh'})
+        self.loop.send.assert_awaited_once()
+
     async def test_full_orchestration_sends_once_and_requires_post_observation(self):
         result=await SocialAgent(self.loop,self.ui).run('auto_reply')
         self.assertEqual(result['outcome'],'sent_observed');self.assertEqual(self.status(),'sent_observed')

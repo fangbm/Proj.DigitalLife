@@ -83,3 +83,10 @@ class EventHub:
     def counts(self):
         self.expire()
         return dict(self.db.execute("SELECT status,count(*) FROM inbound_events WHERE device=? GROUP BY status", (self.device,)))
+
+    def defer_handling(self,offered,reason):
+        """A known pre-send defer keeps the actual event for bounded retry."""
+        self.db.execute("UPDATE inbound_events SET status='pending',decision='reply_later',note=?,next_at=? WHERE id=? AND device=? AND expires>?",
+            ('SOCIAL_DEFER:'+reason[:100],time.time()+120,offered['event_id'],self.device,time.time()))
+        self.db.commit()
+        self.store.event('inbound_handling_deferred',{'event_id':offered['event_id'],'reason':reason[:100],'retry_after_seconds':120})

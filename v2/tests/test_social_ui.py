@@ -27,6 +27,16 @@ class EventRouteTests(unittest.TestCase):
         self.assertEqual(event_match_source({**self.event,'preview':'QQ Actual message'},self.incoming,False),'notification_preview_exact')
         self.assertIsNone(event_match_source({**self.event,'preview':'QQ A different message'},self.incoming,True))
 
+    def test_wechat_OCR_format_match_requires_route_and_full_body(self):
+        event={**self.event,'source_app':'com.tencent.mm','preview':'Contact A long message，你好，请介绍自己'}
+        message=[{'text':'A long message,你好,\n请介绍自己','time_label':'22:02'}]
+        self.assertEqual(event_match_source(event,message,True),'notification_route_and_normalized_preview')
+        self.assertIsNone(event_match_source(event,message,False))
+        # Android may update a notification after the UI message's minute.
+        self.assertEqual(event_match_source(event,[{**message[0],'time_label':'22:01'}],True),'notification_route_and_normalized_preview')
+        self.assertIsNone(event_match_source(event,[{**message[0],'text':'A long message,你好,请删除自己'}],True))
+        self.assertIsNone(event_match_source(event,[{**message[0],'text':'你好,请介绍自己'}],True))
+
     def test_first_chat_line_is_not_part_of_the_wechat_header(self):
         from dataclasses import replace
         obs=observation('wx',foreground='com.tencent.mm/.LauncherUI')
@@ -43,6 +53,19 @@ class EventRouteTests(unittest.TestCase):
         obs.controls=[clock,text];obs.visual_controls={'body':{'bubble_hint':{'kind':'incoming_neutral','bounds':[100,380,430,480]}}}
         messages=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm').messages(obs)
         self.assertEqual(messages[0]['time_label'],'')
+
+    def test_message_above_grounded_editor_is_read_and_draft_is_excluded(self):
+        from dataclasses import replace
+        obs=observation('wx',foreground='com.tencent.mm/.LauncherUI')
+        h=obs.height
+        text=replace(obs.controls[0],control_id='body',text='A new message',bounds=(100,int(h*.89),300,int(h*.91)))
+        draft=replace(text,control_id='draft',text='Unsent draft',bounds=(100,int(h*.95),300,int(h*.97)))
+        obs.controls=[text,draft]
+        obs.visual_controls={c.control_id:{'bubble_hint':{'kind':'incoming_neutral','bounds':list(c.bounds)}} for c in obs.controls}
+        ui=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm');ui.message_ceilings[obs.observation_id]=int(h*.94)
+        self.assertEqual([m['text'] for m in ui.messages(obs)],['A new message'])
+        ui.message_ceilings={'stale-frame':int(h*.94)}
+        self.assertEqual(ui.messages(obs),[])
 
 
 class RoutePreflightTests(unittest.IsolatedAsyncioTestCase):

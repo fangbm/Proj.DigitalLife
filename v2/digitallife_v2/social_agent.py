@@ -102,7 +102,8 @@ class SocialAgent:
         if target_ref and 'incoming:'+target_ref not in references:references.append('incoming:'+target_ref)
         oid = self.social.prepare(self.policy, binding, kind, trigger, draft['text'], draft['motive'], references)
         phase = 'prepared'
-        def check_latest(observation):
+        async def check_latest(observation):
+            if binding.app=='com.tencent.mm':await self.ui.ground_editor_bounds(observation)
             latest=[m for m in self.ui.messages(observation) if m['direction']=='incoming']
             texts=latest if kind=='group_post' else latest[-1:]
             if any(self.social.opt_out(bid,m['text']) for m in texts):
@@ -116,7 +117,7 @@ class SocialAgent:
                     return
                 raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')
         try:
-            check_latest(before)
+            await check_latest(before)
             focused = await self.ui.focus_editor(before)
             controller = InputBridge(loop)
             async with controller.temporary():
@@ -125,14 +126,14 @@ class SocialAgent:
                 self.social.transition(oid, 'prepared', 'typed', {'observation_id': typed.observation_id})
                 phase = 'typed'
                 binding, ready = await self.ui.recheck(binding, expected_draft=draft['text'],input_controller=controller)
-                check_latest(ready)
+                await check_latest(ready)
                 target = self.ui.send_control(ready)
                 action = {'type': 'tap', 'control_id': target.control_id}
                 fresh = await loop.guarded(loop.phone.observe()); loop.observed(fresh)
                 target = rebind(action, ready, fresh, {}, full_access=loop.config.full_access)
                 if binding.app=='com.tencent.mm':await controller.observe_editor(fresh)
                 self.ui.verify_composer(fresh, draft['text'])
-                check_latest(fresh)
+                await check_latest(fresh)
                 command = await loop.guarded(loop.phone.prepare(action, target, fresh))
                 loop.check_stop()
                 self.social.before_send(self.policy, binding, oid)
@@ -206,6 +207,7 @@ class SocialAgent:
                 target=rebind(action,ready,fresh,{},full_access=loop.config.full_access)
                 if binding.app=='com.tencent.mm':await controller.observe_editor(fresh)
                 self.ui.verify_composer(fresh,text)
+                if binding.app=='com.tencent.mm':await self.ui.ground_editor_bounds(fresh)
                 latest=[m for m in self.ui.messages(fresh) if m['direction']=='incoming']
                 if not latest or incoming_reference(binding,latest[-1])!=current or self.social.opt_out(bid,latest[-1]['text']):
                     raise Blocked('SOCIAL_CONTEXT_CHANGED_BEFORE_SEND')

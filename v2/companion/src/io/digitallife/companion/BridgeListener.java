@@ -3,6 +3,7 @@ package io.digitallife.companion;
 import android.service.notification.*;
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.app.ActivityOptions;
 import android.os.SystemClock;
 import java.io.*;
 import java.net.*;
@@ -20,6 +21,8 @@ public class BridgeListener extends NotificationListenerService {
     private final Set<String> packages=new HashSet<>();
     private final LinkedHashMap<String,JSONObject> queue=new LinkedHashMap<>();
     private final LinkedHashMap<String,PendingIntent> routes=new LinkedHashMap<>();
+    private final Map<String,String> routeSources=new HashMap<>();
+    private final Set<String> attemptedRoutes=new HashSet<>();
     @Override public void onCreate() {
         super.onCreate();
         current=this;
@@ -33,7 +36,7 @@ public class BridgeListener extends NotificationListenerService {
     @Override public void onListenerConnected() { ready=true; }
     @Override public synchronized void onListenerDisconnected() {ready=false;clear();}
     @Override public synchronized void onDestroy() { clear();try {if(server!=null)server.close();}catch(IOException ignored){} super.onDestroy(); }
-    private void clear(){activeUntil=0;queue.clear();routes.clear();packages.clear();BridgeIme.invalidate();AudioCaptureService.stopAll();}
+    private void clear(){activeUntil=0;queue.clear();routes.clear();routeSources.clear();attemptedRoutes.clear();packages.clear();BridgeIme.invalidate();AudioCaptureService.stopAll();}
     public static boolean sessionActive(){BridgeListener s=current;return s!=null && s.ready && SystemClock.elapsedRealtime()<s.activeUntil;}
     private boolean active(){if(SystemClock.elapsedRealtime()>=activeUntil){clear();return false;}return ready;}
     static String sha(String value) throws Exception {
@@ -41,6 +44,23 @@ public class BridgeListener extends NotificationListenerService {
         StringBuilder out=new StringBuilder();for(byte b:digest)out.append(String.format("%02x",b));return out.toString();
     }
     static String clip(Object value,int max) {String s=value==null?"":value.toString();return s.substring(0,Math.min(max,s.length()));}
+    private boolean trustedRouteCreator(String source,PendingIntent intent){
+        if(intent==null)return false;
+        String creator=intent.getCreatorPackage();
+        if(source.equals(creator))return true;
+        // Find X6 OEM push owns QQ's original notification PendingIntent.
+        // Permit that fixed broker only when installed as a system app.
+        if(!"com.tencent.mobileqq".equals(source) || !"com.heytap.mcs".equals(creator))return false;
+        try{
+            android.content.pm.ApplicationInfo info=getPackageManager().getApplicationInfo(creator,0);
+            return info.uid==intent.getCreatorUid() && (info.flags&(android.content.pm.ApplicationInfo.FLAG_SYSTEM|android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP))!=0;
+        }catch(android.content.pm.PackageManager.NameNotFoundException missing){return false;}
+    }
+    private boolean routeAllowed(String key,PendingIntent intent){
+        String source=routeSources.get(key);
+        if(source==null)return false;
+        return packages.contains(source) && trustedRouteCreator(source,intent);
+    }
     @Override public synchronized void onNotificationPosted(StatusBarNotification sbn) {
         collect(sbn,"callback");
     }
@@ -56,14 +76,18 @@ public class BridgeListener extends NotificationListenerService {
             String key=sha(sbn.getKey()+"|"+sbn.getPostTime()+"|"+n.when+"|"+title+"|"+text);
             JSONObject event=new JSONObject().put("package",sbn.getPackageName()).put("event_key",key)
                 .put("source_kind",sourceKind)
+                .put("content_intent_present",n.contentIntent!=null)
+                .put("creator_matches_source",n.contentIntent!=null && sbn.getPackageName().equals(n.contentIntent.getCreatorPackage()))
+                .put("route_creator_trusted",trustedRouteCreator(sbn.getPackageName(),n.contentIntent))
                 .put("posted_at",sbn.getPostTime()/1000.0).put("age_seconds",Math.max(0,System.currentTimeMillis()-sbn.getPostTime())/1000.0)
                 .put("_queued_elapsed",SystemClock.elapsedRealtime())
                 .put("title",title).put("text",text);
             if(queue.size()>=100 && !queue.containsKey(key))queue.remove(queue.keySet().iterator().next());
             queue.put(key,event);
-            if(n.contentIntent!=null && sbn.getPackageName().equals(n.contentIntent.getCreatorPackage())){
-                if(routes.size()>=100 && !routes.containsKey(key))routes.remove(routes.keySet().iterator().next());
+            if(trustedRouteCreator(sbn.getPackageName(),n.contentIntent)){
+                if(routes.size()>=100 && !routes.containsKey(key)){String oldest=routes.keySet().iterator().next();routes.remove(oldest);routeSources.remove(oldest);}
                 routes.put(key,n.contentIntent);
+                routeSources.put(key,sbn.getPackageName());
             }
         }catch(Exception ignored){}
     }
@@ -88,6 +112,30 @@ public class BridgeListener extends NotificationListenerService {
             boolean permitted;synchronized(this){permitted=active();}
             if(!permitted){respond(socket,409,new JSONObject().put("error","inactive"));return;}
             respond(socket,200,"/input/inspect".equals(request[1])?BridgeIme.inspect(data.getString("package"),data.getString("request_id")):BridgeIme.insert(data.getString("request_id"),data.getString("package"),data.getString("text")));return;
+        }
+        // Do not call into another app while holding the listener monitor.
+        // Notification callbacks may arrive while the target starts.
+        if("POST".equals(request[0]) && "/open_event".equals(request[1])){
+            String key=data.getString("event_key");PendingIntent pendingRoute;long lease;
+            synchronized(this){
+                pendingRoute=routes.get(key);lease=activeUntil;
+                if(!active() || !routeAllowed(key,pendingRoute)){
+                    respond(socket,200,new JSONObject().put("dispatched",false).put("not_dispatched",true).put("reason","route_unavailable"));return;
+                }
+                if(!MainActivity.isForeground() || !attemptedRoutes.add(key)){
+                    respond(socket,200,new JSONObject().put("dispatched",false).put("not_dispatched",true).put("reason","not_foreground_or_already_attempted"));return;
+                }
+            }
+            if(!sessionActive() || activeUntil!=lease){respond(socket,200,new JSONObject().put("dispatched",false).put("not_dispatched",true).put("reason","lease_changed"));return;}
+            try{
+                ActivityOptions options=ActivityOptions.makeBasic();
+                if(android.os.Build.VERSION.SDK_INT>=34)options.setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                pendingRoute.send(this,0,null,null,null,null,options.toBundle());
+                respond(socket,200,new JSONObject().put("dispatched",true).put("dispatch_evidence","PendingIntent_send_returned_not_UI_confirmation"));
+            }catch(PendingIntent.CanceledException cancelled){
+                respond(socket,200,new JSONObject().put("dispatched",false).put("not_dispatched",true).put("reason","route_cancelled"));
+            }
+            return;
         }
         synchronized(this){
             active();
@@ -119,11 +167,8 @@ public class BridgeListener extends NotificationListenerService {
             case "POST /audio/finish":if(!active()){status=409;response.put("error","inactive");}else{response=AudioCaptureService.result(data.getString("capture_id"),true);}break;
             case "POST /route_status":
                 PendingIntent candidate=routes.get(data.getString("event_key"));
-                response.put("available",active() && candidate!=null && packages.contains(candidate.getCreatorPackage()));break;
-            case "POST /open_event":
-                PendingIntent pendingRoute=routes.get(data.getString("event_key"));
-                if(!active() || pendingRoute==null || !packages.contains(pendingRoute.getCreatorPackage())){status=409;response.put("error","route_unavailable");}
-                else{pendingRoute.send();response.put("dispatched",true);}break;
+                response.put("available",active() && routeAllowed(data.getString("event_key"),candidate) && !attemptedRoutes.contains(data.getString("event_key")))
+                    .put("requires_foreground",true).put("bridge_foreground",MainActivity.isForeground());break;
             default:status=404;response.put("error","not_found");
             }
         }

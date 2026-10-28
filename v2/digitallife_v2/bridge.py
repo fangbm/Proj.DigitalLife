@@ -76,7 +76,19 @@ class NotificationBridge:
         return inactive
 
 
-async def setup(config, apk, provision_only=False):
+async def grant_sensitive_notifications(config,phone):
+    """Explicit administrative setup, never a model action or normal Run."""
+    await phone.identity()
+    previous=(await phone._text('shell','cmd','appops','get',PACKAGE,'RECEIVE_SENSITIVE_NOTIFICATIONS')).strip()
+    path=config.data/'notification-permissions.private.json'
+    if not path.exists():write_json(path,{'serial':config.serial,'sensitive_original':previous,'grant_source':'explicit_operator_phone_permission_setup'})
+    await phone._adb('shell','cmd','appops','set',PACKAGE,'RECEIVE_SENSITIVE_NOTIFICATIONS','allow')
+    actual=(await phone._text('shell','cmd','appops','get',PACKAGE,'RECEIVE_SENSITIVE_NOTIFICATIONS')).strip()
+    if not re.search(r'RECEIVE_SENSITIVE_NOTIFICATIONS:\s*allow(?:;|\s|$)',actual):raise Blocked('SENSITIVE_NOTIFICATION_PERMISSION_NOT_GRANTED')
+    return True
+
+
+async def setup(config, apk, provision_only=False,allow_sensitive=False):
     """Explicit administrative CLI, never called by model or normal Run."""
     path=Path(apk).resolve()
     if not path.is_file() or path.suffix!='.apk':raise ValueError('COMPANION_APK_REQUIRED')
@@ -100,6 +112,11 @@ async def setup(config, apk, provision_only=False):
         if proc.returncode:raise Blocked('NOTIFICATION_TOKEN_PROVISION_FAILED')
         await phone._adb('shell','pm','grant',PACKAGE,'android.permission.POST_NOTIFICATIONS')
         await phone._adb('shell','pm','grant',PACKAGE,'android.permission.RECORD_AUDIO')
+        if allow_sensitive:
+            await grant_sensitive_notifications(config,phone)
+            # Android caches trusted listener UIDs when the service connects.
+            # Reconnect after the explicit app-op grant, outside any live lease.
+            await phone._adb('shell','cmd','notification','disallow_listener',COMPONENT)
         await phone._adb('shell','cmd','notification','allow_listener',COMPONENT)
         write_json(config.data/'notification-bridge.private.json',{'serial':config.serial,'token':token})
         bridge=NotificationBridge(config,phone)

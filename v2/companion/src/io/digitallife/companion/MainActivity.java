@@ -8,11 +8,15 @@ import android.service.notification.NotificationListenerService;
 import android.widget.*;
 
 public class MainActivity extends Activity {
+    private static volatile boolean resumed;
+    static boolean isForeground(){return resumed;}
+    @Override protected void onResume(){super.onResume();resumed=true;}
+    @Override protected void onPause(){resumed=false;super.onPause();}
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(40,60,40,30);
         TextView text = new TextView(this);
-        text.setText("DigitalLife M3 感知桥\n\n仅在桌面有限会话内提供通知与经系统授权的播放音频。\n认证令牌由 ADB 写入私有文件。\n不发送聊天或评论，不使用麦克风兜底。\n");
+        text.setText("DigitalLife M4 手机桥\n\n仅在桌面有限会话内提供通知、原文输入与经系统授权的播放音频。\n通知入口需要本页在前台，聊天发送由桌面独立复核。\n认证令牌由 ADB 写入私有文件，不在后台运行 AI。\n");
         text.setTextSize(20); box.addView(text);
         Button test = new Button(this); test.setText("发送本机测试通知"); test.setOnClickListener(v -> postTest(this)); box.addView(test);
         Button video = new Button(this); video.setText("播放公开视频验收片段"); video.setOnClickListener(v -> startActivity(new Intent(this,VideoActivity.class))); box.addView(video);

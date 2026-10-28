@@ -2,9 +2,10 @@
 import json
 import re
 import time
+import unicodedata
 from datetime import datetime
 from difflib import SequenceMatcher
-from .safety import Blocked, guard, rebind
+from .safety import Blocked, KnownNonDispatch, guard, rebind
 from .social import APPS, Binding, SocialStore, digest, incoming_reference, CHINA
 
 QQ = 'com.tencent.mobileqq'
@@ -15,8 +16,16 @@ def event_match_source(event,incoming,routed):
     if not event or not incoming:return None
     last=incoming[-1]
     if event['preview'].strip().endswith(last['text'].strip()):return 'notification_preview_exact'
+    same_minute=last.get('time_label')==datetime.fromtimestamp(event['posted_at'],CHINA).strftime('%H:%M')
+    if routed and event.get('source_app')==WX:
+        # OCR joins wrapped lines and may use half-width punctuation. Accept
+        # only exact normalized text, never edit distance or a marker alone.
+        normalize=lambda s:re.sub(r'\s+','',unicodedata.normalize('NFKC',s))
+        text=normalize(last['text'])
+        if len(text)>=12 and normalize(event['preview']).endswith(text):
+            return 'notification_route_and_normalized_preview'
     if (routed and event['preview'].strip().endswith('已隐藏敏感通知内容')
-            and last.get('time_label')==datetime.fromtimestamp(event['posted_at'],CHINA).strftime('%H:%M')):
+            and same_minute):
         return 'package_owned_notification_route_and_UI_post_minute'
     return None
 
@@ -26,6 +35,7 @@ class AndroidSocialUI:
         self.loop, self.app = loop, app
         self.sources = []
         self.last_binding = None
+        self.message_ceilings = {}
 
     async def observe(self):
         obs = await self.loop.guarded(self.loop.phone.observe())
@@ -226,16 +236,24 @@ class AndroidSocialUI:
                 self.app=event['source_app']
                 row=self.loop.store.db.execute('SELECT source_key FROM inbound_events WHERE id=? AND device=?',(event['event_id'],self.loop.config.serial)).fetchone()
                 if not row or not self.loop.bridge:raise Blocked('SOCIAL_EVENT_ROUTE_UNAVAILABLE')
-                before=await self.observe()
-                if before.foreground.split('/')[0]==self.app:
-                    before=await self.act({'type':'home'},before)
                 route=await self.loop.guarded(self.loop.bridge.request('POST','/route_status',{'event_key':row[0]}))
                 if route.get('available') is not True:raise Blocked('SOCIAL_NOTIFICATION_ROUTE_UNAVAILABLE')
+                before=await self.observe()
+                if route.get('requires_foreground'):
+                    from .bridge import PACKAGE
+                    if before.foreground.split('/')[0]!=PACKAGE or route.get('bridge_foreground') is not True:
+                        before=await self.act({'type':'open_app','package_name':PACKAGE},before)
                 async def open_event():
                     value=await self.loop.bridge.request('POST','/open_event',{'event_key':row[0]})
+                    if value.get('dispatched') is False and value.get('not_dispatched') is True:
+                        raise KnownNonDispatch('SOCIAL_NOTIFICATION_ROUTE_NOT_DISPATCHED')
                     if value.get('dispatched') is not True:raise Blocked('SOCIAL_EVENT_ROUTE_UNCONFIRMED')
                 opened,_=await self.loop.send_operation(open_event,{'type':'social_open_event','event_id':event['event_id']},before)
                 routed_from_other_app=(before.foreground.split('/')[0]!=self.app and opened.foreground.split('/')[0]==self.app)
+                self.loop.store.event('social_notification_route_observed',{'event_id':event['event_id'],
+                    'foreground':opened.foreground,'source_observation':before.observation_id,
+                    'post_observation':opened.observation_id,'target_app_observed':routed_from_other_app})
+                if not routed_from_other_app:raise Blocked('SOCIAL_NOTIFICATION_TARGET_NOT_OBSERVED')
             chat=await self.observe()
             self.app=self.app or chat.foreground.split('/')[0]
             if self.app not in APPS:raise Blocked('SOCIAL_APP_UNSUPPORTED')
@@ -271,6 +289,7 @@ class AndroidSocialUI:
                 self.loop.store.event('group_receipt_context_retained',{'observation_id':old.observation_id,
                     'proof_observations':receipt['proof_observations'],'fresh_group_identity_verified':True,
                     'used_for_model_context_only':True,'source':'actual_previously_observed_receipt'})
+        if self.app==WX:await self.ground_editor_bounds(chat)
         messages=self.messages(chat)
         incoming=[m for m in messages if m['direction']=='incoming']
         match=event_match_source(event,incoming,routed_from_other_app)
@@ -322,15 +341,20 @@ class AndroidSocialUI:
         self.draft_text=expected
         # An explicit image-grounded editing area excludes multiline drafts
         # from the incoming-message OCR context.
+        await self.ground_editor_bounds(obs)
+        return obs
+
+    async def ground_editor_bounds(self,obs):
+        if obs.observation_id in self.message_ceilings:return
         from .visual import locate
         area=await locate(self.loop,obs,'chat_editor')
         self.editor_bounds=obs.visual_controls[area.control_id].get('grounded_bounds',area.bounds)
-        return obs
+        self.message_ceilings[obs.observation_id]=self.editor_bounds[1]
 
     def messages(self,obs):
         if self.app==WX:
             groups={};stamp=''
-            ceiling=getattr(self,'editor_bounds',(0,int(obs.height*.87),0,0))[1]
+            ceiling=self.message_ceilings.get(obs.observation_id,int(obs.height*.87))
             for c in sorted(obs.controls,key=lambda c:(c.bounds[1],c.bounds[0])):
                 if not c.text:continue
                 if (c.bounds[1]>obs.height*.11 and re.fullmatch(r'(?:\d{1,2}:\d{2}|(?:昨天|前天|\d{1,2}月\d{1,2}日)\s*\d{1,2}:\d{2})',c.text)):

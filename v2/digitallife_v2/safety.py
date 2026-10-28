@@ -11,6 +11,10 @@ class Blocked(ValueError):
     pass
 
 
+class KnownNonDispatch(Blocked):
+    """Trusted operation response explicitly confirms no dispatch occurred."""
+
+
 class UnknownDispatch(RuntimeError):
     pass
 

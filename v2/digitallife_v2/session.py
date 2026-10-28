@@ -9,7 +9,7 @@ import uuid
 from .brain import LifeBrain
 from .memory import LifeMemory
 from .phone import PhoneController
-from .safety import Blocked, DeviceLock, UnknownDispatch, guard, rebind
+from .safety import Blocked, DeviceLock, UnknownDispatch, KnownNonDispatch, guard, rebind
 from .store import LifeStore
 from .events import EventHub
 from .bridge import NotificationBridge
@@ -107,8 +107,10 @@ class SessionLoop:
             self.store.event("cancelled_before_dispatch", {"action_id": action_id})
             self.lock.pending.unlink()
             raise
+        operation_returned=False
         try:
             await self.guarded(operation())
+            operation_returned=True
             self.store.event("action_dispatched", {"action_id": action_id, "action": action})
             self.store.update(dispatched=self.store.state["dispatched"] + 1)
             # A freshly opened system dialog can change focus during capture.
@@ -124,6 +126,13 @@ class SessionLoop:
                     self.store.event('post_observation_retry', {'action_id': action_id, 'reason': str(error)})
                     await self.guarded(asyncio.sleep(.3))
             self.observed(after)
+        except KnownNonDispatch as error:
+            if operation_returned:
+                self.store.event('unknown',{'action_id':action_id,'reason':'POST_OBSERVATION_UNCERTAIN'})
+                raise UnknownDispatch('DISPATCH_OR_POST_OBSERVATION_UNCERTAIN') from error
+            self.store.event('cancelled_before_dispatch',{'action_id':action_id,'reason':str(error)})
+            self.lock.pending.unlink()
+            raise
         except BaseException:
             self.store.event("unknown", {"action_id": action_id, "reason": "DISPATCH_OR_POST_OBSERVATION_UNCERTAIN"})
             raise UnknownDispatch("DISPATCH_OR_POST_OBSERVATION_UNCERTAIN") from None
@@ -181,6 +190,7 @@ class SessionLoop:
             except Blocked as error:
                 if any(code in str(error) for code in ('DEVICE_OFFLINE','DEVICE_IDENTITY','REQUEST_BUDGET','TOKEN_LIMIT')):raise
                 self.store.event('social_deferred',{'reason':str(error)})
+                if reply_event:self.hub.defer_handling(reply_event,str(error))
                 return {'outcome':'social_deferred','reason':str(error)}
         if social_enabled and before.foreground.split('/')[0] in SOCIAL_APPS:
             controls=[c for c in before.controls if c.control_id==action.get('control_id')]
