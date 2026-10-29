@@ -23,7 +23,7 @@ class RecentRowRefreshTests(unittest.IsolatedAsyncioTestCase):
         ui=AndroidSocialUI(SimpleNamespace(),'com.tencent.mm');ui.root=AsyncMock(return_value=root)
         ui.visual_text=lambda *args:root.controls[0];ui.act=AsyncMock(side_effect=[missing,'actual-chat']);ui.observe=AsyncMock(return_value=fresh)
         self.assertEqual(await ui.open_hint('Fixture group'),'actual-chat')
-        ui.observe.assert_awaited_once();self.assertEqual(ui.act.await_count,2)
+        self.assertEqual(ui.observe.await_count,2);self.assertEqual(ui.act.await_count,2)
         self.assertIs(ui.recent_hint_observation,fresh)
 
 

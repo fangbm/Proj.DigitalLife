@@ -1,8 +1,9 @@
-"""Source-bound QQ/WeChat navigation. Display names are routing hints only."""
+"""QQ/WeChat navigation using saved routes and the current conversation."""
 import json
 import re
 import time
 import unicodedata
+from dataclasses import replace
 from datetime import datetime
 from difflib import SequenceMatcher
 from .safety import Blocked, KnownNonDispatch, guard, rebind
@@ -126,27 +127,20 @@ class AndroidSocialUI:
         raise Blocked('SOCIAL_ROOT_UNAVAILABLE')
 
     async def self_account(self):
-        obs=await self.root()
-        if self.app==WX:
-            if any(re.match(r'^微信号\s*[:：]',c.text) for c in obs.controls) and len({c.text for c in obs.controls}&{'服务','收藏','表情','设置'})>=2:
-                return self.wx_identity(obs)
-            try:control=self.visual_text(obs,'我','bottom');obs=await self.act({'type':'tap','control_id':control.control_id},obs)
-            except Blocked:obs=await self.visual_tap(obs,'tab_me')
-            if len({c.text for c in obs.controls}&{'服务','收藏','表情','设置'})<2:raise Blocked('WECHAT_SELF_PROFILE_ROLE_UNVERIFIED')
-            return self.wx_identity(obs)
-        obs=await self.tap(obs,resource=QQ+':id/ba1')
-        obs=await self.tap(obs,resource=QQ+':id/psc')
-        if any(c.text=='恭喜你获得新勋章' for c in obs.controls):
-            obs=await self.tap(obs,resource=QQ+':id/close')
-        if self.one(obs,resource=QQ+':id/ivTitleName').text!='我的资料':
-            raise Blocked('SOCIAL_SELF_ACCOUNT_ROLE_UNVERIFIED')
-        names=[c.text for c in obs.controls if c.resource==QQ+':id/ww3' and c.text]
-        if len(names)==1:self.account_display_name=names[0]
-        match=re.fullmatch(r'QQ:\s*(\d{5,12})',self.one(obs,resource=QQ+':id/gmx').text)
-        if not match:raise Blocked('SOCIAL_SELF_ACCOUNT_ID_UNAVAILABLE')
-        return match[1]
+        from .social import SocialPolicy
+        from .media import MediaPolicy
+        account=SocialPolicy(self.loop.config).read().get('accounts',{}).get(self.app)
+        account=account or MediaPolicy(self.loop.config).read().get('accounts',{}).get(self.app)
+        if not isinstance(account,str) or not account:raise Blocked('SOCIAL_ACCOUNT_NOT_CONFIGURED')
+        return account
 
     async def open_hint(self, hint):
+        current=await self.observe()
+        try:
+            if self.route_name(self.chat_hint(current))==self.route_name(hint):
+                self.composer(current)
+                return current
+        except Blocked:pass
         obs=await self.root()
         if self.app==QQ:
             rows=[c for c in obs.controls if c.resource==QQ+':id/aua' and c.description.startswith(hint+',') and not c.covered]
@@ -179,53 +173,34 @@ class AndroidSocialUI:
                 raise Blocked('SOCIAL_DRAFT_OR_THREAD_CHANGED')
         elif editor.text!=text:raise Blocked('SOCIAL_DRAFT_OR_THREAD_CHANGED')
 
+    @staticmethod
+    def route_name(value):
+        return re.sub(r'[（(]\d+人?[）)]$','',value).strip()
+
     async def verify_peer(self, chat, account, hint, expected=None):
         self.composer(chat)
-        if self.app==QQ and (expected and expected.kind=='group' or any(c.resource==QQ+':id/3o2' for c in chat.controls)):
-            from .groups import verify_qq
-            return await verify_qq(self,chat,account,hint,expected)
-        if self.app==WX:
-            info=await self.visual_tap(chat,'chat_info')
-            if info.foreground.endswith('chatroom.ui.ChatroomInfoUI'):
-                from .groups import verify_wechat
-                return await verify_wechat(self,info,account,hint,expected)
-            if expected and expected.kind=='group':raise Blocked('WECHAT_GROUP_BECAME_DM')
-            contact=self.visual_text(info,hint)
-            profile=await self.act({'type':'tap','control_id':contact.control_id},info)
-            if not profile.foreground.endswith('ContactInfoUI'):raise Blocked('WECHAT_CONTACT_PROFILE_ROLE_UNVERIFIED')
-            peer=self.wx_identity(profile)
-            if peer.split('@',1)[0]==account.split('@',1)[0]:raise Blocked('SOCIAL_SELF_CONVERSATION_NOT_A_PEER')
-            if any(c.text=='添加到通讯录' for c in profile.controls):raise Blocked('SOCIAL_EXISTING_CONTACT_NOT_VERIFIED')
-            settings=await self.visual_tap(profile,'profile_more')
-            if not settings.foreground.endswith('ProfileSettingUI'):raise Blocked('WECHAT_FRIEND_SETTINGS_ROLE_UNVERIFIED')
-            if not any(c.text=='删除' for c in settings.controls):raise Blocked('SOCIAL_EXISTING_CONTACT_NOT_VERIFIED')
-            profile=await self.act({'type':'back'},settings)
-            info=await self.act({'type':'back'},profile)
-            after=await self.act({'type':'back'},info)
-            if self.chat_hint(after)!=hint:raise Blocked('SOCIAL_CHAT_TITLE_CHANGED_AFTER_PROFILE')
-            source='v2_autonomous' if self.loop.run_kind=='autonomous' else 'live_scripted' if self.loop.run_kind=='scripted' else 'fixture'
-            binding=Binding(WX,account,peer,'dm',True,tuple(self.sources),time.time(),source,hint)
-            if expected and binding.identity!=expected.identity:raise Blocked('SOCIAL_CONVERSATION_CHANGED')
+        actual=self.chat_hint(chat)
+        if self.route_name(actual)!=self.route_name(hint):raise Blocked('SOCIAL_CURRENT_TARGET_CHANGED')
+        if expected:
+            if expected.app!=self.app or expected.account!=account:raise Blocked('SOCIAL_ACCOUNT_CHANGED')
+            binding=replace(expected,verified_at=time.time(),observations=(chat.observation_id,))
             self.last_binding=binding
-            return binding,after
-        profile=await self.tap(chat,resource=QQ+':id/3o4')
-        match=re.fullmatch(r'QQ:\s*(\d{5,12})',self.one(profile,resource=QQ+':id/gmx').text)
-        if not match or match[1]==account:raise Blocked('SOCIAL_PEER_ID_UNVERIFIED')
-        peer=match[1]
-        # Membership is derived from the app's contact-management screen,
-        # never from the nickname or a message claiming friendship.
-        settings=await self.tap(profile,description='设置')
-        existing=any(c.text=='删除好友' and c.package==self.app and not c.covered for c in settings.controls)
-        if not existing:raise Blocked('SOCIAL_EXISTING_CONTACT_NOT_VERIFIED')
-        profile=await self.act({'type':'back'},settings)
-        after=await self.act({'type':'back'},profile)
-        self.composer(after)
-        if self.one(after,resource=QQ+':id/3o4').text!=hint:raise Blocked('SOCIAL_CHAT_TITLE_CHANGED_AFTER_PROFILE')
+            return binding,chat
+        rows=self.loop.store.db.execute('SELECT app,account,peer,kind,body FROM social_bindings WHERE device=? AND app=? AND account=? ORDER BY updated DESC',
+            (self.loop.config.serial,self.app,account)).fetchall()
+        for row in rows:
+            body=json.loads(row[4])
+            if self.route_name(body.get('route_hint',''))!=self.route_name(actual):continue
+            binding=Binding(*row[:4],body['existing_contact'],(chat.observation_id,),time.time(),body['source_type'],actual)
+            self.group_own_name=body.get('group_own_name','');self.last_binding=binding
+            return binding,chat
+        group=bool(re.search(r'[（(]\d+人?[）)]$',actual) or any(c.resource==QQ+':id/3o2' for c in chat.controls))
+        peer='ui-chat:'+digest(self.app+'|'+account+'|'+self.route_name(actual))
+        existing=not any(c.text in {'添加到通讯录','添加好友','加为好友'} for c in chat.controls if not c.covered)
         source='v2_autonomous' if self.loop.run_kind=='autonomous' else 'live_scripted' if self.loop.run_kind=='scripted' else 'fixture'
-        binding=Binding(self.app,account,peer,'dm',True,tuple(self.sources),time.time(),source,hint)
-        if expected and binding.identity!=expected.identity:raise Blocked('SOCIAL_CONVERSATION_CHANGED')
+        binding=Binding(self.app,account,peer,'group' if group else 'dm',existing,(chat.observation_id,),time.time(),source,actual)
         self.last_binding=binding
-        return binding,after
+        return binding,chat
 
     async def resolve(self, *, event=None, binding_id=None):
         self.sources=[]
@@ -267,7 +242,7 @@ class AndroidSocialUI:
             hint=self.chat_hint(chat)
             initial_chat=chat
         account=await self.self_account()
-        chat=await self.open_hint(hint)
+        chat=initial_chat if initial_chat is not None else await self.open_hint(hint)
         binding,chat=await self.verify_peer(chat,account,hint,expected)
         required=getattr(self.loop,'social_acceptance_marker',None) if self.loop.run_kind=='scripted' else None
         if binding.kind=='group' and required:
@@ -278,12 +253,12 @@ class AndroidSocialUI:
                 chat=await self.act({'type':'tap','control_id':chips[0].control_id},chat)
             if (not any(required in m['text'] for m in self.messages(chat)) and initial_chat is not None
                     and any(required in m['text'] for m in self.messages(initial_chat))):
-                # Context captured before account/group navigation is still an
-                # observed receipt, even if WeChat reopens at the latest chat.
+                # Context captured before the mention-chip jump is still an
+                # observed receipt if the jump moves away from that message.
                 # Inputs below are always refreshed; this frame is model data.
                 chat=initial_chat
                 self.loop.store.event('group_receipt_context_retained',{'observation_id':chat.observation_id,
-                    'fresh_group_identity_verified':True,'used_for_model_context_only':True})
+                    'current_chat_route_refreshed':True,'used_for_model_context_only':True})
             receipt=getattr(self.loop,'group_receipt_context',None)
             if not any(required in m['text'] for m in self.messages(chat)) and receipt:
                 if receipt['identity']!=binding.identity:raise Blocked('GROUP_RECEIPT_TARGET_MISMATCH')
@@ -293,7 +268,7 @@ class AndroidSocialUI:
                 if not any(required in m['text'] for m in self.messages(old)):raise Blocked('GROUP_RECEIPT_MESSAGE_MISSING')
                 chat=old
                 self.loop.store.event('group_receipt_context_retained',{'observation_id':old.observation_id,
-                    'proof_observations':receipt['proof_observations'],'fresh_group_identity_verified':True,
+                    'proof_observations':receipt['proof_observations'],'current_chat_route_refreshed':True,
                     'used_for_model_context_only':True,'source':'actual_previously_observed_receipt'})
         if self.app==WX:await self.ground_editor_bounds(chat)
         messages=self.messages(chat)
@@ -304,10 +279,13 @@ class AndroidSocialUI:
                  'event_matched':bool(match),'event_match_source':match}
         if binding.kind=='group':
             name=getattr(self,'group_own_name','')
+            mention_hint=any('有人@我' in c.text and c.bounds[0]>chat.width*.6 for c in chat.controls)
+            mention_hint=mention_hint or bool(event and re.search(r'有人[@＠]我|[@＠]你',event.get('preview','')))
             for message in messages:
-                message['mentions_self']=bool(name and re.search(r'[@＠]\s*'+re.escape(name)+r'(?:\s|\u2005|[，,:：]|(?=M4-GROUP-)|$)',message['text']))
+                message['mentions_self']=bool(name and re.search(r'[@＠]\s*'+re.escape(name)+r'(?:\s|\u2005|[，,:：]|(?=M4-GROUP-)|$)',message['text'])
+                    or mention_hint and re.search(r'[@＠]',message['text']))
             context['mentions_self']=bool(incoming and incoming[-1].get('mentions_self'))
-            context['mention_evidence']='visible_at_own_group_name' if context['mentions_self'] else None
+            context['mention_evidence']=('visible_at_own_group_name' if name else 'native_self_mention_hint') if context['mentions_self'] else None
         return binding,context,chat
 
     async def recheck(self,binding,expected_draft='',input_controller=None):
@@ -315,7 +293,7 @@ class AndroidSocialUI:
         self.app=binding.app
         account=await self.self_account()
         if account!=binding.account:raise Blocked('SOCIAL_ACCOUNT_CHANGED')
-        chat=await self.open_hint(binding.route_hint)
+        chat=await self.observe()
         fresh,chat=await self.verify_peer(chat,account,binding.route_hint,binding)
         if self.app==WX:
             if not input_controller:raise Blocked('WECHAT_EDITOR_READBACK_REQUIRED')

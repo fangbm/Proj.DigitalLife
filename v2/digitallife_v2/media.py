@@ -103,12 +103,13 @@ class VideoSources:
             return body,summary,row[2]
         except (ValueError,KeyError,TypeError,OSError):raise Blocked('MEDIA_WATCH_EVIDENCE_UNVERIFIED') from None
 
-    def bind(self,segment,*,public_url,title,uploader,followed,captures):
+    def bind(self,segment,*,public_url,title,uploader,followed,captures,uploader_name=None):
         video,url=canonical_video(public_url);body,summary,source_type=self._watch(segment)
         # Captures bracket the watch and come from the real source App's share
         # UI, not from an arbitrary URL supplied by a model.
-        if (not isinstance(title,str) or not title or len(title)>300 or not isinstance(uploader,str)
-                or not re.fullmatch('[0-9]{1,24}',uploader) or type(followed) is not bool
+        if (not isinstance(title,str) or not title or len(title)>300
+                or (uploader is None and (not isinstance(uploader_name,str) or not uploader_name)
+                    or uploader is not None and (not isinstance(uploader,str) or not re.fullmatch('[0-9]{1,24}',uploader))) or type(followed) is not bool
                 or not isinstance(captures,list) or len(captures)!=2):raise Blocked('MEDIA_SOURCE_ANCHOR_UNVERIFIED')
         for capture in captures:
             try:
@@ -128,6 +129,7 @@ class VideoSources:
         anchor={'video_id':video,'public_url':url,'title':title,'uploader':uploader,'followed':followed,
             'captures':captures,'summary_sha256':digest(json.dumps(summary,ensure_ascii=False,sort_keys=True)),
             'source_type':source_type}
+        if uploader_name is not None:anchor['uploader_name']=uploader_name
         if body.get('public_video') and body['public_video']!=anchor:raise Blocked('MEDIA_SOURCE_ALREADY_BOUND_DIFFERENTLY')
         body['public_video']=anchor
         self.db.execute('UPDATE content_segments SET body=? WHERE id=?',(json.dumps(body,ensure_ascii=False),segment));self.db.commit()

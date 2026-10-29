@@ -95,14 +95,14 @@ class BilibiliUI(AndroidSocialUI):
             'xml_path':obs.xml_path,'xml_sha256':obs.xml_sha256}
 
     async def watch(self,seconds=15):
-        identity,obs=await self.ensure_identity();uid,obs=await self.author_identity(identity,obs)
+        identity,obs=await self.ensure_identity()
         capture_before=self.identity_capture(identity,obs)
         replay=self.controls(obs,'replay')
         if replay:obs=await self.select(obs,resource='replay')
         result=await ContentPerception(self.loop).run({'intent':'explore','action':{'type':'watch_video','seconds':seconds},'note':'Bounded current Bilibili video perception with visible native video ID'},obs)
         fresh,after=await self.ensure_identity()
         if fresh['video_id']!=identity['video_id'] or fresh['title']!=identity['title']:raise Blocked('BILI_VIDEO_CHANGED_DURING_WATCH')
-        source=VideoSources(self.loop.store).bind(result['segment_id'],public_url=canonical_video(capture_before['url'])[1],title=identity['title'],uploader=uid,followed=identity['followed'],captures=[capture_before,self.identity_capture(fresh,after)])
+        source=VideoSources(self.loop.store).bind(result['segment_id'],public_url=canonical_video(capture_before['url'])[1],title=identity['title'],uploader=None,uploader_name=identity['author_name'],followed=identity['followed'],captures=[capture_before,self.identity_capture(fresh,after)])
         self.loop.store.event('media_watched_source_ready',{'source_id':source,'video_id':identity['video_id'],'scope':'sampled_segment_only'})
         return {**result,'source_id':source}
 
@@ -133,17 +133,31 @@ class BilibiliUI(AndroidSocialUI):
         raise Blocked('BILI_HOME_UNAVAILABLE')
 
     async def own_account(self):
-        obs=await self.home_page();obs=await self.select(obs,resource='tab_text',text='我的')
-        profile=await self.select(obs,resource='tv_go_to_space')
-        try:uid,name=self.profile_uid(profile,own=True)
-        except Blocked as error:
-            if str(error)!='BILI_PROFILE_UID_UNAVAILABLE':raise
-            profile=await self.select(profile,resource='header_info_no_verify_expand_button');uid,name=self.profile_uid(profile,own=True)
-        self.actor={'id':uid,'name':name,'observation_id':profile.observation_id}
-        self.loop.store.event('media_self_account_observed',{'account_sha256':digest(uid),'observation_id':profile.observation_id})
+        from .media import MediaPolicy
+        import json
+        uid=MediaPolicy(self.loop.config).read().get('accounts',{}).get(BILIBILI)
+        if not uid:raise Blocked('BILI_ACCOUNT_NOT_CONFIGURED')
+        cached=getattr(self.loop,'bili_actor',{})
+        name=cached.get('name','') if cached.get('id')==uid else ''
+        if not name:
+            rows=self.loop.store.db.execute("SELECT c.body FROM content_segments c JOIN sessions s ON s.id=c.session WHERE c.kind='comment_thread' AND s.serial=? ORDER BY c.started DESC LIMIT 20",(self.loop.config.serial,)).fetchall()
+            for row in rows:
+                body=json.loads(row[0])
+                if body.get('account')==uid and body.get('actor_name'):name=body['actor_name'];break
+        self.actor={'id':uid,'name':name};self.loop.bili_actor=self.actor
         return self.actor
 
     async def open_watched_video(self,source):
+        obs=await self.observe()
+        if obs.foreground.split('/')[0]==BILIBILI and 'UnitedBizDetailsActivity' in obs.foreground:
+            obs=await self.dismiss_empty_editor(obs)
+            if self.controls(obs,'title',text='评论详情'):obs=await self.act({'type':'back'},obs)
+            if self.controls(obs,'comment_container'):obs=await self.select(obs,resource='tab_title',text='简介')
+            try:
+                identity,obs=await self.ensure_identity(obs)
+                if identity['video_id']==source['video_id'] and identity['title']==source['title']:return identity,obs
+            except Blocked as error:
+                if str(error) not in {'BILI_VISIBLE_VIDEO_ID_UNAVAILABLE','BILI_UI_TARGET_MISSING_OR_AMBIGUOUS','BILI_VIDEO_TITLE_AMBIGUOUS'}:raise
         obs=await self.home_page();obs=await self.select(obs,resource='tab_text',text='我的')
         history=await self.select(obs,resource='title',text='历史记录')
         video=await self.select(history,text=source['title'])
@@ -167,7 +181,7 @@ class BilibiliUI(AndroidSocialUI):
             'activity':comments.foreground,'origin_observation_id':context_id,'opened':time.monotonic()}
         source_type='v2_autonomous' if self.loop.run_kind=='autonomous' else 'live_scripted'
         binding=VideoBinding(BILIBILI,actor['id'],identity['video_id'],'video',identity['followed'],
-            (actor['observation_id'],context_id,comments.observation_id),time.time(),source_type,identity['title'])
+            (context_id,comments.observation_id),time.time(),source_type,identity['title'])
         return binding,{'visible_comments':self.visible_comments(comments),'actor_name':actor['name']},comments
 
     async def focus_comment(self,obs):return await self.select(obs,resource='input')
@@ -181,9 +195,10 @@ class BilibiliUI(AndroidSocialUI):
         for row in comment_rows(self,comments):
             prefix=normalized(re.sub(r'(?:\.{3}|…)\s*展开.*$','',row['text']))
             for root in roots:
-                if row['author']==self.actor['name'] and len(prefix)>=30 and normalized(root[1]).startswith(prefix):candidates.append((root,row))
+                if (not self.actor['name'] or row['author']==self.actor['name']) and len(prefix)>=30 and normalized(root[1]).startswith(prefix):candidates.append((root,row))
         if len(candidates)!=1:raise Blocked('BILI_OWN_ROOT_COMMENT_NOT_UNIQUE')
         root,row=candidates[0]
+        self.actor['name']=row['author'];self.loop.bili_actor=self.actor
         next_names=[c.bounds[1] for c in self.controls(comments,'user_name') if c.bounds[1]>row['name_control'].bounds[1]]
         bottom=min(next_names) if next_names else comments.height
         previews=[c for c in self.controls(comments,'secondary_message') if row['name_control'].bounds[1]<c.bounds[1]<bottom]
@@ -236,11 +251,22 @@ class BilibiliUI(AndroidSocialUI):
             thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],None,name,incoming['text'],self.actor,(detail,after),None,parent=comments,entry=entry,preview_text=previews[0].text)
             thread=ThreadSources(self.loop.store).get(thread_id)
         self.reply_route={'thread_id':thread['thread_id'],'sender_name':name,'text':incoming['text'],'root_text':root[1]}
-        self.comment_route.update(opened=time.monotonic(),followed=binding.existing_contact)
+        self.comment_route.update(opened=time.monotonic(),followed=binding.existing_contact,thread_key=thread['ui_thread_key'])
+        self.loop.bili_reply_context={'thread_id':thread['thread_id'],'source_id':source['source_id'],'actor':dict(self.actor),
+            'route':dict(self.comment_route),'reply':dict(self.reply_route),'dispatch_count':self.loop.store.state['dispatched']}
         return thread,incoming,after
 
     async def resolve_reply(self,source,thread):
-        thread,incoming,after=await self.inspect_replies(source,thread)
+        from .bili_threads import comment_rows,normalized
+        cached=getattr(self.loop,'bili_reply_context',{})
+        reused=False
+        if (cached.get('thread_id')==thread['thread_id'] and cached.get('source_id')==source['source_id']
+                and cached.get('dispatch_count')==self.loop.store.state['dispatched']):
+            after=await self.observe()
+            rows=[r for r in comment_rows(self,after) if r['author']==thread['sender_name'] and normalized(r['text'])==normalized(thread['text'])]
+            if after.foreground==cached['route']['activity'] and self.controls(after,'title',text='评论详情') and len(rows)==1:
+                self.actor=dict(cached['actor']);self.comment_route=dict(cached['route']);self.reply_route=dict(cached['reply']);reused=True
+        if not reused:thread,incoming,after=await self.inspect_replies(source,thread)
         self.comment_route['thread_key']=thread['ui_thread_key']
         binding=VideoBinding(BILIBILI,self.actor['id'],source['video_id']+':'+thread['ui_thread_key'],'comment_thread',self.comment_route['followed'],
             tuple(self.sources),time.time(),'v2_autonomous' if self.loop.run_kind=='autonomous' else 'live_scripted',source['title'])
@@ -280,7 +306,7 @@ class BilibiliUI(AndroidSocialUI):
         route=getattr(self,'comment_route',{})
         if (obs.foreground!=route.get('activity') or source['source_id']!=route.get('source_id')
                 or binding.peer.split(':')[0]!=route.get('video_id') or not self.actor or binding.account!=self.actor['id']
-                or time.monotonic()-route.get('opened',0)>120 or len(self.controls(obs,'edit'))!=1):
+                or len(self.controls(obs,'edit'))!=1):
             raise Blocked('BILI_COMMENT_ROUTE_CHANGED')
         if binding.kind=='comment_thread' and binding.peer.split(':')[1]!=route.get('thread_key'):raise Blocked('BILI_REPLY_ROUTE_CHANGED')
 
@@ -364,7 +390,13 @@ class BilibiliUI(AndroidSocialUI):
     def comment_evidence(self,before,after,text,actor_name):
         if after.foreground!=before.foreground or self.controls(after,'edit') or not self.controls(after,'comment_container'):return None
         def count(obs):return sum(c.text.strip()==text and not c.covered for c in obs.controls if c.package==BILIBILI and not c.is_editor)
-        actor=any(c.text.strip()==actor_name or c.description.startswith(actor_name+'，') for c in after.controls if c.package==BILIBILI and not c.covered)
+        if not actor_name:
+            from .bili_threads import comment_rows
+            rows=[r for r in comment_rows(self,after) if r['text'].strip()==text]
+            if len(rows)==1:
+                actor_name=rows[0]['author']
+                if self.actor:self.actor['name']=actor_name;self.loop.bili_actor=self.actor
+        actor=bool(actor_name) and any(c.text.strip()==actor_name or c.description.startswith(actor_name+'，') for c in after.controls if c.package==BILIBILI and not c.covered)
         failure=any(re.search(r'发布失败|发送失败|审核中|网络异常',c.text) for c in after.controls if not c.covered)
         if count(after)>count(before) and actor and not failure:
             return {'observation_id':after.observation_id,'png_sha256':after.png_sha256,'xml_sha256':after.xml_sha256,

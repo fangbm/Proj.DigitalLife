@@ -164,7 +164,7 @@ class SocialStore:
     def targets(self, limit=8):
         rows = self.db.execute("SELECT b.id,b.app,b.kind,b.body,r.opted_out FROM social_bindings b LEFT JOIN social_relations r ON r.binding_id=b.id WHERE b.device=? AND b.kind IN ('dm','group') ORDER BY b.updated DESC LIMIT ?",
             (self.store.serial, limit)).fetchall()
-        return [{'binding_id': r[0], 'app': r[1], 'kind': r[2], 'scope': 'previously_verified_needs_fresh_UI',
+        return [{'binding_id': r[0], 'app': r[1], 'kind': r[2], 'scope': 'bound_route_current_chat',
                  'source_type': json.loads(r[3])['source_type']} for r in rows if not r[4]]
 
     def public_experiences(self):

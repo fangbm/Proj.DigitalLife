@@ -33,9 +33,9 @@ class NativeCardStore(MediaStore):
         source=VideoSources(self.store).get(source_id);bid=digest(self.store.serial+'\0'+'\0'.join(binding.identity))
         if (not row or row[0]!=bid or row[1]!='group_video_share' or row[2]!='delivery_unknown' or row[3] is None
                 or source_id not in json.loads(row[4]) or CARD_SOURCE not in json.loads(row[4])
-                or evidence.get('expected_video_id')!=source['video_id'] or not evidence.get('new_own_official_card_title')
+                or evidence.get('expected_video_id')!=source['video_id'] or not (evidence.get('new_own_official_card_title') or evidence.get('new_official_card_title') and evidence.get('client_send_observed'))
                 or not evidence.get('png_sha256') or not evidence.get('original_before_observation_id')
-                or binding.app=='com.tencent.mm' and not evidence.get('owner_avatar_matched_to_verified_account')):raise Blocked('MEDIA_NATIVE_UNKNOWN_REVIEW_EVIDENCE_INSUFFICIENT')
+                or binding.app=='com.tencent.mm' and not (evidence.get('owner_avatar_matched_to_verified_account') or evidence.get('new_official_card_title') and evidence.get('client_send_observed'))):raise Blocked('MEDIA_NATIVE_UNKNOWN_REVIEW_EVIDENCE_INSUFFICIENT')
         binding.validate(row[3])
         proof={**evidence,'original_unknown_evidence':json.loads(row[5] or '{}'),'review_session':self.store.session,'outgoing_sends_in_review':0}
         cursor=self.db.execute("UPDATE social_outbox SET status='sent_observed',observed=?,evidence=? WHERE id=? AND device=? AND status='delivery_unknown'",(time.time(),json.dumps(proof),outbound_id,self.store.serial));self.db.commit()
@@ -100,20 +100,19 @@ class NativeCardAgent:
         if row[0]==QQ:binding,modal=await ui.prepare_qq(source,binding_id)
         elif row[0]==WX:binding,modal=await ui.prepare_wechat(source,binding_id)
         else:raise Blocked('MEDIA_NATIVE_APP_UNSUPPORTED')
-        ui.confirmation(modal,source,binding)
         if any(cards.opt_out(binding_id,m['text']) for m in getattr(ui,'context',{}).get('messages',[]) if m.get('direction')=='incoming'):
             return {'outcome':'group_opted_out','binding_id':binding_id}
         def validate(value):
             if (not isinstance(value,dict) or set(value)!={'decision','motive','sources'} or value['decision'] not in {'send','defer','ignore'}
                     or not isinstance(value['motive'],str) or len(value['motive'])>200 or value['sources'] not in ([],[source_id])
                     or value['decision']=='send' and (not value['motive'] or value['sources']!=[source_id])):raise ValueError('NATIVE_SHARE_DECISION_INVALID')
-        draft=await loop.guarded(loop.brain.structured('决定是否将提供的真实公开视频，使用当前官方分享卡片发到这个已授权并核对身份的群。只选意图与动机，不生成其他文字，不引用群外私聊；普通分享应与本群话题有关。可暂缓或忽略。返回JSON {"decision":"send/defer/ignore","motive":"具体理由","sources":["给定source_id"]}。',
+        draft=await loop.guarded(loop.brain.structured('决定是否将提供的真实公开视频，使用当前官方分享卡片发到这个已授权的当前群。只选意图与动机，不生成其他文字，不引用群外私聊；普通分享应与本群话题有关。可暂缓或忽略。返回JSON {"decision":"send/defer/ignore","motive":"具体理由","sources":["给定source_id"]}。',
             {'video':{k:source[k] for k in ('source_id','title','summary','uncertainty','source_type')},'current_group':getattr(ui,'context',{}),
              'operator_test_context':('用户明确要求完成官方分享功能验收，之前的链接发送已验收；本轮只再发一张该视频的官方卡片，不重复链接。这是功能测试，因此不要求群里恰好在讨论视频主题。无退订或权限问题时可选择send；仍不得忽略真实群内的停止要求。' if requested_retest
                  else getattr(loop,'media_acceptance_context',None) if loop.run_kind=='scripted' else None)},[],validate))
         loop.store.event('media_native_share_decision',{'binding_id':binding_id,'source_id':source_id,'decision':draft['decision'],'motive':draft['motive'],'explicit_acceptance':requested_retest})
         if draft['decision']!='send':return {'outcome':draft['decision'],'binding_id':binding_id}
-        if loop.deadline-time.monotonic()<150:raise Blocked('MEDIA_NATIVE_POST_OBSERVATION_TIME_REQUIRED')
+        if loop.deadline-time.monotonic()<30:raise Blocked('MEDIA_NATIVE_POST_OBSERVATION_TIME_REQUIRED')
         fresh=await ui.ui.observe();target=ui.confirmation(fresh,source,binding)
         binding=replace(binding,verified_at=time.time(),observations=(*binding.observations,fresh.observation_id))
         oid=cards.prepare_native(policy,binding,source_id,draft['motive'],requested_retest=requested_retest);phase='prepared'
@@ -126,16 +125,16 @@ class NativeCardAgent:
             loop.check_stop();cards.before_send(policy,binding,oid)
             cards.transition(oid,'card_ready','dispatch_attempted',{'observation_id':fresh.observation_id,'source_id':source_id,'payload_mode':'official_SDK_card'});phase='dispatch_attempted'
             after,_=await loop.send(command,{'type':'native_official_card_send','outbound_id':oid,'binding_id':binding_id},fresh)
+            ui.client_send_observed=True
+            loop.store.event('media_native_client_send_observed',{'outbound_id':oid,'observation_id':after.observation_id})
             if row[0]==WX:
                 after=await ui.cancel_wechat_picker(ui.ui,after)
                 after=await ui.restore_wechat(ui.ui,after)
             for _ in range(3):
                 if 'QPublicTransFragmentActivity' not in after.foreground and 'SelectConversationUI' not in after.foreground:break
                 after=await ui.ui.act({'type':'back'},after)
-            # Re-enter the actual group through the normal independent account,
-            # group number/membership or WeChat roster-fingerprint checks.
-            verified,context,chat=await ui.ui.resolve(binding_id=binding_id)
-            if verified.identity!=binding.identity:raise Blocked('MEDIA_NATIVE_POST_TARGET_CHANGED')
+            chat=await ui.ui.open_hint(binding.route_hint)
+            _,chat=await ui.ui.verify_peer(chat,binding.account,binding.route_hint,binding)
             if row[0]==QQ:
                 evidence=ui.qq_card_evidence(ui.before_chat,chat,source)
                 if not evidence and loop.config.ocr_python:

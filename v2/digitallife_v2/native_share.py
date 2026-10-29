@@ -55,7 +55,7 @@ class NativeShareUI:
     def origin_matches(self,source):
         origin=getattr(self,'native_origin',{})
         return bool(origin.get('video_id') and origin.get('source_id')==source.get('source_id') and origin['video_id']==source.get('video_id')
-            and origin.get('title')==source['title'] and 0<=time.monotonic()-origin.get('at',0)<=300)
+            and origin.get('title')==source['title'])
 
     def confirmation(self,obs,source,binding):
         if obs.foreground.split('/')[0]!=binding.app:raise Blocked('MEDIA_NATIVE_CONFIRMATION_WRONG_APP')
@@ -87,19 +87,10 @@ class NativeShareUI:
         return sends[0]
 
     def qq_card_evidence(self,before,after,source):
-        def cards(obs):
-            if obs is None:return set()
-            avatars=[c for c in obs.controls if c.package==QQ and c.description.endswith('资料卡') and not c.covered]
-            found=set()
-            for c in obs.controls:
-                if c.package!=QQ or c.covered or plain(c.text)!=plain(source['title']):continue
-                preceding=[a for a in avatars if a.bounds[1]<=c.bounds[1]+25]
-                if not preceding:continue
-                a=max(preceding,key=lambda x:x.bounds[1])
-                if c.bounds[1]-a.bounds[1]<obs.height*.3 and a.bounds[0]>obs.width*.6:found.add(a.bounds)
-            return found
-        if len(cards(after))>len(cards(before)):
-            return {'observation_id':after.observation_id,'png_sha256':after.png_sha256,'xml_sha256':after.xml_sha256,'new_own_official_card_title':True,
+        def cards(obs):return [] if obs is None else [c for c in obs.controls if c.package==QQ and not c.covered and plain(c.text)==plain(source['title'])]
+        if getattr(self,'client_send_observed',False) and len(cards(after))>len(cards(before)):
+            return {'observation_id':after.observation_id,'png_sha256':after.png_sha256,'xml_sha256':after.xml_sha256,'new_official_card_title':True,
+                'client_send_observed':True,'owner_avatar_checked':False,
                 'expected_video_id':source['video_id'],'payload_origin':'fresh_Bilibili_native_BVID_and_official_QQ_SDK_mini_program_preview','server_delivery_or_read_claimed':False}
         return None
 
@@ -197,44 +188,29 @@ class NativeShareUI:
         return obs
 
     async def prepare_wechat(self,source,binding_id):
-        ui=NativeIdentityUI(self,WX);obs=await ui.observe()
+        ui=AndroidSocialUI(self.loop,WX);obs=await ui.observe()
         if obs.foreground=='com.oplus.multiapp/com.oplus.multiapp.chooser.MultiAppResolverActivity':obs=await ui.act({'type':'back'},obs)
         obs=await ui.act({'type':'open_app','package_name':WX})
-        obs=await self.cancel_wechat_picker(ui,obs)
-        obs=await self.restore_wechat(ui,obs)
-        for _ in range(3):
-            if not any(name in obs.foreground for name in ('SelectConversationUI','HalfScreenTransparentActivity')):break
-            obs=await ui.act({'type':'back'},obs)
+        obs=await self.cancel_wechat_picker(ui,obs);obs=await self.restore_wechat(ui,obs)
         binding,context,chat=await ui.resolve(binding_id=binding_id)
         MediaPolicy(self.loop.config).check(binding,'group_video_share')
-        recent=ui.recent_hint_observation;label=ui.recent_hint_control;avatar=await self.avatar_region(recent,label)
-        created=time.monotonic();obs=await self.open_wechat_picker(source)
-        target_label=self.wechat_group_row(obs,label)
-        target_avatar=await self.avatar_region(obs,target_label)
-        if time.monotonic()-created>180 or not self.avatar_matches(recent,avatar,obs,target_avatar):raise Blocked('MEDIA_NATIVE_GROUP_AVATAR_MISMATCH')
+        from types import SimpleNamespace
+        label=SimpleNamespace(text=ui.route_name(binding.route_hint));obs=await self.open_wechat_picker(source)
+        chosen=self.wechat_group_row(obs,label)
         from .visual import add_control
-        target=add_control(obs,label.text,target_avatar,1,'vision','official_share_recipient_avatar')
-        self.loop.store.event('media_native_group_identity_matched',{'app':WX,'group_identity_sha256':digest('|'.join(binding.identity)),
-            'witness_observation_id':recent.observation_id,'picker_observation_id':obs.observation_id,'method':'fresh_account_roster_fingerprint_membership_name_and_actual_avatar_pixels','native_card_not_sent':True})
+        target=add_control(obs,chosen.text,list(chosen.bounds),1,'vision','official_share_recipient_label')
         modal=await ui.act({'type':'tap','control_id':target.control_id},obs)
-        self.ui=ui;self.binding=binding;self.source=source;self.before_chat=chat;self.context=context;self.witness={'created':created,'observation':recent};self.owner_avatar=ui.owner_avatar
-        return replace(binding,verified_at=time.time(),observations=(*binding.observations,recent.observation_id,obs.observation_id,modal.observation_id)),modal
+        self.ui=ui;self.binding=binding;self.source=source;self.before_chat=chat;self.context=context
+        return replace(binding,verified_at=time.time(),observations=(*binding.observations,obs.observation_id,modal.observation_id)),modal
 
     async def wechat_card_evidence(self,obs,source):
         def titles(frame):
-            return [block[0] for block in self.title_blocks(frame,source['title'],allow_truncated=self.origin_matches(source))
+            return [block for block in self.title_blocks(frame,source['title'],allow_truncated=self.origin_matches(source))
                 if (frame.visual_controls.get(block[0].control_id,{}).get('bubble_hint') or {}).get('kind')!='outgoing_green']
-        candidates=titles(obs)
-        if len(candidates)!=1:return None
-        old=0
-        if self.before_chat:
-            for c in titles(self.before_chat):
-                a=await self.avatar_region(self.before_chat,c,sender=True)
-                if self.avatar_matches(self.owner_avatar[0],self.owner_avatar[1],self.before_chat,a):old+=1
-        avatar=await self.avatar_region(obs,candidates[0],sender=True)
-        if old or not self.avatar_matches(self.owner_avatar[0],self.owner_avatar[1],obs,avatar):return None
+        old=titles(self.before_chat) if self.before_chat else []
+        if not getattr(self,'client_send_observed',False) or len(titles(obs))<=len(old):return None
         return {'observation_id':obs.observation_id,'png_sha256':obs.png_sha256,'expected_video_id':source['video_id'],
-            'new_own_official_card_title':True,'owner_avatar_matched_to_verified_account':True,'sender_avatar_bounds':avatar,
+            'new_official_card_title':True,'client_send_observed':True,'owner_avatar_checked':False,
             'payload_origin':'fresh_Bilibili_native_BVID_and_official_WeChat_SDK_preview','server_delivery_or_read_claimed':False}
 
     async def open_wechat_picker(self,source):
@@ -279,41 +255,24 @@ class NativeShareUI:
         self.loop.store.event('media_native_source_observed',{k:v for k,v in self.native_origin.items() if k!='at'})
 
     async def prepare_qq(self,source,binding_id):
-        ui=AndroidSocialUI(self.loop,QQ)
-        obs=await ui.act({'type':'open_app','package_name':QQ})
+        ui=AndroidSocialUI(self.loop,QQ);obs=await ui.act({'type':'open_app','package_name':QQ})
         for _ in range(3):
             if 'QPublicTransFragmentActivity' not in obs.foreground:break
             obs=await ui.act({'type':'back'},obs)
         binding,context,chat=await ui.resolve(binding_id=binding_id)
         MediaPolicy(self.loop.config).check(binding,'group_video_share')
-        info=await ui.tap(chat,description='聊天设置')
-        if ui.one(info,resource=QQ+':id/rpd').text!=binding.peer:raise Blocked('MEDIA_QQ_GROUP_CHANGED')
-        icon=ui.one(info,resource=QQ+':id/rng')
-        member_label=ui.one(info,resource=QQ+':id/zlj',text='群成员');cy=(member_label.bounds[1]+member_label.bounds[3])/2
-        counts=[c.text for c in info.controls if c.resource==QQ+':id/zls' and re.fullmatch(r'\d+人',c.text) and not c.covered
-            and abs((c.bounds[1]+c.bounds[3])/2-cy)<(member_label.bounds[3]-member_label.bounds[1])*.6]
-        if len(counts)!=1:raise Blocked('MEDIA_GROUP_MEMBER_COUNT_UNAVAILABLE')
-        count=counts[0]
-        witness={'observation':info,'bounds':icon.bounds,'label':binding.route_hint+'，'+count,'created':time.monotonic()}
-        await ui.act({'type':'back'},info)
         bili,obs=await self.open_source_video(source)
         obs=await bili.select(obs,resource='frame_share');obs=await bili.select(obs,text='QQ')
         if 'QPublicTransFragmentActivity' not in obs.foreground:raise Blocked('MEDIA_QQ_OFFICIAL_PICKER_NOT_OPEN')
-        rows=[c for c in obs.controls if c.package==QQ and c.description.removesuffix('，当前聊天')==witness['label'] and not c.covered]
+        name=ui.route_name(binding.route_hint)
+        rows=[c for c in obs.controls if c.package==QQ and not c.covered
+            and re.sub(r'[，,]\d+人$','',c.description.removesuffix('，当前聊天'))==name]
         if len(rows)!=1:raise Blocked('MEDIA_QQ_NATIVE_GROUP_ROW_AMBIGUOUS')
-        row=rows[0]
-        icons={c.bounds for c in obs.controls if c.package==QQ and c.kind=='android.widget.ImageView'
-            and row.bounds[1]<=c.bounds[1] and c.bounds[3]<=row.bounds[3] and c.bounds[2]<obs.width*.3}
-        if len(icons)!=1:raise Blocked('MEDIA_NATIVE_GROUP_AVATAR_MISMATCH')
-        picker_icon=icons.pop()
-        if time.monotonic()-witness['created']>180 or not self.avatar_matches(info,icon.bounds,obs,picker_icon):raise Blocked('MEDIA_NATIVE_GROUP_AVATAR_MISMATCH')
-        self.loop.store.event('media_native_group_identity_matched',{'app':QQ,'group_identity_sha256':__import__('hashlib').sha256('|'.join(binding.identity).encode()).hexdigest(),
-            'witness_observation_id':info.observation_id,'picker_observation_id':obs.observation_id,'method':'fresh_group_number_membership_name_member_count_and_actual_avatar_pixels','native_card_not_sent':True})
         from .visual import add_control
-        target=add_control(obs,witness['label'],list(picker_icon),1,'vision','official_share_recipient_avatar')
+        row=rows[0];target=add_control(obs,row.description,list(row.bounds),1,'vision','official_share_recipient_label')
         modal=await ui.act({'type':'tap','control_id':target.control_id},obs)
-        self.witness=witness;self.binding=binding;self.source=source;self.ui=ui;self.before_chat=chat;self.context=context
-        return replace(binding,verified_at=time.time(),observations=(*binding.observations,info.observation_id,obs.observation_id,modal.observation_id)),modal
+        self.binding=binding;self.source=source;self.ui=ui;self.before_chat=chat;self.context=context
+        return replace(binding,verified_at=time.time(),observations=(*binding.observations,obs.observation_id,modal.observation_id)),modal
 
     async def search_qq_group(self,peer=None):
         if peer is None:
@@ -338,12 +297,5 @@ class NativeShareUI:
 
 
 class NativeIdentityUI(AndroidSocialUI):
+    """Compatibility name; ordinary sends never navigate to a self profile."""
     def __init__(self,controller,app):super().__init__(controller.loop,app);self.controller=controller
-    async def self_account(self):
-        account=await super().self_account()
-        if self.app==WX:
-            profile=await self.observe();labels=[c for c in profile.controls if re.match(r'^微信号\s*[:：]',c.text)]
-            if len(labels)!=1:raise Blocked('MEDIA_WECHAT_OWN_AVATAR_ANCHOR_UNAVAILABLE')
-            bounds=await self.controller.avatar_region(profile,labels[0],owner=True)
-            self.owner_avatar=(profile,bounds)
-        return account

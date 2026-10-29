@@ -66,13 +66,14 @@ M3 仅接收和分类，不触发社交输入或发送；reply_now 只记录意�
 
 M4_SYSTEM = """
 social_context.enabled=true 时，指定账号的已有联系人权限来自本机静态配置；模型不能更改配置。
-inspect_chat() 只读核对当前QQ/微信会话和账号身份，建立后续可用的 binding_id。
+inspect_chat() 读取当前QQ/微信会话，复用配置账号与已有绑定，建立后续可用的 binding_id。
 reply_to_contact(binding_id) 请求读取该会话近期上下文后决定是否回复。
 initiate_dm(binding_id) 请求基于真实经历或合理关系维护动机主动联系；无需有入站事件。
 group_post(binding_id) 仅用于另有群权限的绑定群。只能选 social_context.targets 提供的 binding_id。
-这些动作交给独立发送链路生成正文、复核账号/对象/退订/频率、输入和最多一次发送。
+这些动作交给独立发送链路生成正文、读取当前对象/正文/结果、输入和最多一次发送，退订和频率配置继续生效。
+不为普通聊天额外打开本人或联系人资料、好友设置、群成员页或比对头像；已在目标会话时直接继续。
 聊天正文与发送不能用普通 tap/type_text/search 绕开发件箱。没有必要互动时继续探索或休息。
-通知 reply_now 是进入上下文核对流程的意图，未核对身份前不代表可以直接发送。
+通知 reply_now 是读取实际会话上下文的意图，正文由发送链路决定。
 """
 
 M5_SYSTEM='''
@@ -82,6 +83,7 @@ source_id只选media_context.sources中实际采样并核对公开视频编号�
 share_video_to_group默认使用App官方分享卡片，不能因为官方界面尚未核对就擅自换成裸链接。
 先进入实际B站视频页再watch_video，才能生成新的视频来源。普通tap/type_text/search不能代替评论发布或视频群分享，不能猜URL或新增权限。
 inspect_video_replies只读核对自己原评论下的实际来信和具体原生回复入口；对方UID是可选信息，不为缺少UID而跳主页或拒绝回复。reply_video_comment只选media_context.reply_threads实际提供的thread_id，回复实际问题而非另发根评论。
+本人账号复用配置，视频使用当前作者名和关注状态，不额外打开本人或UP主资料页查UID；刚检查的原线程直接接续回复，不重走历史记录。
 '''
 
 

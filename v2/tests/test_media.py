@@ -35,6 +35,20 @@ class MediaTests(unittest.TestCase):
         for bad in ['https://www.bilibili.com.evil.test/video/'+self.video,'http://www.bilibili.com/video/'+self.video,'https://user@www.bilibili.com/video/'+self.video,'https://www.bilibili.com/space/123','bilibili://video/123','https://www.bilibili.com:1234/video/'+self.video]:
             with self.subTest(url=bad),self.assertRaises(Blocked):canonical_video(bad)
 
+    def test_visible_author_name_can_bind_a_watched_video_without_profile_uid(self):
+        segment='3'*32
+        self.store.db.execute('INSERT INTO content_segments SELECT ?,session,kind,source_type,started,?,summary,status FROM content_segments WHERE id=?',
+            (segment,json.dumps(self.body),self.segment));self.store.db.commit()
+        source=VideoSources(self.store).bind(segment,public_url=self.url,title='Video title',uploader=None,
+            uploader_name='Visible fixture author',followed=True,captures=self.captures)
+        result=VideoSources(self.store).get(source)
+        self.assertIsNone(result['uploader']);self.assertEqual(result['uploader_name'],'Visible fixture author')
+        self.assertEqual(result['video_id'],self.video)
+
+    def test_missing_author_name_and_uid_does_not_invent_an_uploader(self):
+        with self.assertRaisesRegex(Blocked,'ANCHOR_UNVERIFIED'):
+            VideoSources(self.store).bind(self.segment,public_url=self.url,title='Video title',uploader=None,followed=True,captures=self.captures)
+
     def test_scope_requires_account_kind_and_current_follow_relationship(self):
         self.assertTrue(self.policy.check(self.binding,'post_video_comment'))
         for b in [replace(self.binding,account='99999999'),replace(self.binding,existing_contact=False),replace(self.binding,verified_at=time.time()-60)]:
