@@ -292,7 +292,7 @@ class PhoneController:
             x, y = (x1+x2)//2, (y1+y2)//2
             region = (x, y, x+1, y+1)
         if action["type"] == "swipe":
-            a, b, c, d = swipe_region(observation, target)
+            a, b, c, d = swipe_region(observation, target, full_access=self.config.full_access)
             x = (a + c) // 2
             region = (x - 1, b + (d - b) // 4, x + 1, d - (d - b) // 4)
         self.check_windows(fg, region)
@@ -330,7 +330,7 @@ class PhoneController:
         x, y = (x1 + x2) // 2, (y1 + y2) // 2
         if kind == "tap":
             return ("shell", "input", "tap", str(x), str(y))
-        _, safe_top, _, safe_bottom = swipe_region(observation, target)
+        _, safe_top, _, safe_bottom = swipe_region(observation, target, full_access=self.config.full_access)
         top = safe_top + (safe_bottom - safe_top) // 4
         bottom = safe_bottom - (safe_bottom - safe_top) // 4
         begin, end = (bottom, top) if action["direction"] == "up" else (top, bottom)

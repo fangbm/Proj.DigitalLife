@@ -19,6 +19,11 @@ class NativeCardPolicy(MediaPolicy):
             # One explicit official-card acceptance after the already accepted
             # link test. Ordinary autonomy never creates this temporary scope.
             limits['video_shares_group_day']=self.acceptance_limit if self.acceptance_source else 2
+            if self.acceptance_source:
+                # A human-requested, source-bound one-card test is distinct
+                # from automatic contact. Deduplication and unknown-send
+                # barriers still apply before preparation and dispatch.
+                limits['cooldown_seconds']=0
         return limits
 
 

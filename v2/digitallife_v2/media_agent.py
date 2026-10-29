@@ -80,6 +80,9 @@ class MediaAgent:
         loop=self.loop;loop.check_stop();source=VideoSources(loop.store).get(source_id);ui=BilibiliUI(loop)
         actor=self.policy.read().get('accounts',{}).get('tv.danmaku.bili')
         kind='reply_video_comment' if thread else 'post_video_comment'
+        if thread:
+            from .bili_threads import ThreadSources
+            if ThreadSources(loop.store).already_replied(thread):raise Blocked('MEDIA_COMMENT_INTENT_ALREADY_RECORDED_NO_REPOST')
         trigger=source['video_id']+(':'+thread['ui_thread_key'] if thread else '')
         if loop.store.db.execute("SELECT 1 FROM social_outbox o JOIN social_bindings b ON b.id=o.binding_id WHERE o.device=? AND b.app='tv.danmaku.bili' AND b.account=? AND o.kind=? AND o.trigger_id=?",(loop.config.serial,actor,kind,trigger)).fetchone():
             raise Blocked('MEDIA_COMMENT_INTENT_ALREADY_RECORDED_NO_REPOST')

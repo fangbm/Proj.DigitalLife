@@ -78,6 +78,21 @@ class OfficialCardOutboxTests(unittest.TestCase):
         self.assertEqual(self.policy.check(self.group,'group_video_share')['video_shares_group_day'],1)
         with self.assertRaises(Blocked):self.cards.prepare_native(policy,self.group,source,'Duplicate fixture')
 
+    def test_explicit_one_card_window_does_not_inherit_automatic_contact_cooldown(self):
+        self.old_link();source=self.new_source()
+        self.store.db.execute('UPDATE social_outbox SET created=?',(time.time()+600,));self.store.db.commit()
+        with self.assertRaisesRegex(Blocked,'COOLDOWN'):self.cards.check_thread(self.bid,self.policy.check(self.group,'group_video_share'),time.time())
+        policy=NativeCardPolicy(self.cfg,retest_binding=self.bid,deadline=time.time()+120,acceptance_source=source,acceptance_limit=2)
+        oid=self.cards.prepare_native(policy,self.group,source,'One explicit fixture despite wall-clock regression')
+        self.assertTrue(oid);self.assertGreater(self.policy.check(self.group,'group_video_share')['cooldown_seconds'],0)
+        policy.retest_deadline=time.time()-1
+        self.assertGreater(policy.check(self.group,'group_video_share')['cooldown_seconds'],0)
+
+    def test_one_card_cooldown_exception_never_releases_an_unknown_send(self):
+        self.old_link('delivery_unknown');source=self.new_source()
+        policy=NativeCardPolicy(self.cfg,retest_binding=self.bid,deadline=time.time()+120,acceptance_source=source,acceptance_limit=2)
+        with self.assertRaisesRegex(Blocked,'UNKNOWN_SEND'):self.cards.prepare_native(policy,self.group,source,'No uncertain-send replay')
+
     def test_acceptance_cannot_change_source_target_deadline_or_resend_an_old_video(self):
         source=self.new_source();policy=NativeCardPolicy(self.cfg,retest_binding=self.bid,deadline=time.time()+120,acceptance_source=source,acceptance_limit=2)
         with self.assertRaisesRegex(Blocked,'SCOPE_REQUIRED'):self.cards.prepare_native(policy,self.group,self.source,'Wrong source')

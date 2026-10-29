@@ -133,7 +133,7 @@ def guard(action, obs, apps, *, full_access=False):
     if kind == "swipe":
         if c.scrollable is not True:
             raise Blocked("SCROLL_CONTAINER_REQUIRED")
-        swipe_region(obs, c)
+        swipe_region(obs, c, full_access=full_access)
     elif kind == "search":
         if (not SEARCH.search(c.words) or c.focused is not True
                 or not c.is_editor):
@@ -157,11 +157,17 @@ def guard(action, obs, apps, *, full_access=False):
     return c
 
 
-def swipe_region(obs, control):
+def swipe_region(obs, control, *, full_access=False):
     """Clip the gesture inside a known scroll container, away from fixed edge UI."""
     x1, y1, x2, y2 = control.bounds
     top, bottom = max(y1, int(obs.height * .12)), min(y2, int(obs.height * .82))
-    if bottom - top < max(160, obs.height * .18):
+    minimum=max(160,obs.height*.18)
+    if full_access:
+        # A native nested list can occupy only the lower part of the screen.
+        # Keep the same fixed-edge exclusion, but size the minimum to that
+        # actual container instead of requiring a large fraction of the phone.
+        minimum=max(160,min(minimum,(y2-y1)*.4))
+    if bottom - top < minimum:
         raise Blocked("SCROLL_REGION_TOO_SMALL")
     return (x1, top, x2, bottom)
 

@@ -234,7 +234,7 @@ class SocialStore:
             (*params, binding_id, now-86400)).fetchone()[0] >= limits['conversation_day']:
             raise Blocked('SOCIAL_CONVERSATION_RATE_LIMIT')
         last = self.db.execute('SELECT max(created) FROM social_outbox WHERE ' + clauses + ' AND binding_id=?', (*params, binding_id)).fetchone()[0]
-        if last and now-last < limits['cooldown_seconds']:
+        if limits['cooldown_seconds']>0 and last and now-last < limits['cooldown_seconds']:
             raise Blocked('SOCIAL_CONTACT_COOLDOWN')
 
     def prepare(self, policy, binding, kind, trigger_id, text, motive, sources, now=None):

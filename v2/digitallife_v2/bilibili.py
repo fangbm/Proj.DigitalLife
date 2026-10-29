@@ -59,10 +59,20 @@ class BilibiliUI(AndroidSocialUI):
     def profile_uid(self,obs,own=False):
         if 'AuthorSpaceActivity' not in obs.foreground:raise Blocked('BILI_PROFILE_NOT_OPEN')
         if own and len(self.controls(obs,'edit_info'))!=1:raise Blocked('BILI_SELF_ACCOUNT_NOT_VERIFIED')
-        ids=[c.text for c in obs.controls if c.package==BILIBILI and not c.resource and re.fullmatch('[0-9]{5,24}',c.text) and not c.covered]
+        from .bili_threads import native_profile_uid
+        from pathlib import Path
+        import hashlib
+        try:
+            raw=Path(obs.xml_path).read_bytes()
+            if hashlib.sha256(raw).hexdigest()!=obs.xml_sha256:raise ValueError()
+            uid=native_profile_uid(raw)
+        except (OSError,TypeError,ValueError):raise Blocked('BILI_PROFILE_UID_UNAVAILABLE') from None
         names=self.controls(obs,'header_info_name')
-        if len(set(ids))!=1 or len(names)!=1:raise Blocked('BILI_PROFILE_UID_UNAVAILABLE')
-        return ids[0],names[0].text
+        fields=[c for c in self.controls(obs) if not c.resource and c.text==uid and c.clickable is True
+            and BILIBILI+':id/bottom_tags_layout' in c.ancestry.split()
+            and 0<=c.bounds[0]<c.bounds[2]<=obs.width and 0<=c.bounds[1]<c.bounds[3]<=obs.height]
+        if not uid or len(names)!=1 or len(fields)!=1:raise Blocked('BILI_PROFILE_UID_UNAVAILABLE')
+        return uid,names[0].text
 
     async def author_identity(self,identity,obs):
         profile=await self.select(obs,resource='author_layout')
@@ -109,7 +119,11 @@ class BilibiliUI(AndroidSocialUI):
         return obs
 
     async def home_page(self):
-        obs=await self.dismiss_empty_editor(await self.observe())
+        obs=await self.observe()
+        if obs.foreground.split('/')[0]!=BILIBILI:
+            obs=await self.act({'type':'open_app','package_name':BILIBILI},obs)
+        if obs.foreground.split('/')[0]!=BILIBILI:raise Blocked('BILI_APP_FOREGROUND_CHANGED')
+        obs=await self.dismiss_empty_editor(obs)
         for _ in range(7):
             if obs.foreground.split('/')[0]!=BILIBILI:raise Blocked('BILI_APP_FOREGROUND_CHANGED')
             if self.controls(obs,'tab_text',text='我的'):return obs
@@ -209,13 +223,9 @@ class BilibiliUI(AndroidSocialUI):
         targets=target_rows(detail)
         if not targets:raise Blocked('BILI_NO_INCOMING_PUBLIC_REPLY')
         incoming=targets[-1];selected=(incoming['author'],normalized(incoming['text']))
-        profile=await self.act({'type':'tap','control_id':incoming['name_control'].control_id},detail)
-        try:uid,name=self.profile_uid(profile)
-        except Blocked as error:
-            if str(error)!='BILI_PROFILE_UID_UNAVAILABLE':raise
-            profile=await self.select(profile,resource='header_info_no_verify_expand_button');uid,name=self.profile_uid(profile)
-        if name!=incoming['author'] or expected and uid!=expected['sender_uid']:raise Blocked('BILI_REPLY_SENDER_CHANGED')
-        after=await self.act({'type':'back'},profile)
+        # The actual native reply row is the target. A separate profile UID is
+        # optional metadata and must not add a navigation prerequisite.
+        name=incoming['author'];after=await self.observe()
         targets=[r for r in target_rows(after) if (r['author'],normalized(r['text']))==selected]
         if len(targets)!=1:raise Blocked('BILI_REPLY_SENDER_CHANGED')
         incoming=targets[0]
@@ -223,7 +233,7 @@ class BilibiliUI(AndroidSocialUI):
             thread=expected
             if root[0]!=thread['root_outbound_id']:raise Blocked('BILI_REPLY_ROOT_CHANGED')
         else:
-            thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],uid,name,incoming['text'],self.actor,(detail,after),profile,parent=comments,entry=entry,preview_text=previews[0].text)
+            thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],None,name,incoming['text'],self.actor,(detail,after),None,parent=comments,entry=entry,preview_text=previews[0].text)
             thread=ThreadSources(self.loop.store).get(thread_id)
         self.reply_route={'thread_id':thread['thread_id'],'sender_name':name,'text':incoming['text'],'root_text':root[1]}
         self.comment_route.update(opened=time.monotonic(),followed=binding.existing_contact)
@@ -274,20 +284,51 @@ class BilibiliUI(AndroidSocialUI):
             raise Blocked('BILI_COMMENT_ROUTE_CHANGED')
         if binding.kind=='comment_thread' and binding.peer.split(':')[1]!=route.get('thread_key'):raise Blocked('BILI_REPLY_ROUTE_CHANGED')
 
+    def bound_reply_parent(self,before,preceding):
+        """A clipped older own reply is not a different root comment."""
+        from .bili_threads import ThreadSources,comment_rows,normalized,native_comment_text
+        import json
+        try:
+            threads=ThreadSources(self.loop.store);thread=threads.get(self.reply_route['thread_id'])
+            route=self.comment_route
+            if (not self.actor or self.actor['id']!=thread['account'] or route['source_id']!=thread['source_id']
+                    or route['video_id']!=thread['video_id'] or route['thread_key']!=thread['ui_thread_key']
+                    or normalized(thread['root_text'])!=normalized(self.reply_route['root_text'])
+                    or thread['sender_name']!=self.reply_route['sender_name'] or normalized(thread['text'])!=normalized(self.reply_route['text'])):return None
+            if not self.controls(before,'title',text='评论详情') or not any(r['author']==thread['sender_name'] and normalized(r['text'])==normalized(thread['text']) for r in comment_rows(self,before)):return None
+            known=set()
+            rows=self.loop.store.db.execute("SELECT o.text,o.sources,o.evidence FROM social_outbox o JOIN social_bindings b ON b.id=o.binding_id WHERE o.device=? AND b.account=? AND b.app=? AND o.kind='reply_video_comment' AND o.status='sent_observed'",(self.loop.store.serial,thread['account'],BILIBILI)).fetchall()
+            for text,sources,evidence in rows:
+                corrected=json.loads(evidence or '{}').get('corrected_thread_source_id')
+                for source in [*json.loads(sources),*([corrected] if isinstance(corrected,str) else [])]:
+                    if not source.startswith('thread:'):continue
+                    try:old=threads.get(source)
+                    except Blocked:continue
+                    if old['root_outbound_id']==thread['root_outbound_id'] and old['account']==thread['account']:
+                        known.add(normalized('回复 '+old['sender_name']+': '+text))
+            if not all(normalized(native_comment_text(c.text)) in known for c in preceding):return None
+            return {'parent_identity_proof':'bound_original_thread_and_known_prior_own_replies','bound_thread_id':thread['thread_id'],
+                'parent_proof_observation_ids':[c['observation_id'] for c in thread['captures']]}
+        except (AttributeError,KeyError,TypeError,ValueError,OSError,Blocked):return None
+
     def reply_evidence(self,before,after,text,actor_name):
-        from .bili_threads import comment_rows,normalized
+        from .bili_threads import comment_rows,normalized,native_comment_text
         if after.foreground!=before.foreground or self.controls(after,'edit') or not self.controls(after,'title',text='评论详情'):return None
         rows=comment_rows(self,after)
-        root_visible=any(normalized(c.text)==normalized(self.reply_route['root_text']) for c in self.controls(after,'primary_message'))
+        root_visible=any(normalized(native_comment_text(c.text))==normalized(self.reply_route['root_text']) for c in self.controls(after,'primary_message'))
         targets=[r for r in rows if r['author']==self.reply_route['sender_name'] and normalized(r['text'])==normalized(self.reply_route['text'])]
         target_visible=bool(targets)
-        if targets and any(c.bounds[1]<targets[0]['body_control'].bounds[1] for c in self.controls(after,'primary_message')) and not root_visible:return None
+        ancestry={}
+        preceding=[c for c in self.controls(after,'primary_message') if targets and c.bounds[1]<targets[0]['body_control'].bounds[1]]
+        if targets and preceding and not root_visible:
+            ancestry=self.bound_reply_parent(before,preceding)
+            if not ancestry:return None
         if not root_visible and not target_visible:return None
         expected=normalized('回复 '+self.reply_route['sender_name']+': '+text)
         count=lambda obs:sum(r['author']==actor_name and normalized(r['text'])==expected for r in comment_rows(self,obs))
         if count(after)>count(before):return {'observation_id':after.observation_id,'png_sha256':after.png_sha256,'xml_sha256':after.xml_sha256,'text_sha256':digest(text),
             'same_original_parent':True,'parent_text_currently_present':root_visible,'verified_incoming_question_currently_present':target_visible,
-            'new_own_reply_exact_text':True,'actor_label_observed':True,'composer_closed':True,'server_delivery_or_read_claimed':False}
+            'new_own_reply_exact_text':True,'actor_label_observed':True,'composer_closed':True,'server_delivery_or_read_claimed':False,**ancestry}
 
     async def read_reply_after(self,obs):
         messages=self.controls(obs,'primary_message')

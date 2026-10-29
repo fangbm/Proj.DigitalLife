@@ -81,7 +81,7 @@ source_id只选media_context.sources中实际采样并核对公开视频编号�
 公开视频评论需要具体内容依据，不夸大观看范围；分享要有适合该群的话题。可以不评论、不分享。只选意图，正文和发送由独立链路再次决定。
 share_video_to_group默认使用App官方分享卡片，不能因为官方界面尚未核对就擅自换成裸链接。
 先进入实际B站视频页再watch_video，才能生成新的视频来源。普通tap/type_text/search不能代替评论发布或视频群分享，不能猜URL或新增权限。
-inspect_video_replies只读核对自己原评论下的实际来信和发送者UID。reply_video_comment只选media_context.reply_threads实际提供的thread_id，回复实际问题而非另发根评论。
+inspect_video_replies只读核对自己原评论下的实际来信和具体原生回复入口；对方UID是可选信息，不为缺少UID而跳主页或拒绝回复。reply_video_comment只选media_context.reply_threads实际提供的thread_id，回复实际问题而非另发根评论。
 '''
 
 
@@ -232,7 +232,7 @@ class LifeBrain:
                 + ('M4已启用。reply_now会打开该真实通知的原入口，核对实际账号、好友/群身份及上下文，然后再决定是否回复；不会直接发送。'
                    '通知阶段身份unresolved是正常的，不能仅因尚未打开核对就判定无法核对。根据消息是否值得查看选择；仍可稍后、忽略或只读。'
                    '决定现在打开核对上下文应选reply_now；reply_later表示本轮不打开并推迟处理，read_only只读预览。'
-                 if social_enabled and not video_event else 'M5已启用。reply_now只进入已知公开视频原评论线程，核对来信全文、原评论和发送者UID后再决定是否回复，不猜视频或对象。' if video_event else 'M3 没有外发；reply_now只代表供M4考虑的意图。普通本机测试通知适合仅阅读或忽略。'),
+                 if social_enabled and not video_event else 'M5已启用。reply_now只进入已知公开视频原评论线程，核对来信全文、原评论和具体回复入口后再决定是否回复；对方UID可选，不猜视频或对象。' if video_event else 'M3 没有外发；reply_now只代表供M4考虑的意图。普通本机测试通知适合仅阅读或忽略。'),
                 {'inbound_event':inbound,'paused_activity':observation.foreground,
                  'routing_capabilities':{'inspect_original_notification_thread':social_enabled and not video_event,
                                          'inspect_known_public_comment_threads':video_event,
