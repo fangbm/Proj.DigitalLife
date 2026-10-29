@@ -25,8 +25,13 @@ class BilibiliUI(AndroidSocialUI):
             # Only an explicit pre-dispatch affordance refusal can use a
             # separately grounded target. Unknown operations never get replayed.
             if not visual or str(error)!='UNKNOWN_ACTION_ROLE':raise
-            from .visual import locate
-            control=await locate(self.loop,obs,visual)
+            from .visual import locate,add_control
+            if resource=='arrow' and visual=='bili_video_details':
+                # The unique native detail-arrow bounds are observed, even
+                # when Android does not declare a clickable role. Bind those
+                # actual pixels instead of letting a model shift the arrow.
+                control=add_control(obs,'',list(found[0].bounds),1,'vision',visual)
+            else:control=await locate(self.loop,obs,visual)
             return await self.act({'type':'tap','control_id':control.control_id},obs)
 
     def identity(self,obs):
@@ -153,9 +158,10 @@ class BilibiliUI(AndroidSocialUI):
 
     async def focus_comment(self,obs):return await self.select(obs,resource='input')
 
-    async def inspect_replies(self,source,expected=None):
+    async def inspect_replies(self,source,expected=None,notification_preview=None):
         from .bili_threads import comment_rows,normalized,ThreadSources
         binding,_,comments=await self.resolve_comment(source)
+        comments=await self.read_comments(comments,expand=True)
         roots=self.loop.store.db.execute("SELECT id,text FROM social_outbox WHERE device=? AND binding_id=? AND kind='post_video_comment' AND status='sent_observed' ORDER BY created DESC",(self.loop.config.serial,__import__('hashlib').sha256((self.loop.config.serial+'\0'+'\0'.join(binding.identity)).encode()).hexdigest())).fetchall()
         candidates=[]
         for row in comment_rows(self,comments):
@@ -164,30 +170,60 @@ class BilibiliUI(AndroidSocialUI):
                 if row['author']==self.actor['name'] and len(prefix)>=30 and normalized(root[1]).startswith(prefix):candidates.append((root,row))
         if len(candidates)!=1:raise Blocked('BILI_OWN_ROOT_COMMENT_NOT_UNIQUE')
         root,row=candidates[0]
-        previews=[c for c in self.controls(comments,'secondary_message') if c.bounds[1]>row['name_control'].bounds[1]]
+        next_names=[c.bounds[1] for c in self.controls(comments,'user_name') if c.bounds[1]>row['name_control'].bounds[1]]
+        bottom=min(next_names) if next_names else comments.height
+        previews=[c for c in self.controls(comments,'secondary_message') if row['name_control'].bounds[1]<c.bounds[1]<bottom]
         if len(previews)!=1:raise Blocked('BILI_REPLY_PREVIEW_UNAVAILABLE')
         detail=await self.act({'type':'tap','control_id':previews[0].control_id},comments)
+        async def scroll(obs,direction):
+            lists=self.controls(obs,'cmt3_recycler')
+            if len(lists)!=1:raise Blocked('BILI_REPLY_LIST_UNAVAILABLE')
+            obs=await self.act({'type':'swipe','control_id':lists[0].control_id,'direction':direction},obs)
+            await self.loop.guarded(__import__('asyncio').sleep(.4))
+            return await self.observe()
+        anchor=normalized(previews[0].text)
+        def entered_parent(obs):
+            return self.controls(obs,'title',text='评论详情') and any(
+                normalized(r['text'])==normalized(root[1]) and r['author']==self.actor['name']
+                or normalized(r['author']+':'+r['text'])==anchor for r in comment_rows(self,obs))
+        for _ in range(2):
+            if entered_parent(detail):break
+            detail=await scroll(detail,'down')
+        if not entered_parent(detail):raise Blocked('BILI_REPLY_PARENT_CHANGED')
+        entry=detail
         def target_rows(obs):
             rows=comment_rows(self,obs)
-            if not self.controls(obs,'title',text='评论详情') or not rows or normalized(rows[0]['text'])!=normalized(root[1]) or rows[0]['author']!=self.actor['name']:
-                raise Blocked('BILI_REPLY_PARENT_CHANGED')
-            targets=[r for r in rows[1:] if r['author']!=self.actor['name']]
+            if not self.controls(obs,'title',text='评论详情'):raise Blocked('BILI_REPLY_PARENT_CHANGED')
+            targets=[r for r in rows if r['author']!=self.actor['name']]
             if expected:targets=[r for r in targets if normalized(r['text'])==normalized(expected['text']) and r['author']==expected['sender_name']]
-            if not targets:raise Blocked('BILI_NO_INCOMING_PUBLIC_REPLY')
-            return targets[-1]
-        incoming=target_rows(detail)
+            if notification_preview:targets=[r for r in targets if len(normalized(r['text']))>=12 and normalized(r['text']) in normalized(notification_preview)]
+            return targets
+        for attempt in range(4):
+            targets=target_rows(detail)
+            if targets and (expected or notification_preview) or attempt==3:break
+            old=[(r['author'],r['text'],r['body_control'].bounds) for r in comment_rows(self,detail)]
+            fresh=await scroll(detail,'up')
+            new=[(r['author'],r['text'],r['body_control'].bounds) for r in comment_rows(self,fresh)]
+            detail=fresh
+            if old==new:break
+        targets=target_rows(detail)
+        if not targets:raise Blocked('BILI_NO_INCOMING_PUBLIC_REPLY')
+        incoming=targets[-1];selected=(incoming['author'],normalized(incoming['text']))
         profile=await self.act({'type':'tap','control_id':incoming['name_control'].control_id},detail)
         try:uid,name=self.profile_uid(profile)
         except Blocked as error:
             if str(error)!='BILI_PROFILE_UID_UNAVAILABLE':raise
             profile=await self.select(profile,resource='header_info_no_verify_expand_button');uid,name=self.profile_uid(profile)
         if name!=incoming['author'] or expected and uid!=expected['sender_uid']:raise Blocked('BILI_REPLY_SENDER_CHANGED')
-        after=await self.act({'type':'back'},profile);incoming=target_rows(after)
+        after=await self.act({'type':'back'},profile)
+        targets=[r for r in target_rows(after) if (r['author'],normalized(r['text']))==selected]
+        if len(targets)!=1:raise Blocked('BILI_REPLY_SENDER_CHANGED')
+        incoming=targets[0]
         if expected:
             thread=expected
             if root[0]!=thread['root_outbound_id']:raise Blocked('BILI_REPLY_ROOT_CHANGED')
         else:
-            thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],uid,name,incoming['text'],self.actor,(detail,after),profile)
+            thread_id=ThreadSources(self.loop.store).bind(source['source_id'],root[0],uid,name,incoming['text'],self.actor,(detail,after),profile,parent=comments,entry=entry,preview_text=previews[0].text)
             thread=ThreadSources(self.loop.store).get(thread_id)
         self.reply_route={'thread_id':thread['thread_id'],'sender_name':name,'text':incoming['text'],'root_text':root[1]}
         self.comment_route.update(opened=time.monotonic(),followed=binding.existing_contact)

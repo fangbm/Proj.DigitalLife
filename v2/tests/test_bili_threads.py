@@ -50,3 +50,23 @@ class PublicThreadTests(unittest.TestCase):
     def test_self_reply_or_missing_real_parent_is_rejected(self):
         with self.assertRaises(Blocked):self.threads.bind(self.source,self.root_id,self.actor['id'],'Self',self.question,self.actor,(self.detail,self.detail),self.profile)
         with self.assertRaises(Blocked):self.threads.bind(self.source,'0'*32,self.sender,'Sender',self.question,self.actor,(self.detail,self.detail),self.profile)
+
+    def split_captures(self,wrong_entry=False):
+        preview='Public sender: '+self.question
+        parent=self.capture('parent',[('user_name','Fixture AI'),('primary_message',self.root_text+'\u200b 收起'),('secondary_message',preview)])
+        entry=self.capture('entry',[('title','评论详情'),('user_name','Public sender'),('primary_message','Different branch' if wrong_entry else self.question)])
+        incoming=self.capture('incoming',[('title','评论详情'),('user_name','Public sender'),('primary_message',self.question)])
+        after=self.capture('after-profile',[('title','评论详情'),('user_name','Public sender'),('primary_message',self.question)])
+        return parent,entry,incoming,after,preview
+
+    def test_offscreen_parent_requires_separate_native_parent_entry_and_question_proofs(self):
+        parent,entry,incoming,after,preview=self.split_captures()
+        tid=self.threads.bind(self.source,self.root_id,self.sender,'Public sender',self.question,self.actor,(incoming,after),self.profile,parent=parent,entry=entry,preview_text=preview)
+        self.assertEqual(self.threads.get(tid)['root_text'],self.root_text)
+        self.assertEqual(len(self.threads.get(tid)['captures']),5)
+        Path(parent.xml_path).write_text('<hierarchy/>')
+        with self.assertRaises(Blocked):self.threads.get(tid)
+
+    def test_other_branch_cannot_be_substituted_for_the_actual_parent_preview_entry(self):
+        parent,entry,incoming,after,preview=self.split_captures(wrong_entry=True)
+        with self.assertRaises(Blocked):self.threads.bind(self.source,self.root_id,self.sender,'Public sender',self.question,self.actor,(incoming,after),self.profile,parent=parent,entry=entry,preview_text=preview)

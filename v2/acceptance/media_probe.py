@@ -96,6 +96,8 @@ def main():
     c=Config.load(args.profile)
     if MediaPolicy(c).read().get('enabled') is not True:raise ValueError('M5_SCOPE_REQUIRED')
     loop=SessionLoop(c,args.session,minutes=10,brain_factory=lambda cfg,s:Probe(cfg,s,loop,args.kind,args.source_id,args.binding_id,args.resume_outbound,args.thread_id))
+    if args.kind=='share':
+        loop.media_acceptance_context='用户要求验证官方群分享的完整流程。本轮只向当前已核对的授权测试群分享一次这条尚未分享过的公开视频；不要求群中恰好正在讨论视频主题。保留退订、账号、来源、去重和普通每日额度；不额外发文字或重复旧视频。'
     if args.kind=='link':
         loop.social_acceptance_context=('用户要求M5真实分享验收，已允许向当前这个单独授权的测试群分享来源视频。本次是脚本安排的单次测试，不需要新来信或新@触发。'
             '请只基于提供的真实公开视频采样写一句简短分享理由，表明数字生命测试身份和采样局限，末尾保留提供的公开链接。'

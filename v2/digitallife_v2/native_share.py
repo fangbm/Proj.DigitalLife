@@ -7,7 +7,7 @@ from dataclasses import replace
 from PIL import Image,ImageChops,ImageStat
 from .input_bridge import InputBridge
 from .social_ui import AndroidSocialUI,QQ,WX
-from .media import MediaPolicy
+from .media import MediaPolicy,BILIBILI
 from .safety import Blocked
 from .social import digest
 
@@ -18,6 +18,45 @@ def plain(value):return re.sub(r'[\W_]+','',value).lower()
 class NativeShareUI:
     def __init__(self,loop):self.loop=loop
 
+    @staticmethod
+    def wechat_group_row(obs,label):
+        headings=[c for c in obs.controls if c.text=='最近聊天' and not c.covered]
+        if len(headings)!=1:raise Blocked('MEDIA_WECHAT_NATIVE_RECENT_SECTION_UNVERIFIED')
+        labels=[c for c in obs.controls if plain(c.text)==plain(label.text) and not c.covered and c.bounds[1]>headings[0].bounds[3]]
+        if len(labels)!=1:raise Blocked('MEDIA_WECHAT_NATIVE_GROUP_ROW_AMBIGUOUS')
+        return labels[0]
+
+    @staticmethod
+    def title_blocks(obs,title,controls=None,*,allow_truncated=False):
+        wanted=plain(title);regions=[c for c in (obs.controls if controls is None else controls) if c.text and not c.covered]
+        result=[]
+        for first in regions:
+            value=plain(first.text)
+            if len(value)<min(4,len(wanted)) or not wanted.startswith(value):continue
+            block=[first]
+            for _ in range(3):
+                if value==wanted:break
+                last=block[-1];height=last.bounds[3]-last.bounds[1]
+                def adjacent(c):
+                    same_line=(abs((c.bounds[1]+c.bounds[3]-last.bounds[1]-last.bounds[3])/2)<=height*.35
+                        and 0<=c.bounds[0]-last.bounds[2]<=height*1.5)
+                    next_line=(c.bounds[1]>=last.bounds[3]-height*.15 and c.bounds[1]<=last.bounds[3]+max(30,height*1.5)
+                        and abs(c.bounds[0]-first.bounds[0])<=max(20,obs.width*.04))
+                    return same_line or next_line
+                following=[c for c in regions if c not in block and adjacent(c) and plain(c.text) and wanted.startswith(value+plain(c.text))]
+                if len(following)!=1:break
+                block.append(following[0]);value+=plain(following[0].text)
+            if value==wanted:result.append(block)
+            elif allow_truncated and len(value)>=max(16,int(len(wanted)*.75)):
+                from .native_pixels import trailing_ellipsis
+                if block[-1].text.rstrip().endswith(('...','…')) or trailing_ellipsis(obs,block[-1]):result.append(block)
+        return result
+
+    def origin_matches(self,source):
+        origin=getattr(self,'native_origin',{})
+        return bool(origin.get('video_id') and origin.get('source_id')==source.get('source_id') and origin['video_id']==source.get('video_id')
+            and origin.get('title')==source['title'] and 0<=time.monotonic()-origin.get('at',0)<=300)
+
     def confirmation(self,obs,source,binding):
         if obs.foreground.split('/')[0]!=binding.app:raise Blocked('MEDIA_NATIVE_CONFIRMATION_WRONG_APP')
         controls=[c for c in obs.controls if c.package==binding.app and not c.covered]
@@ -26,7 +65,12 @@ class NativeShareUI:
             if len(headers)!=1 or 'HalfScreenTransparentActivity' not in obs.foreground:raise Blocked('MEDIA_WECHAT_OFFICIAL_CONFIRMATION_UNVERIFIED')
             controls=[c for c in controls if c.bounds[1]>=headers[0].bounds[1]]
         texts=[c.text or c.description for c in controls]
-        if not any(plain(source['title']) in plain(t) for t in texts):raise Blocked('MEDIA_NATIVE_CARD_TITLE_CHANGED')
+        blocks=self.title_blocks(obs,source['title'],controls,allow_truncated=self.origin_matches(source)) if binding.app==WX else []
+        title_ok=len(blocks)==1 if binding.app==WX else any(plain(source['title']) in plain(t) for t in texts)
+        if not title_ok:raise Blocked('MEDIA_NATIVE_CARD_TITLE_CHANGED')
+        if blocks and ''.join(plain(c.text) for c in blocks[0])!=plain(source['title']):
+            self.loop.store.event('media_native_preview_title_truncated',{'observation_id':obs.observation_id,'source_png_sha256':obs.png_sha256,
+                'verified_video_id':self.native_origin['video_id'],'origin_observation_id':self.native_origin['observation_id'],'full_title_claimed_visible':False})
         name=re.sub(r'[（(]\d+[）)]$','',binding.route_hint)
         if not any(plain(name)==plain(re.sub(r'[（(]\d+人?[）)]$','',t)) or plain(t)==plain('发送给'+name) for t in texts):raise Blocked('MEDIA_NATIVE_RECIPIENT_CHANGED')
         if binding.app==QQ:
@@ -98,23 +142,44 @@ class NativeShareUI:
         return box
 
     async def ensure_wechat_fullscreen(self,ui,obs):
-        if obs.foreground.split('/')[0]!=WX:return obs
+        return await self.ensure_app_fullscreen(ui,obs,WX)
+
+    async def ensure_app_fullscreen(self,ui,obs,app):
+        if app not in {WX,BILIBILI}:raise Blocked('MEDIA_FULLSCREEN_APP_UNSUPPORTED')
+        if obs.foreground.split('/')[0]!=app:return obs
         phone=self.loop.phone
-        blocks=re.split(r'(?=\bWindow #\d+ Window\{)',phone.last_windows)
-        focused=next((b for b in blocks if phone.focus_window and re.search(r'Window\{'+re.escape(phone.focus_window)+r'\s',b.split('\n')[0])),None)
-        frame=re.search(r'\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]',focused or '')
-        if not frame:raise Blocked('MEDIA_WECHAT_WINDOW_BOUNDS_UNAVAILABLE')
-        x,y,r,b=map(int,frame.groups())
-        if x<=20 and y<=obs.height*.1 and r>=obs.width-20 and b>=obs.height*.9:return obs
-        obs=await ui.visual_tap(obs,'floating_window_menu')
+        def full(frame_obs):
+            blocks=re.split(r'(?=\bWindow #\d+ Window\{)',phone.last_windows)
+            focused=next((b for b in blocks if phone.focus_window and re.search(r'Window\{'+re.escape(phone.focus_window)+r'\s',b.split('\n')[0])),None)
+            frame=re.search(r'\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]',focused or '')
+            if not frame:raise Blocked('MEDIA_WECHAT_WINDOW_BOUNDS_UNAVAILABLE')
+            x,y,r,b=map(int,frame.groups())
+            return x<=20 and y<=frame_obs.height*.1 and r>=frame_obs.width-20 and b>=frame_obs.height*.9
+        if full(obs):return obs
+        def menu_present(frame):return {'全屏','分屏','最小化','关闭'}<={c.text for c in frame.controls}
+        async def read_menu(frame):
+            python=getattr(getattr(self.loop,'config',None),'ocr_python',None)
+            if not menu_present(frame) and python:
+                from .visual import OcrClient
+                reader=OcrClient(python)
+                try:await self.loop.guarded(reader.read(frame));self.loop.observed(frame)
+                finally:await reader.close()
+            return frame
+        obs=await read_menu(obs)
+        if not menu_present(obs):
+            obs=await ui.visual_tap(obs,'floating_window_menu')
+            obs=await read_menu(obs)
         menu=AndroidSocialUI(self.loop,obs.foreground.split('/')[0])
-        if not {'全屏','分屏','最小化','关闭'}<={c.text for c in obs.controls}:raise Blocked('MEDIA_FLOATING_SYSTEM_MENU_UNVERIFIED')
-        try:obs=await menu.tap(obs,text='全屏')
-        except Blocked as error:
-            if str(error)!='SOCIAL_UI_ROLE_UNAVAILABLE_OR_AMBIGUOUS':raise
-            obs=await menu.visual_tap(obs,'floating_fullscreen')
-        if obs.foreground.split('/')[0]!=WX:raise Blocked('MEDIA_WECHAT_FULLSCREEN_WRONG_APP')
+        if not menu_present(obs):raise Blocked('MEDIA_FLOATING_SYSTEM_MENU_UNVERIFIED')
+        obs=await menu.visual_tap(obs,'floating_fullscreen')
+        if obs.foreground.split('/')[0]!=app or not full(obs):raise Blocked('MEDIA_APP_FULLSCREEN_NOT_RESTORED')
         return obs
+
+    async def restore_wechat(self,ui,obs):
+        if obs.foreground.split('/')[0]==BILIBILI:
+            obs=await self.ensure_app_fullscreen(AndroidSocialUI(self.loop,BILIBILI),obs,BILIBILI)
+            obs=await ui.act({'type':'open_app','package_name':WX},obs)
+        return await self.ensure_wechat_fullscreen(ui,obs)
 
     async def cancel_wechat_picker(self,ui,obs):
         # ColorOS may keep this SDK floating window above LauncherUI. BACK
@@ -136,7 +201,7 @@ class NativeShareUI:
         if obs.foreground=='com.oplus.multiapp/com.oplus.multiapp.chooser.MultiAppResolverActivity':obs=await ui.act({'type':'back'},obs)
         obs=await ui.act({'type':'open_app','package_name':WX})
         obs=await self.cancel_wechat_picker(ui,obs)
-        obs=await self.ensure_wechat_fullscreen(ui,obs)
+        obs=await self.restore_wechat(ui,obs)
         for _ in range(3):
             if not any(name in obs.foreground for name in ('SelectConversationUI','HalfScreenTransparentActivity')):break
             obs=await ui.act({'type':'back'},obs)
@@ -144,9 +209,8 @@ class NativeShareUI:
         MediaPolicy(self.loop.config).check(binding,'group_video_share')
         recent=ui.recent_hint_observation;label=ui.recent_hint_control;avatar=await self.avatar_region(recent,label)
         created=time.monotonic();obs=await self.open_wechat_picker(source)
-        labels=[c for c in obs.controls if plain(c.text)==plain(label.text) and not c.covered]
-        if len(labels)!=1:raise Blocked('MEDIA_WECHAT_NATIVE_GROUP_ROW_AMBIGUOUS')
-        target_avatar=await self.avatar_region(obs,labels[0])
+        target_label=self.wechat_group_row(obs,label)
+        target_avatar=await self.avatar_region(obs,target_label)
         if time.monotonic()-created>180 or not self.avatar_matches(recent,avatar,obs,target_avatar):raise Blocked('MEDIA_NATIVE_GROUP_AVATAR_MISMATCH')
         from .visual import add_control
         target=add_control(obs,label.text,target_avatar,1,'vision','official_share_recipient_avatar')
@@ -158,8 +222,8 @@ class NativeShareUI:
 
     async def wechat_card_evidence(self,obs,source):
         def titles(frame):
-            return [c for c in frame.controls if plain(c.text)==plain(source['title']) and not c.covered
-                and (frame.visual_controls.get(c.control_id,{}).get('bubble_hint') or {}).get('kind')!='outgoing_green']
+            return [block[0] for block in self.title_blocks(frame,source['title'],allow_truncated=self.origin_matches(source))
+                if (frame.visual_controls.get(block[0].control_id,{}).get('bubble_hint') or {}).get('kind')!='outgoing_green']
         candidates=titles(obs)
         if len(candidates)!=1:return None
         old=0
@@ -201,11 +265,18 @@ class NativeShareUI:
         if 'UnitedBizDetailsActivity' in obs.foreground:
             try:
                 identity,obs=await bili.ensure_identity(obs)
-                if identity['video_id']==source['video_id'] and identity['title']==source['title']:return bili,obs
+                if identity['video_id']==source['video_id'] and identity['title']==source['title']:
+                    self.remember_origin(source,identity,obs);return bili,obs
             except Blocked as error:
                 if str(error) not in {'BILI_VISIBLE_VIDEO_ID_UNAVAILABLE','BILI_UI_TARGET_MISSING_OR_AMBIGUOUS'}:raise
-        _,obs=await bili.open_watched_video(source)
+        identity,obs=await bili.open_watched_video(source);self.remember_origin(source,identity,obs)
         return bili,obs
+
+    def remember_origin(self,source,identity,obs):
+        if identity['video_id']!=source['video_id'] or identity['title']!=source['title']:raise Blocked('MEDIA_NATIVE_SOURCE_CHANGED')
+        self.native_origin={'source_id':source['source_id'],'video_id':identity['video_id'],'title':identity['title'],'at':time.monotonic(),
+            'observation_id':obs.observation_id,'png_sha256':obs.png_sha256,'xml_sha256':obs.xml_sha256}
+        self.loop.store.event('media_native_source_observed',{k:v for k,v in self.native_origin.items() if k!='at'})
 
     async def prepare_qq(self,source,binding_id):
         ui=AndroidSocialUI(self.loop,QQ)

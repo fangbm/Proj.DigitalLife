@@ -8,8 +8,9 @@ CARD_SOURCE='native:official-share-card'
 
 
 class NativeCardPolicy(MediaPolicy):
-    def __init__(self,config,*,retest_binding=None,deadline=0):
+    def __init__(self,config,*,retest_binding=None,deadline=0,acceptance_source=None,acceptance_limit=None):
         super().__init__(config);self.retest_binding=retest_binding;self.retest_deadline=deadline
+        self.acceptance_source=acceptance_source;self.acceptance_limit=acceptance_limit
 
     def check(self,binding,kind,now=None):
         now=time.time() if now is None else now;limits=super().check(binding,kind,now)
@@ -17,7 +18,7 @@ class NativeCardPolicy(MediaPolicy):
         if self.retest_binding==bid and 0<self.retest_deadline-now<=600:
             # One explicit official-card acceptance after the already accepted
             # link test. Ordinary autonomy never creates this temporary scope.
-            limits['video_shares_group_day']=2
+            limits['video_shares_group_day']=self.acceptance_limit if self.acceptance_source else 2
         return limits
 
 
@@ -40,6 +41,11 @@ class NativeCardStore(MediaStore):
 
     def prepare_native(self,policy,binding,source_id,motive,*,requested_retest=False):
         source=VideoSources(self.store).get(source_id);bid=self.bind(binding)
+        if getattr(policy,'acceptance_source',None):
+            if (policy.acceptance_source!=source_id or policy.retest_binding!=bid or not 0<policy.retest_deadline-time.time()<=600
+                    or type(policy.acceptance_limit)is not int or not 1<=policy.acceptance_limit<=5):raise Blocked('MEDIA_NATIVE_ACCEPTANCE_SCOPE_REQUIRED')
+            self.store.event('media_native_explicit_acceptance_scope',{'source_id':source_id,'binding_id':bid,'deadline':policy.retest_deadline,
+                'fixed_group_share_limit':policy.acceptance_limit,'maximum_additional_cards':1,'ordinary_daily_limits_unchanged':True})
         if policy.read().get('shares',{}).get('following_only',True) and not source['followed']:raise Blocked('MEDIA_UPLOADER_NOT_FOLLOWED')
         previous=self.db.execute("SELECT status,sources FROM social_outbox WHERE device=? AND binding_id=? AND kind='group_video_share' AND trigger_id=?",(self.store.serial,bid,source['video_id'])).fetchone()
         trigger=source['video_id']
@@ -57,6 +63,7 @@ class NativeCardStore(MediaStore):
         if not row or row[2]!='card_ready' or CARD_SOURCE not in json.loads(row[0]):raise Blocked('MEDIA_NATIVE_CARD_NOT_PREPARED')
         sources=[s for s in json.loads(row[0]) if s.startswith('video:')]
         if len(sources)!=1 or not row[1].endswith(' '+VideoSources(self.store).get(sources[0])['public_url']):raise Blocked('MEDIA_NATIVE_CARD_SOURCE_CHANGED')
+        if getattr(policy,'acceptance_source',None) and sources[0]!=policy.acceptance_source:raise Blocked('MEDIA_NATIVE_ACCEPTANCE_SCOPE_REQUIRED')
         return SocialStore.before_send(self,policy,binding,outbound_id,now)
 
 
@@ -73,8 +80,17 @@ class NativeCardAgent:
         if requested_retest and loop.run_kind!='scripted':raise Blocked('MEDIA_NATIVE_RETEST_SCOPE_REQUIRED')
         trigger=source['video_id']+(':official_card_acceptance' if requested_retest else '')
         if loop.store.db.execute("SELECT 1 FROM social_outbox WHERE device=? AND binding_id=? AND kind='group_video_share' AND trigger_id=?",(loop.config.serial,binding_id,trigger)).fetchone():raise Blocked('MEDIA_VIDEO_GROUP_INTENT_ALREADY_RECORDED_NO_RESHARE')
-        policy=NativeCardPolicy(loop.config,retest_binding=binding_id if requested_retest and loop.run_kind=='scripted' else None,
-            deadline=loop.store.state['deadline'] if requested_retest else 0)
+        acceptance=loop.run_kind=='scripted' and bool(getattr(loop,'media_acceptance_context',None)) and not requested_retest
+        count=loop.store.db.execute("SELECT count(*) FROM social_outbox WHERE device=? AND binding_id=? AND kind='group_video_share' AND created>? AND status!='cancelled_before_send'",(loop.config.serial,binding_id,time.time()-86400)).fetchone()[0]
+        if acceptance:
+            scope=getattr(loop,'_media_acceptance_scope',None)
+            if scope is None:
+                scope=loop._media_acceptance_scope={'source_id':source_id,'binding_id':binding_id,'limit':count+1}
+            if scope['source_id']!=source_id or scope['binding_id']!=binding_id:raise Blocked('MEDIA_NATIVE_ACCEPTANCE_SCOPE_REQUIRED')
+            count=scope['limit']-1
+        policy=NativeCardPolicy(loop.config,retest_binding=binding_id if requested_retest or acceptance else None,
+            deadline=loop.store.state['deadline'] if requested_retest or acceptance else 0,
+            acceptance_source=source_id if acceptance else None,acceptance_limit=count+1 if acceptance else None)
         cards=NativeCardStore(loop.store);ui=NativeShareUI(loop)
         if row[0]==QQ:binding,modal=await ui.prepare_qq(source,binding_id)
         elif row[0]==WX:binding,modal=await ui.prepare_wechat(source,binding_id)
@@ -88,7 +104,8 @@ class NativeCardAgent:
                     or value['decision']=='send' and (not value['motive'] or value['sources']!=[source_id])):raise ValueError('NATIVE_SHARE_DECISION_INVALID')
         draft=await loop.guarded(loop.brain.structured('决定是否将提供的真实公开视频，使用当前官方分享卡片发到这个已授权并核对身份的群。只选意图与动机，不生成其他文字，不引用群外私聊；普通分享应与本群话题有关。可暂缓或忽略。返回JSON {"decision":"send/defer/ignore","motive":"具体理由","sources":["给定source_id"]}。',
             {'video':{k:source[k] for k in ('source_id','title','summary','uncertainty','source_type')},'current_group':getattr(ui,'context',{}),
-             'operator_test_context':'用户明确要求完成官方分享功能验收，之前的链接发送已验收；本轮只再发一张该视频的官方卡片，不重复链接。这是功能测试，因此不要求群里恰好在讨论视频主题。无退订或权限问题时可选择send；仍不得忽略真实群内的停止要求。' if requested_retest else None},[],validate))
+             'operator_test_context':('用户明确要求完成官方分享功能验收，之前的链接发送已验收；本轮只再发一张该视频的官方卡片，不重复链接。这是功能测试，因此不要求群里恰好在讨论视频主题。无退订或权限问题时可选择send；仍不得忽略真实群内的停止要求。' if requested_retest
+                 else getattr(loop,'media_acceptance_context',None) if loop.run_kind=='scripted' else None)},[],validate))
         loop.store.event('media_native_share_decision',{'binding_id':binding_id,'source_id':source_id,'decision':draft['decision'],'motive':draft['motive'],'explicit_acceptance':requested_retest})
         if draft['decision']!='send':return {'outcome':draft['decision'],'binding_id':binding_id}
         if loop.deadline-time.monotonic()<150:raise Blocked('MEDIA_NATIVE_POST_OBSERVATION_TIME_REQUIRED')
@@ -106,7 +123,7 @@ class NativeCardAgent:
             after,_=await loop.send(command,{'type':'native_official_card_send','outbound_id':oid,'binding_id':binding_id},fresh)
             if row[0]==WX:
                 after=await ui.cancel_wechat_picker(ui.ui,after)
-                after=await ui.ensure_wechat_fullscreen(ui.ui,after)
+                after=await ui.restore_wechat(ui.ui,after)
             for _ in range(3):
                 if 'QPublicTransFragmentActivity' not in after.foreground and 'SelectConversationUI' not in after.foreground:break
                 after=await ui.ui.act({'type':'back'},after)

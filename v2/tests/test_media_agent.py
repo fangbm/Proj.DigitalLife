@@ -111,10 +111,14 @@ class MediaCommentAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kind,'reply_video_comment');self.assertIn(tid,sources)
 
     async def test_notification_requires_full_actual_question_before_reply(self):
+        oid=self.social.prepare_media(self.policy,self.binding,'post_video_comment',self.source,'Original fixture root','Offline fixture')
+        self.social.transition(oid,'prepared','typed');self.social.transition(oid,'typed','dispatch_attempted');self.social.transition(oid,'dispatch_attempted','sent_observed',{'offline_fixture':True})
         thread={'thread_id':'thread:'+'c'*32,'text':'What is the benefit of preserving a confirmation step?'}
         self.ui.inspect_replies=AsyncMock(return_value=(thread,None,self.before))
-        with patch('digitallife_v2.bilibili.BilibiliUI',return_value=self.ui),patch.object(MediaAgent,'reply',new=AsyncMock(return_value={'outcome':'defer'})) as reply:
+        with patch('digitallife_v2.bilibili.BilibiliUI',return_value=self.ui),patch('digitallife_v2.media_agent.VideoSources.offered',return_value=[{'source_id':'newer-unrelated-video'}]) as latest,patch.object(MediaAgent,'reply',new=AsyncMock(return_value={'outcome':'defer'})) as reply:
             with self.assertRaisesRegex(Blocked,'NOT_MATCHED'):await MediaAgent(self.loop).reply_from_event({'event_id':'fixture','preview':'Unrelated notification'})
             reply.assert_not_awaited()
             await MediaAgent(self.loop).reply_from_event({'event_id':'fixture','preview':'Other replied: '+thread['text']})
             reply.assert_awaited_once_with(thread['thread_id'])
+            latest.assert_not_called()
+            self.assertEqual(self.ui.inspect_replies.call_args.args[0]['source_id'],self.source)

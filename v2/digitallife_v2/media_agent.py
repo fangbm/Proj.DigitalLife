@@ -58,10 +58,17 @@ class MediaAgent:
     async def reply_from_event(self,event):
         from .bilibili import BilibiliUI
         from .bili_threads import normalized
-        sources=VideoSources(self.loop.store).offered()
+        # A later video watch must not move an older comment notification to
+        # the newest video. Only actual observed root-comment intents qualify.
+        rows=self.loop.store.db.execute("SELECT sources FROM social_outbox WHERE device=? AND kind='post_video_comment' AND status='sent_observed' ORDER BY created DESC LIMIT 6",(self.loop.config.serial,)).fetchall()
+        ids=list(dict.fromkeys(s for row in rows for s in json.loads(row[0]) if s.startswith('video:')))
+        sources=[VideoSources(self.loop.store).get(s) for s in ids]
         if not sources:raise Blocked('MEDIA_NOTIFICATION_SOURCE_UNRESOLVED')
-        source=VideoSources(self.loop.store).get(sources[0]['source_id'])
-        thread,_,_=await BilibiliUI(self.loop).inspect_replies(source)
+        if len(sources)>1:
+            preview=normalized(event['preview']);sources=[s for s in sources if normalized(s['video_id']) in preview or normalized(s['title']) in preview]
+        if len(sources)!=1:raise Blocked('MEDIA_NOTIFICATION_SOURCE_AMBIGUOUS')
+        source=sources[0]
+        thread,_,_=await BilibiliUI(self.loop).inspect_replies(source,notification_preview=event['preview'])
         incoming=normalized(thread['text'])
         if len(incoming)<12 or incoming not in normalized(event['preview']):raise Blocked('MEDIA_NOTIFICATION_NOT_MATCHED_TO_PUBLIC_THREAD')
         self.loop.store.event('media_notification_correlated_to_public_thread',{'event_id':event['event_id'],'thread_id':thread['thread_id'],'routing':'known_video_parent_sender_UID_full_text_UI_correlation'})

@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from PIL import Image,ImageDraw
 from digitallife_v2.native_pixels import avatar_bounds
+from digitallife_v2.native_pixels import trailing_ellipsis
 from digitallife_v2.safety import Blocked
 
 
@@ -28,3 +29,15 @@ class AvatarBoundaryTests(unittest.TestCase):
         obs=self.frame(blank=True);label=SimpleNamespace(bounds=(170,330,300,365))
         self.assertIsNone(avatar_bounds(obs,label));self.path.write_bytes(b'changed')
         with self.assertRaises(Blocked):avatar_bounds(obs,label)
+
+    def test_trailing_ellipsis_requires_three_actual_baseline_dots(self):
+        obs=self.frame(blank=True);line=SimpleNamespace(bounds=(100,100,200,140))
+        with Image.open(self.path) as image:
+            draw=ImageDraw.Draw(image)
+            for x in (194,202):draw.rectangle((x,130,x+2,132),fill=(210,210,210))
+            image.save(self.path)
+        obs.png_sha256=hashlib.sha256(self.path.read_bytes()).hexdigest();self.assertFalse(trailing_ellipsis(obs,line))
+        with Image.open(self.path) as image:ImageDraw.Draw(image).rectangle((210,130,212,132),fill=(210,210,210));image.save(self.path)
+        obs.png_sha256=hashlib.sha256(self.path.read_bytes()).hexdigest();self.assertTrue(trailing_ellipsis(obs,line))
+        line.bounds=(100,100,214,140)
+        self.assertTrue(trailing_ellipsis(obs,line))

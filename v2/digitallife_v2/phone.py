@@ -64,6 +64,10 @@ class PhoneController:
 
     async def _adb(self, *args, dispatch=False, timeout=12):
         """Only internal fixed builders call this method; cancellation kills own child."""
+        if not dispatch and args[:3]==('exec-out','uiautomator','dump') and timeout==12:
+            # UiAutomation can spend ten seconds waiting for the first frame
+            # to settle after navigation, before it starts writing the tree.
+            timeout=25
         proc = None
         try:
             proc = await asyncio.create_subprocess_exec(self.config.adb, "-s", self.config.serial, *args,

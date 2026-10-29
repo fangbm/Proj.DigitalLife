@@ -7,7 +7,8 @@ from digitallife_v2.safety import Blocked
 from digitallife_v2.social_ui import WX
 from digitallife_v2.perception import Control
 from test_m1 import observation
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock,Mock
+import time
 
 
 class NativeAvatarWitnessTests(unittest.TestCase):
@@ -35,6 +36,41 @@ class NativeAvatarWitnessTests(unittest.TestCase):
 
 
 class OfficialConfirmationTests(unittest.TestCase):
+    def test_truncated_preview_needs_a_fresh_exact_native_video_origin(self):
+        title='TermPop：不离开页面，也能看懂术语【B站AI创造公开赛】'
+        source={'title':title,'source_id':'video:'+'f'*32,'video_id':'BV1234567890'}
+        obs=self.screen(title='TermPop：不离开页面，也能看懂术语【B站AI创造公开...')
+        native=NativeShareUI(SimpleNamespace(store=SimpleNamespace(event=Mock())))
+        binding=SimpleNamespace(app=WX,route_hint='Fixture group(12)')
+        with self.assertRaisesRegex(Blocked,'TITLE_CHANGED'):native.confirmation(obs,source,binding)
+        native.native_origin={**source,'at':time.monotonic(),'observation_id':'fixture-actual-native-bvid'}
+        self.assertEqual(native.confirmation(obs,source,binding).text,'发送')
+        native.native_origin['video_id']='BV0987654321'
+        with self.assertRaisesRegex(Blocked,'TITLE_CHANGED'):native.confirmation(obs,source,binding)
+    def test_wrapped_title_requires_complete_adjacent_lines_in_one_block(self):
+        row=lambda text,x,y:SimpleNamespace(text=text,bounds=(x,y,x+300,y+30),covered=False)
+        first=row('TermPop：不离开页面，',300,500);second=row('也能看懂术语',300,535)
+        obs=SimpleNamespace(width=1240,controls=[first,second]);title='TermPop：不离开页面，也能看懂术语'
+        self.assertEqual(NativeShareUI.title_blocks(obs,title),[[first,second]])
+        second.bounds=(800,535,1100,565)
+        self.assertEqual(NativeShareUI.title_blocks(obs,title),[])
+        obs.controls=[first];self.assertEqual(NativeShareUI.title_blocks(obs,title),[])
+    def test_ocr_split_on_same_baseline_then_wrapped_line_keeps_reading_order(self):
+        row=lambda text,bounds:SimpleNamespace(text=text,bounds=bounds,covered=False)
+        regions=[row('TermPop：',(300,1181,541,1234)),row('不离开页面，也',(567,1179,934,1233)),
+            row('能看懂术语',(303,1251,565,1298)),row('【B站AI创造公开赛】',(593,1245,1003,1302))]
+        obs=SimpleNamespace(width=1240,controls=regions)
+        title='TermPop：不离开页面，也能看懂术语【B站AI创造公开赛】'
+        self.assertEqual(NativeShareUI.title_blocks(obs,title),[regions])
+        regions[1].bounds=(1000,1179,1200,1233)
+        self.assertEqual(NativeShareUI.title_blocks(obs,title),[])
+    def test_recent_forward_duplicate_cannot_replace_verified_recent_chat_row(self):
+        row=lambda text,y:SimpleNamespace(text=text,bounds=(300,y,700,y+40),covered=False)
+        forwarded=row('Fixture group',400);recent=row('Fixture group',900)
+        obs=SimpleNamespace(controls=[row('最近转发',300),forwarded,row('最近聊天',800),recent])
+        self.assertIs(NativeShareUI.wechat_group_row(obs,recent),recent)
+        obs.controls.append(row('Fixture group',1200))
+        with self.assertRaisesRegex(Blocked,'AMBIGUOUS'):NativeShareUI.wechat_group_row(obs,recent)
     def screen(self,recipient='Fixture group(12人)',caption='发消息',title='Fixture video'):
         obs=observation('preview',foreground=WX+'/com.tencent.mm.ui.halfscreen.HalfScreenTransparentActivity');obs.controls=[]
         for i,text in enumerate(['Fixture group','Fixture video','发送给：',recipient,title,caption,'取消','发送']):

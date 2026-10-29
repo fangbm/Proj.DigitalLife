@@ -5,6 +5,31 @@ from PIL import Image,ImageStat
 from .safety import Blocked
 
 
+def trailing_ellipsis(observation,line):
+    if hashlib.sha256(Path(observation.png_path).read_bytes()).hexdigest()!=observation.png_sha256:raise Blocked('MEDIA_AVATAR_IMAGE_CHANGED')
+    x1,y1,x2,y2=line.bounds;height=y2-y1
+    # OCR sometimes includes all three dots in its right bound and sometimes
+    # drops them. Inspect one glyph width inside and two outside that bound.
+    region=(max(x1,x2-height),y1,min(observation.width,x2+max(48,height*2)),min(observation.height,y2+4))
+    with Image.open(observation.png_path) as picture:
+        image=picture.convert('RGB');mask={(x,y) for y in range(region[1],region[3]) for x in range(region[0],region[2]) if min(image.getpixel((x,y)))>135}
+    dots=[]
+    while mask:
+        seed=mask.pop();queue=[seed];points=[seed]
+        while queue:
+            x,y=queue.pop()
+            for dx,dy in ((-1,0),(1,0),(0,-1),(0,1)):
+                point=(x+dx,y+dy)
+                if point in mask:mask.remove(point);queue.append(point);points.append(point)
+        a=min(p[0] for p in points);b=min(p[1] for p in points);c=max(p[0] for p in points)+1;d=max(p[1] for p in points)+1
+        if 2<=c-a<=height*.3 and 2<=d-b<=height*.3 and (b+d)/2>y1+height*.5:dots.append((a,b,c,d))
+    dots.sort()
+    for a,b,c in zip(dots,dots[1:],dots[2:]):
+        if (1<=b[0]-a[2]<=height*.5 and 1<=c[0]-b[2]<=height*.5
+                and max(a[1],b[1],c[1])-min(a[1],b[1],c[1])<=height*.15):return True
+    return False
+
+
 def avatar_bounds(observation,label,*,owner=False,sender=False):
     if hashlib.sha256(Path(observation.png_path).read_bytes()).hexdigest()!=observation.png_sha256:raise Blocked('MEDIA_AVATAR_IMAGE_CHANGED')
     w,h=observation.width,observation.height
