@@ -1,6 +1,6 @@
 # DigitalLife V2 · M5 视频社交增量
 
-当前版本 **2.0.0a21**，分支 `codex/v2-m6`。正常 QQ 文字与语音处理支持 LifeBrain 选择回复格式，源码和 wheel 各 340 项回归通过，35 个运行模块一致；本切片实际格式探针因 QQ 需要重新扫码而未发送，见 [格式选择](M6-REPLY-FORMATS.md)。此前 QQ 真人语音 → 模型 → 静默原生语音回复及用户试听已通过，见 [QQ 语音闭环](M6-QQ-VOICE-REPLY.md)。微信静默路径仍在排查，本轮未发送微信消息；中英混合新音色未完成，M6 仍在开发。[角色 TTS](M6-SILENT-VOICE.md)、[M5 验收](M5-FINAL-ACCEPTANCE.md) 与 [流程简化](SIMPLIFIED-FLOWS.md) 保留。
+当前版本 **2.0.0a21**，分支 `codex/v2-m6`。正常 QQ 文字与语音处理支持 LifeBrain 选择回复格式，源码和 wheel 各 340 项回归通过，35 个运行模块一致；两个构造场景已由真实模型选择文字/语音并实际自发、读回原生消息，见 [格式选择](M6-REPLY-FORMATS.md)。此前 QQ 真人语音 → 模型 → 静默原生语音回复及用户试听已通过，见 [QQ 语音闭环](M6-QQ-VOICE-REPLY.md)。微信静默路径仍在排查，本轮未发送微信消息；中英混合新音色未完成，M6 仍在开发。[角色 TTS](M6-SILENT-VOICE.md)、[M5 验收](M5-FINAL-ACCEPTANCE.md) 与 [流程简化](SIMPLIFIED-FLOWS.md) 保留。
 
 M4 本机阶段验收保持完成：QQ / 主微信真实通知自动进入正确会话、现场身份核对及模型单次回复均已通过，主动联系、真人续聊及两端群 @ 回复证据齐全。见 [M4 最终验收](M4-FINAL-DELIVERY.md) · [M4 使用](M4.md)。按 v2.4 路线，M6 为 ASR/TTS 与语音消息，M7 为双向通话，M8 为长期运行。
 

@@ -1,6 +1,6 @@
 # Proj.DigitalLife V2
 
-当前为 **2.0.0a21**，分支 `codex/v2-m6`。QQ 普通文字与语音现可由 LifeBrain 选择回复格式，源码和 wheel 各 340 项回归通过，35 个运行模块一致；真实格式探针因 QQ 需要重新扫码而未发送，见 [格式选择与当前边界](v2/M6-REPLY-FORMATS.md)。此前 QQ 真人语音来信、模型回复、静默原生语音送达及用户试听已通过，见 [QQ 语音闭环](v2/M6-QQ-VOICE-REPLY.md)。微信静默路径仍在排查，本轮未发送微信消息；中英混合新音色也未完成，M6 不宣称整体完成。[角色音色](v2/M6-SILENT-VOICE.md) 与 [M5 验收](v2/M5-FINAL-ACCEPTANCE.md) 保留。不导入 V1 数据，下方 V1 历史逐字节保留。
+当前为 **2.0.0a21**，分支 `codex/v2-m6`。QQ 普通文字与语音现可由 LifeBrain 选择回复格式，源码和 wheel 各 340 项回归通过，35 个运行模块一致；两个构造场景已由真实模型选择文字/语音并实际自发、读回原生消息，见 [格式选择与当前边界](v2/M6-REPLY-FORMATS.md)。此前 QQ 真人语音来信、模型回复、静默原生语音送达及用户试听已通过，见 [QQ 语音闭环](v2/M6-QQ-VOICE-REPLY.md)。微信静默路径仍在排查，本轮未发送微信消息；中英混合新音色也未完成，M6 不宣称整体完成。[角色音色](v2/M6-SILENT-VOICE.md) 与 [M5 验收](v2/M5-FINAL-ACCEPTANCE.md) 保留。不导入 V1 数据，下方 V1 历史逐字节保留。
 
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
