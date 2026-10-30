@@ -1,6 +1,6 @@
 # Proj.DigitalLife V2
 
-当前为 **2.0.0a16**，分支 `codex/v2-m6`。M6 正在开发：本地普通话/中英混合 TTS 与 ASR、手机自播自录校准和微信文件传输助手原生语音试验已取得实际证据；微信 8 秒语音经平台转文字全文核对通过，无需电脑扬声器外放。手机自身仍需发声，QQ、真人入站语音与常规自主语音发件箱尚未验收，不宣称 M6 整体完成。源码与独立 wheel 各 309 项通过。见 [M6 语音切片](v2/M6-SPEECH-DELIVERY.md) 与 [V2 入口](v2/README.md)。[M5 本机验收](v2/M5-FINAL-ACCEPTANCE.md) 及 [a15 流程简化](v2/SIMPLIFIED-FLOWS.md) 保持；不导入 V1 数据，下方 V1 历史逐字节保留。
+当前为 **2.0.0a17**，分支 `codex/v2-m6`。M6 正在开发：新增 QQ 静默原生语音文件发送入口和本地 GPT-SoVITS 角色音色适配器。QQ 桥已启动，新版客户端登录和真实发送仍待验收；DS娘演示使用的小酒狐模型由用户下载中，尚未完成新音色替换。见 [静默语音与角色 TTS](v2/M6-SILENT-VOICE.md)。[a16 微信声学路径](v2/M6-SPEECH-DELIVERY.md)、[M5 本机验收](v2/M5-FINAL-ACCEPTANCE.md) 和 [a15 流程简化](v2/SIMPLIFIED-FLOWS.md) 保留；M6 不宣称整体完成。不导入 V1 数据，下方 V1 历史逐字节保留。
 
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 

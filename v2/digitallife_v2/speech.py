@@ -11,6 +11,7 @@ import time
 import uuid
 import wave
 from .safety import Blocked
+from .local_http import endpoint,request
 
 
 def initialize(db):
@@ -38,7 +39,15 @@ class SpeechPolicy:
     def check(self,operation):
         data=self.read();part=data.get(operation,{})
         if data.get('enabled') is not True or part.get('enabled') is not True:raise Blocked('SPEECH_DISABLED')
-        if part.get('provider')!={'tts':'windows_sapi','asr':'faster_whisper_local'}[operation]:raise Blocked('LOCAL_SPEECH_PROVIDER_REQUIRED')
+        if part.get('provider') not in {'tts':{'windows_sapi','gpt_sovits_local'},'asr':{'faster_whisper_local'}}[operation]:raise Blocked('LOCAL_SPEECH_PROVIDER_REQUIRED')
+        if part.get('provider')=='gpt_sovits_local':
+            endpoint(part.get('endpoint',''))
+            if (not isinstance(part.get('voice_id'),str) or not part['voice_id']
+                    or part.get('text_language','auto') not in {'zh','en','ja','auto','auto_zh'}
+                    or part.get('prompt_language') not in {'zh','en','ja'}
+                    or not isinstance(part.get('prompt_text'),str) or not part['prompt_text'].strip()
+                    or not isinstance(part.get('reference_audio'),str)
+                    or not Path(part['reference_audio']).is_file()):raise Blocked('SPEECH_CHARACTER_VOICE_NOT_CONFIGURED')
         limits={'max_tts_characters':300,'max_tts_seconds':20,'max_asr_seconds':60,'audio_seconds_hour':900,'raw_ttl_seconds':600}
         for key,default in limits.items():
             value=data.get('limits',{}).get(key,default)
@@ -158,15 +167,28 @@ class SpeechEngine:
         if voice_profile is not None and voice_profile!=voice:raise Blocked('SPEECH_VOICE_NOT_CONFIGURED')
         rate=settings.get('rate',0)
         if type(rate)is not int or not -5<=rate<=5:raise Blocked('SPEECH_RATE_INVALID')
-        job=self.reserve('tts',limits['max_tts_seconds'],len(text),'windows_sapi',limits);path=self.cache/(job+'.wav');self.jobs[job]=asyncio.current_task()
+        provider=settings['provider']
+        job=self.reserve('tts',limits['max_tts_seconds'],len(text),provider,limits);path=self.cache/(job+'.wav');self.jobs[job]=asyncio.current_task()
         try:
-            encoded=base64.b64encode(SAPI_SCRIPT.encode('utf-16-le')).decode()
             english=settings.get('english_voice_id','')
-            await run_worker(['powershell.exe','-NoProfile','-NonInteractive','-EncodedCommand',encoded],{'text':text,'voice':voice,'english_voice':english,'rate':rate,'path':str(path)},60)
-            self.policy.check('tts');info,_=inspect_wav(path,limits['max_tts_seconds'])
+            if provider=='windows_sapi':
+                encoded=base64.b64encode(SAPI_SCRIPT.encode('utf-16-le')).decode()
+                await run_worker(['powershell.exe','-NoProfile','-NonInteractive','-EncodedCommand',encoded],{'text':text,'voice':voice,'english_voice':english,'rate':rate,'path':str(path)},60)
+            else:
+                raw,content_type=await request(settings['endpoint'],'/tts',{'text':text,
+                    'text_lang':settings.get('text_language','auto'),'ref_audio_path':settings['reference_audio'],
+                    'prompt_text':settings['prompt_text'],'prompt_lang':settings['prompt_language'],
+                    'text_split_method':'cut5','batch_size':1,'media_type':'wav','streaming_mode':False,
+                    'seed':42,'parallel_infer':True},timeout=120,max_bytes=4_000_000)
+                if not raw.startswith(b'RIFF') or 'json' in content_type:raise Blocked('SPEECH_TTS_WAV_RESPONSE_REQUIRED')
+                path.write_bytes(raw)
+            current,_=self.policy.check('tts')
+            if current!=settings:raise Blocked('SPEECH_CONFIGURATION_CHANGED')
+            info,_=inspect_wav(path,limits['max_tts_seconds'])
             result=self.asset('tts',{'path':str(path),**info,'text_sha256':hashlib.sha256(text.encode()).hexdigest(),
-                'voice_id':voice,'english_voice_id':english,'language':settings.get('language','zh-CN'),'engine_id':'windows_sapi',
-                'text':text,'synthesized_only':True,'cloud_audio_uploaded':False,'cloned_voice':False},limits['raw_ttl_seconds'])
+                'voice_id':voice,'english_voice_id':english,'language':settings.get('language','zh-CN'),'engine_id':provider,
+                'text':text,'synthesized_only':True,'cloud_audio_uploaded':False,'cloned_voice':provider=='gpt_sovits_local',
+                'voice_source':settings.get('voice_source','installed_system_voice' if provider=='windows_sapi' else 'operator_configured_character')},limits['raw_ttl_seconds'])
             self.complete(job,info['seconds']);return result
         except BaseException:
             if path.exists():path.unlink()
