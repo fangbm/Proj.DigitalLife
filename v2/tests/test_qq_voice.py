@@ -121,7 +121,8 @@ class VoiceBridgeTests(unittest.IsolatedAsyncioTestCase):
     async def test_local_character_tts_decodes_chunked_wav_and_preserves_voice_metadata(self):
         policy={'version':1,'serial':self.cfg.serial,'enabled':True,'tts':{'enabled':True,'provider':'gpt_sovits_local',
             'endpoint':self.url,'voice_id':'winefox-character','reference_audio':str(self.wav),
-            'prompt_text':'参考语音','prompt_language':'ja','text_language':'auto','voice_source':'creator-model-package'}}
+            'prompt_text':'参考语音','prompt_language':'ja','text_language':'auto','voice_source':'creator-model-package',
+            'text_split_method':'cut0','parallel_infer':False,'split_bucket':False,'seed':1234}}
         self.speech.policy.path.write_text(json.dumps(policy),encoding='utf8')
         with patch('digitallife_v2.speech.run_worker',side_effect=AssertionError('must not fall back to SAPI')):
             result=await self.speech.synthesize('你好，这是新的角色音色。')
@@ -129,10 +130,21 @@ class VoiceBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['voice_source'],'creator-model-package');self.assertEqual(result['seconds'],1)
         sent=[c for c in self.calls if c[0]=='/tts'][0][1]
         self.assertFalse(sent['streaming_mode']);self.assertEqual(sent['prompt_lang'],'ja')
+        self.assertEqual(sent['text_split_method'],'cut0');self.assertFalse(sent['parallel_infer']);self.assertFalse(sent['split_bucket']);self.assertEqual(sent['seed'],1234)
         self.send_mode='json_error'
         with self.assertRaisesRegex(Blocked,'WAV_RESPONSE'):await self.speech.synthesize('模型错误不切回旧声音')
         states=self.store.db.execute('SELECT state FROM speech_usage ORDER BY rowid').fetchall()
         self.assertEqual([r[0] for r in states],['completed','failed_or_cancelled'])
+
+    async def test_character_parameter_errors_are_found_before_network_or_budget(self):
+        policy={'version':1,'serial':self.cfg.serial,'enabled':True,'tts':{'enabled':True,'provider':'gpt_sovits_local',
+            'endpoint':self.url,'voice_id':'winefox-character','reference_audio':str(self.wav),'prompt_text':'参考','prompt_language':'ja'}}
+        for key,value in [('parallel_infer','false'),('split_bucket',0),('seed',-1),('seed',True),('text_split_method','invalid')]:
+            changed={**policy,'tts':{**policy['tts'],key:value}}
+            self.speech.policy.path.write_text(json.dumps(changed),encoding='utf8')
+            with self.assertRaisesRegex(Blocked,'TTS_PARAMETERS_INVALID'):await self.speech.synthesize('不请求错误参数')
+        self.assertEqual(self.calls,[])
+        self.assertEqual(self.store.db.execute('SELECT count(*) FROM speech_usage').fetchone()[0],0)
 
     async def test_local_http_rejects_remote_redirect_payload_limit_and_times_out(self):
         for value in ('http://example.com:3000','http://127.0.0.1:3000@evil.test:80','https://127.0.0.1:3000','http://127.0.0.1:3000/path'):

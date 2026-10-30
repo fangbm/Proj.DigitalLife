@@ -48,6 +48,9 @@ class SpeechPolicy:
                     or not isinstance(part.get('prompt_text'),str) or not part['prompt_text'].strip()
                     or not isinstance(part.get('reference_audio'),str)
                     or not Path(part['reference_audio']).is_file()):raise Blocked('SPEECH_CHARACTER_VOICE_NOT_CONFIGURED')
+            if (part.get('text_split_method','cut5') not in {'cut0','cut5'}
+                    or type(part.get('parallel_infer',True)) is not bool or type(part.get('split_bucket',True)) is not bool
+                    or type(part.get('seed',42)) is not int or not 0<=part.get('seed',42)<2**32):raise Blocked('SPEECH_TTS_PARAMETERS_INVALID')
         limits={'max_tts_characters':300,'max_tts_seconds':20,'max_asr_seconds':60,'audio_seconds_hour':900,'raw_ttl_seconds':600}
         for key,default in limits.items():
             value=data.get('limits',{}).get(key,default)
@@ -178,8 +181,9 @@ class SpeechEngine:
                 raw,content_type=await request(settings['endpoint'],'/tts',{'text':text,
                     'text_lang':settings.get('text_language','auto'),'ref_audio_path':settings['reference_audio'],
                     'prompt_text':settings['prompt_text'],'prompt_lang':settings['prompt_language'],
-                    'text_split_method':'cut5','batch_size':1,'media_type':'wav','streaming_mode':False,
-                    'seed':42,'parallel_infer':True},timeout=120,max_bytes=4_000_000)
+                    'text_split_method':settings.get('text_split_method','cut5'),'batch_size':1,'media_type':'wav','streaming_mode':False,
+                    'seed':settings.get('seed',42),'parallel_infer':settings.get('parallel_infer',True),
+                    'split_bucket':settings.get('split_bucket',True)},timeout=120,max_bytes=4_000_000)
                 if not raw.startswith(b'RIFF') or 'json' in content_type:raise Blocked('SPEECH_TTS_WAV_RESPONSE_REQUIRED')
                 path.write_bytes(raw)
             current,_=self.policy.check('tts')

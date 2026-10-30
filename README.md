@@ -1,6 +1,6 @@
 # Proj.DigitalLife V2
 
-当前为 **2.0.0a17**，分支 `codex/v2-m6`。M6 正在开发：新增 QQ 静默原生语音文件发送入口和本地 GPT-SoVITS 角色音色适配器。QQ 桥已启动，新版客户端登录和真实发送仍待验收；DS娘演示使用的小酒狐模型由用户下载中，尚未完成新音色替换。见 [静默语音与角色 TTS](v2/M6-SILENT-VOICE.md)。[a16 微信声学路径](v2/M6-SPEECH-DELIVERY.md)、[M5 本机验收](v2/M5-FINAL-ACCEPTANCE.md) 和 [a15 流程简化](v2/SIMPLIFIED-FLOWS.md) 保留；M6 不宣称整体完成。不导入 V1 数据，下方 V1 历史逐字节保留。
+当前为 **2.0.0a18**，分支 `codex/v2-m6`。M6 正在开发：新增 QQ 静默原生语音文件发送入口和本地 GPT-SoVITS 角色音色适配器。小酒狐角色音色已选用，真实中文合成及完整转写核验通过；源码和 wheel 各 318 项回归通过。QQ 拒绝相册扫码授权，需手机摄像头实际扫码，静默发送尚未实测；中英混合语音仍待修。见 [静默语音与角色 TTS](v2/M6-SILENT-VOICE.md)。[a16 微信声学路径](v2/M6-SPEECH-DELIVERY.md)、[M5 本机验收](v2/M5-FINAL-ACCEPTANCE.md) 和 [a15 流程简化](v2/SIMPLIFIED-FLOWS.md) 保留；M6 不宣称整体完成。不导入 V1 数据，下方 V1 历史逐字节保留。
 
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
