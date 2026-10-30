@@ -1,5 +1,7 @@
 # M6 静默语音通道与角色 TTS
 
+后续进展：[a21 QQ 格式选择实测](M6-REPLY-FORMATS.md)、[a22 混合音色试听与完整虚拟声卡回录](M6-WECHAT-MIXED-DIAGNOSTIC.md)。下文保留 a18 阶段的实现与验收记录。
+
 2026-10-30，`2.0.0a18`，分支 `codex/v2-m6`。本切片将 QQ 原生语音发送接到本机 NapCat，增加本地 GPT-SoVITS 角色音色适配器。**M6 仍未整体验收完成。**
 
 ## 当前边界

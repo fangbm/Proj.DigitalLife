@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -29,7 +29,9 @@ param(
     [double]$VoiceOpenedAfter=0,
     [string]$VoiceOutbound='',
     [string]$VoiceMessageId='',
-    [ValidateSet('text','voice')][string]$ReplyScenario='text'
+    [ValidateSet('text','voice')][string]$ReplyScenario='text',
+    [string]$VoiceWav='',
+    [string]$FFmpegExe=''
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
@@ -38,7 +40,12 @@ if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 if ($ResumeOutbound -and ($Command -notin @('M4Probe','M5Probe') -or $ResumeOutbound -notmatch '^[a-f0-9]{32}$')) { throw 'ResumeOutbound requires M4Probe/M5Probe and an exact known-unsent outbound ID.' }
 if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires M4Probe/M4Listen/M5Probe and a verified binding ID.' }
-if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe') -and -not $Session) { throw 'Voice conversion/send/reconcile/listen requires a new Session.' }
+if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe') -and -not $Session) { throw 'Voice conversion/send/reconcile/listen/probe requires a new Session.' }
+if ($Command -eq 'VirtualCableProbe') {
+    if (-not $VoiceWav -or -not $FFmpegExe) { throw 'VirtualCableProbe requires VoiceWav and FFmpegExe; select the local audio environment with Python.' }
+    if (-not [IO.Path]::IsPathRooted($VoiceWav)) { $VoiceWav=Join-Path $PSScriptRoot $VoiceWav }
+    if (-not [IO.Path]::IsPathRooted($FFmpegExe)) { $FFmpegExe=Join-Path $PSScriptRoot $FFmpegExe }
+}
 if ($Command -eq 'VoiceReconcile' -and ($VoiceOutbound -notmatch '^[a-f0-9]{32}$' -or $VoiceMessageId -notmatch '^-?\d+$')) { throw 'VoiceReconcile requires the original outbound ID and an actually observed native message ID.' }
 if ($Command -eq 'VoiceSend' -and -not $VoiceIntent) { throw 'VoiceSend requires a stable VoiceIntent; unknown sends are never replayed.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
@@ -64,6 +71,7 @@ if ($Command -eq 'SpeechProbe') { $v2Args = @('-u','-m','acceptance.speech_probe
 if ($Command -eq 'NativeVoiceProbe') { $v2Args = @('-u','-m','acceptance.native_voice_probe') }
 if ($Command -eq 'VoiceListen') { $v2Args = @('-u','-m','acceptance.voice_reply_listen','--profile',$Profile,'--minutes',$Minutes.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($Command -eq 'ReplyFormatProbe') { $v2Args = @('-u','-m','acceptance.reply_format_probe','--profile',$Profile,'--scenario',$ReplyScenario) }
+if ($Command -eq 'VirtualCableProbe') { $v2Args = @('-u','-m','acceptance.virtual_cable_probe','--source',$VoiceWav,'--ffmpeg',$FFmpegExe) }
 if ($Command -eq 'VoiceListen' -and $VoiceOpenedAfter -gt 0) { $v2Args += @('--opened-after',$VoiceOpenedAfter.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
