@@ -12,7 +12,7 @@
 
 ## 实机与音色来源
 
-已在本机启动 NapCat `4.18.41`。原电脑 QQ `9.9.16` 在用户扫码后，被腾讯以版本过旧拒绝登录，未发送消息。随后在忽略的 `data/voice-runtime/` 下独立解压腾讯签名的 QQ `9.9.33.52230`，不修改原 QQ 安装。安装包 SHA-256 与 [winget 清单](https://github.com/microsoft/winget-pkgs/blob/master/manifests/t/Tencent/QQ/NT/9.9.33.52230/Tencent.QQ.NT.installer.yaml) 一致：`b25c0d3ce9df764074a9118d0ded927e1b2d7ebf60e306112e8df18a040ec492`。新版二维码已由测试手机识别，但 QQ 官方授权页明确拒绝相册图片识别/长按授权，要求使用摄像头实际扫码。该轮没有登录、没有发送消息；临时二维码图片已清理，手机回到桌面，未登录桥已停止。需要物理扫码后才能验收真实原生语音发送。
+已在本机启动 NapCat `4.18.41`。原电脑 QQ `9.9.16` 在用户扫码后，被腾讯以版本过旧拒绝登录，未发送消息。随后在忽略的 `data/voice-runtime/` 下独立解压腾讯签名的 QQ `9.9.33.52230`，不修改原 QQ 安装。安装包 SHA-256 与 [winget 清单](https://github.com/microsoft/winget-pkgs/blob/master/manifests/t/Tencent/QQ/NT/9.9.33.52230/Tencent.QQ.NT.installer.yaml) 一致：`b25c0d3ce9df764074a9118d0ded927e1b2d7ebf60e306112e8df18a040ec492`。新版二维码已由测试手机识别，但 QQ 官方授权页明确拒绝相册图片识别/长按授权，要求使用摄像头实际扫码。该轮没有登录、没有发送消息；临时二维码图片已清理，手机回到桌面，未登录桥已停止。随后用户完成摄像头扫码并在手机授权，新版 QQ 已实际登录。
 
 DS娘没有在本项目中被当作唯一的官方音色。查到的一个具体来源是 LingChat 的 DeepSeek娘演示引用的“小酒狐” GPT-SoVITS 模型：[模型作者视频](https://www.bilibili.com/video/BV1ozLE6pE3k/)、[LingChat 语音接入文档](https://slimeboyowo.github.io/LingBlog/blog/projects/ling-chat/develop/tts_guide)。作者旧夸克链接已失效；置顶评论补档为 `https://pan.baidu.com/s/1D4u8i7h18yJmf2iNBXKhBg`，提取码 `bmww`。浏览器安全策略禁止代理访问该补档站点，用户下载的精简包已在本机找到并解压，使用其中 v2Pro 权重和 idle50 日语参考录音；本仓库不重新分发角色权重或参考音频。
 
@@ -56,6 +56,12 @@ cd D:\codex\Proj.DigitalLife\v2
 
 通过正式 `VoiceSynthesize` 入口，用角色权重生成 6.02 秒、32 kHz、单声道 WAV，文本为「你好呀，我是数字生命。现在开始，我会用这个新的声音和你聊天。」本地 ASR 转写全文经繁简、标点归一化后完全一致。证据为 `data/voice-runtime/CHARACTER_VOICE_ACCEPTANCE.json`，试听文件为 `data/speech/samples/winefox-demo-20261030.wav`。本轮没有播放、没有用麦克风，也没有发给任何联系人。
 
-最初并行/分句参数的中文样本转写不完整，未计为通过；调整成上述默认参数后才通过。纯英文单句在常规 ASR 静音过滤下漏掉开头 Hello，关闭过滤后的诊断能完整识别；中英混合样本仍未通过正文核验，不能宣称混合语音验收完成。该问题与原生 QQ 实际发送均保留为后续验收项。
+最初并行/分句参数的中文样本转写不完整，未计为通过；调整成上述默认参数后才通过。纯英文单句在常规 ASR 静音过滤下漏掉开头 Hello，关闭过滤后的诊断能完整识别；中英混合样本仍未通过正文核验，不能宣称混合语音验收完成。中英混合问题保留为后续验收项。
 
 TTS 请求取消会关闭本地连接；独立模型服务可能继续完成当前推理，服务生命周期与每次转换分开管理。正常自主语音选择、真人入站语音、微信静默通道尚未完成，M6 整体仍在开发。
+
+## 2026-10-30 QQ 静默语音实测
+
+用户完成摄像头扫码登录后，`VoiceStatus` 读回账号与现有绑定一致。正式 `VoiceSend` 入口只向登录账号自己发送一条小酒狐中文语音，结果 `sent_observed`；QQ `get_msg` 读回发送者、同一消息 ID 和原生 `record` 类型。随后使用 QQ `get_record` 将该语音读回 WAV，并由本地 ASR 转写；正文经繁简和标点归一化后与「你好呀，我是数字生命。现在开始，我会用这个新的声音和你聊天。」全文一致。
+
+私有证据为 `data/voice-runtime/QQ_NATIVE_VOICE_ACCEPTANCE.json`，发送会话为 `data/sessions/m6-qq-silent-self-character-20261030-01`。这次实际只发给自己一条，没有播放扬声器、使用麦克风或向其他联系人/群发消息；读回证明原生语音内容可解码，不代表其他收件人已听。未额外发送第二条，也没有启动自主社交循环。QQ 静默自发与新中文角色音色已实测通过，M6 其他未完成项保持上述边界。
