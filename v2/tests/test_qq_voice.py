@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock,patch
+import time
 from digitallife_v2.local_http import endpoint,request
 from digitallife_v2.qq_voice import QQVoiceSender
 from digitallife_v2.safety import Blocked
@@ -70,11 +71,37 @@ class VoiceBridgeTests(unittest.IsolatedAsyncioTestCase):
     def outbound_state(self):return self.store.db.execute('SELECT status FROM social_outbox').fetchone()[0]
     def sends(self):return [c for c in self.calls if c[0].startswith('/send_')]
 
+    async def unknown_for_review(self):
+        self.send_mode='drop'
+        with self.assertRaises(Blocked):await self.sender.send(self.asset['speech_ref'],target='self',intent='late-source')
+        return self.store.db.execute('SELECT id FROM social_outbox').fetchone()[0]
+
+    async def test_late_native_confirmation_is_read_only_and_preserves_one_attempt(self):
+        oid=await self.unknown_for_review();posted=time.time()
+        native={'message_id':987,'time':posted,'message_type':'private','sender':{'user_id':12345678},'message':[{'type':'record','data':{'file':'actual.silk'}}]}
+        api=AsyncMock(side_effect=[{'user_id':12345678},{'messages':[native]},native])
+        with patch.object(self.sender,'api',api):result=await self.sender.reconcile(oid,987)
+        self.assertEqual(result['outcome'],'sent_observed');self.assertEqual(result['additional_messages_sent'],0)
+        self.assertFalse(result['audio_content_independently_verified']);self.assertEqual(len(self.sends()),1)
+        self.assertEqual([c.args[0] for c in api.await_args_list],['get_login_info','get_friend_msg_history','get_msg'])
+        self.assertEqual(self.outbound_state(),'sent_observed')
+        with self.assertRaisesRegex(Blocked,'NOT_UNKNOWN'):await self.sender.reconcile(oid,987)
+
+    async def test_late_confirmation_rejects_wrong_message_and_ambiguous_records(self):
+        oid=await self.unknown_for_review()
+        native={'message_id':987,'time':time.time(),'sender':{'user_id':12345678},'message':[{'type':'record'}]}
+        for messages in ([],[{**native,'message_id':999}],[native,{**native,'message_id':988}],[{**native,'sender':{'user_id':23456789}}]):
+            with patch.object(self.sender,'api',AsyncMock(side_effect=[{'user_id':12345678},{'messages':messages}])):
+                with self.assertRaisesRegex(Blocked,'AMBIGUOUS_OR_UNMATCHED'):await self.sender.reconcile(oid,987)
+            self.assertEqual(self.outbound_state(),'delivery_unknown')
+        self.assertEqual(len(self.sends()),1)
+
     async def test_file_becomes_record_without_speaker_mic_or_ui_and_same_intent_never_repeats(self):
         result=await self.sender.send(self.asset['speech_ref'],target='23456789',intent='one-source')
         self.assertEqual(result['outcome'],'sent_observed');self.assertFalse(result['speaker_used']);self.assertFalse(result['microphone_used'])
         message=self.sends()[0][1]['message'];self.assertEqual([m['type'] for m in message],['record'])
         self.assertEqual(base64.b64decode(message[0]['data']['file'][9:]),self.wav.read_bytes())
+        self.assertEqual(self.sends()[0][1]['timeout'],45000)
         self.assertEqual(self.sends()[0][2]['authorization'],'Bearer fixture-only-token-1234')
         with self.assertRaisesRegex(Blocked,'INTENT_ALREADY'):await self.sender.send(self.asset['speech_ref'],target='23456789',intent='one-source')
         self.assertEqual(len(self.sends()),1)

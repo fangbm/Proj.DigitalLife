@@ -307,6 +307,19 @@ class SocialStore:
         self.check_thread(bid, limits, now, outbound_id)
         return row[1]
 
+    def reconcile_native_record(self,outbound_id,evidence):
+        """Read-only late confirmation; never resets an intent for another send."""
+        row=self.db.execute('SELECT status,sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
+        if (not row or row[0]!='delivery_unknown' or 'native:qq-record' not in json.loads(row[1])
+                or evidence.get('transport')!='napcat_record' or evidence.get('client_record_observed') is not True
+                or evidence.get('reconciled_read_only') is not True or type(evidence.get('message_id')) is not int):
+            raise Blocked('SOCIAL_LATE_NATIVE_RECORD_UNVERIFIED')
+        cursor=self.db.execute("UPDATE social_outbox SET status='sent_observed',observed=?,evidence=? WHERE id=? AND device=? AND status='delivery_unknown'",
+            (time.time(),json.dumps(evidence),outbound_id,self.store.serial));self.db.commit()
+        if cursor.rowcount!=1:raise Blocked('SOCIAL_LATE_RECORD_STATE_CHANGED')
+        self.store.event('social_late_native_record_observed',{'outbound_id':outbound_id,'evidence':evidence,'additional_send_attempts':0,
+            'delivery_claim':'own_QQ_client_record_observed_not_read_receipt'})
+
     def resume_pre_send(self,policy,binding,outbound_id,observation_id):
         """Operator recovery only: no send was ever attempted for this draft."""
         now=time.time()

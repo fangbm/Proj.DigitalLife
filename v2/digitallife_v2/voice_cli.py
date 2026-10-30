@@ -36,6 +36,13 @@ async def convert_or_send(config,args):
     engine=SpeechEngine(config,store)
     try:
         sender=QQVoiceSender(config,store,engine)
+        if args.command=='reconcile':
+            if not args.outbound_id or args.message_id is None:raise ValueError('VOICE_RECONCILIATION_REFERENCES_REQUIRED')
+            result=await sender.reconcile(args.outbound_id,args.message_id)
+            if result['trigger_id'].startswith('qq-voice:'):
+                from .voice import QQVoiceInbox
+                QQVoiceInbox(config,store).finish(result['trigger_id'][9:],'sent_observed',outbound_id=args.outbound_id,reconciled_read_only=True)
+            write_json(directory/'VOICE_RESULT.json',result);store.finish('completed','LATE_NATIVE_VOICE_CONFIRMED_NO_RESEND');return result
         if args.command=='send':await sender.status()
         if bool(args.speech_ref)==bool(args.text):raise ValueError('EXACTLY_ONE_VOICE_TEXT_OR_SPEECH_REF_REQUIRED')
         asset=engine.get(args.speech_ref) if args.speech_ref else await engine.synthesize(args.text)
@@ -55,12 +62,13 @@ async def convert_or_send(config,args):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=('status','synthesize','send'))
+    parser.add_argument('command',choices=('status','synthesize','send','reconcile'))
     parser.add_argument('--profile',default='find-x6');parser.add_argument('--session')
     parser.add_argument('--text');parser.add_argument('--speech-ref')
     parser.add_argument('--target',default='self');parser.add_argument('--target-kind',choices=('dm','group'),default='dm')
     parser.add_argument('--kind',choices=('auto_reply','proactive_dm','group_post'),default='proactive_dm')
     parser.add_argument('--intent')
+    parser.add_argument('--outbound-id');parser.add_argument('--message-id',type=int)
     args=parser.parse_args()
     try:
         result=asyncio.run(run(Config.load(args.profile),args))

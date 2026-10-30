@@ -28,9 +28,9 @@ class QQVoiceSender:
             return value
         except (ValueError,KeyError,TypeError,OSError):raise Blocked('QQ_VOICE_NOT_CONFIGURED') from None
 
-    async def api(self,action,payload=None,settings=None,*,max_bytes=1_000_000):
+    async def api(self,action,payload=None,settings=None,*,max_bytes=1_000_000,timeout=45):
         value=settings or self.settings()
-        result=await json_request(value['endpoint'],'/'+action,payload or {},token=value['access_token'],timeout=45,max_bytes=max_bytes)
+        result=await json_request(value['endpoint'],'/'+action,payload or {},token=value['access_token'],timeout=timeout,max_bytes=max_bytes)
         if not isinstance(result,dict) or result.get('status')!='ok' or result.get('retcode')!=0:
             raise Blocked('QQ_VOICE_BRIDGE_REFUSED')
         return result.get('data')
@@ -74,12 +74,12 @@ class QQVoiceSender:
             raw=Path(asset['path']).read_bytes()
             if hashlib.sha256(raw).hexdigest()!=asset['sha256']:raise Blocked('SPEECH_ASSET_CHANGED')
             audio=base64.b64encode(raw).decode('ascii')
-            payload={'message':[{'type':'record','data':{'file':'base64://'+audio}}],
+            payload={'message':[{'type':'record','data':{'file':'base64://'+audio}}],'timeout':45000,
                 'user_id' if target_kind=='dm' else 'group_id':int(target)}
             if self.store.state['dispatched']>=self.config.max_actions:raise Blocked('VOICE_ACTION_BUDGET_EXHAUSTED')
             self.social.transition(oid,'voice_ready','dispatch_attempted',{'speech_ref':speech_ref,'transport':'napcat_record'})
             self.store.update(dispatched=self.store.state['dispatched']+1)
-            result=await self.api('send_private_msg' if target_kind=='dm' else 'send_group_msg',payload,settings)
+            result=await self.api('send_private_msg' if target_kind=='dm' else 'send_group_msg',payload,settings,timeout=60)
             message_id=result.get('message_id') if isinstance(result,dict) else None
             if type(message_id) is not int:raise Blocked('QQ_VOICE_MESSAGE_ID_MISSING')
             # Acceptance by the client is recorded separately from read receipt.
@@ -100,3 +100,32 @@ class QQVoiceSender:
             if row and row[0]=='dispatch_attempted':self.social.transition(oid,row[0],'delivery_unknown',{'transport':'napcat_record','reason':'send_or_receipt_uncertain_no_retry'})
             elif row and row[0] in {'prepared','voice_ready'}:self.social.transition(oid,row[0],'cancelled_before_send',{'reason':'cancelled_before_HTTP_send'})
             raise
+
+    async def reconcile(self,outbound_id,message_id):
+        """Operator inspection of a late record. This method cannot send."""
+        if not re.fullmatch('[a-f0-9]{32}',outbound_id) or type(message_id) is not int:raise Blocked('QQ_VOICE_RECONCILIATION_ARGUMENTS_INVALID')
+        row=self.store.db.execute('SELECT o.status,o.attempted,o.sources,b.account,b.peer,b.kind,o.binding_id,o.kind,o.trigger_id FROM social_outbox o JOIN social_bindings b ON b.id=o.binding_id WHERE o.id=? AND o.device=?',
+            (outbound_id,self.config.serial)).fetchone()
+        if not row or row[0]!='delivery_unknown' or row[1] is None or 'native:qq-record' not in json.loads(row[2]):raise Blocked('QQ_VOICE_NOT_UNKNOWN_NATIVE_SEND')
+        login=await self.status()
+        if str(login['user_id'])!=row[3]:raise Blocked('QQ_VOICE_LOGIN_ACCOUNT_MISMATCH')
+        group=row[5]=='group';payload={'group_id' if group else 'user_id':int(row[4]),'message_seq':0,'count':20}
+        history=await self.api('get_group_msg_history' if group else 'get_friend_msg_history',payload)
+        candidates=[m for m in history.get('messages',[]) if isinstance(m,dict)
+            and str(m.get('sender',{}).get('user_id'))==row[3]
+            and type(m.get('time')) in (int,float) and row[1]-1<=m['time']<=row[1]+120
+            and (not group or str(m.get('group_id'))==row[4])
+            and any(p.get('type')=='record' for p in m.get('message',[]) if isinstance(p,dict))]
+        if len(candidates)!=1 or candidates[0].get('message_id')!=message_id:raise Blocked('QQ_VOICE_LATE_RECORD_AMBIGUOUS_OR_UNMATCHED')
+        actual=await self.api('get_msg',{'message_id':message_id})
+        if (not isinstance(actual,dict) or actual.get('message_id')!=message_id
+                or str(actual.get('sender',{}).get('user_id'))!=row[3]
+                or (str(actual.get('group_id'))!=row[4] if group else actual.get('message_type')!='private')
+                or not any(p.get('type')=='record' for p in actual.get('message',[]) if isinstance(p,dict))):
+            raise Blocked('QQ_VOICE_LATE_RECORD_UNVERIFIED')
+        evidence={'message_id':message_id,'transport':'napcat_record','client_record_observed':True,
+            'reconciled_read_only':True,'recipient_history_verified':True,'late_confirmation_seconds':round(candidates[0]['time']-row[1],3),
+            'speaker_used':False,'microphone_used':False,'read_receipt':False,'audio_content_independently_verified':False}
+        self.social.reconcile_native_record(outbound_id,evidence)
+        self.social.record_exchange(row[6],row[7],outbound_id,'own_outgoing_native_record_observed_not_read_receipt')
+        return {'outcome':'sent_observed','outbound_id':outbound_id,'trigger_id':row[8],'additional_messages_sent':0,**evidence}

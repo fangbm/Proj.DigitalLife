@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceListen','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -26,7 +26,9 @@ param(
     [string]$VoiceTarget='self',
     [ValidateSet('dm','group')][string]$VoiceTargetKind='dm',
     [string]$VoiceIntent='',
-    [double]$VoiceOpenedAfter=0
+    [double]$VoiceOpenedAfter=0,
+    [string]$VoiceOutbound='',
+    [string]$VoiceMessageId=''
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
@@ -35,14 +37,16 @@ if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 if ($ResumeOutbound -and ($Command -notin @('M4Probe','M5Probe') -or $ResumeOutbound -notmatch '^[a-f0-9]{32}$')) { throw 'ResumeOutbound requires M4Probe/M5Probe and an exact known-unsent outbound ID.' }
 if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires M4Probe/M4Listen/M5Probe and a verified binding ID.' }
-if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceListen') -and -not $Session) { throw 'Voice conversion/send/listen requires a new Session.' }
+if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen') -and -not $Session) { throw 'Voice conversion/send/reconcile/listen requires a new Session.' }
+if ($Command -eq 'VoiceReconcile' -and ($VoiceOutbound -notmatch '^[a-f0-9]{32}$' -or $VoiceMessageId -notmatch '^-?\d+$')) { throw 'VoiceReconcile requires the original outbound ID and an actually observed native message ID.' }
 if ($Command -eq 'VoiceSend' -and -not $VoiceIntent) { throw 'VoiceSend requires a stable VoiceIntent; unknown sends are never replayed.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
-if ($Command -in @('VoiceStatus','VoiceSynthesize','VoiceSend')) {
-    $v2Args = @('-u','-m','digitallife_v2.voice_cli',@{VoiceStatus='status';VoiceSynthesize='synthesize';VoiceSend='send'}[$Command],'--profile',$Profile)
+if ($Command -in @('VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile')) {
+    $v2Args = @('-u','-m','digitallife_v2.voice_cli',@{VoiceStatus='status';VoiceSynthesize='synthesize';VoiceSend='send';VoiceReconcile='reconcile'}[$Command],'--profile',$Profile)
     if ($VoiceText) { $v2Args += @('--text',$VoiceText) }
     if ($VoiceRef) { $v2Args += @('--speech-ref',$VoiceRef) }
     if ($Command -eq 'VoiceSend') { $v2Args += @('--target',$VoiceTarget,'--target-kind',$VoiceTargetKind,'--intent',$VoiceIntent) }
+    if ($Command -eq 'VoiceReconcile') { $v2Args += @('--outbound-id',$VoiceOutbound,'--message-id',$VoiceMessageId) }
 }
 if ($Command -eq 'VisionProbe') { $v2Args = @('-u','-m','acceptance.vision_probe') }
 if ($Command -eq 'M3Probe') { $v2Args = @('-u','-m','acceptance.m3_content_events') }
