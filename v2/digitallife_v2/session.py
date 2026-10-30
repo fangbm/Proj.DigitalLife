@@ -175,7 +175,7 @@ class SessionLoop:
         self.store.reading_context = ReadingStore(self.store, reading_source).context(before.foreground.split('/')[0])
         self.store.inbound_context = self.hub.next() if self.hub else None
         if (self.voice_inbox and self.store.inbound_context and self.store.inbound_context.get('source_app')=='com.tencent.mobileqq'
-                and any(label in self.store.inbound_context.get('preview','') for label in ('[语音]','[语音消息]','发来一条语音'))):
+                and (self.voice_inbox.accept_text or any(label in self.store.inbound_context.get('preview','') for label in ('[语音]','[语音消息]','发来一条语音')))):
             self.hub.resolve(self.store.inbound_context,{'event_id':self.store.inbound_context['event_id'],
                 'decision':'read_only','note':'Native voice stream owns this event; notification is not a transcript'})
             self.store.inbound_context=None
@@ -238,6 +238,11 @@ class SessionLoop:
                     bid=SocialStore(self.store).bind(binding)
                     return {'outcome':'social_identity_observed','binding_id':bid}
                 kind='auto_reply' if reply_event or action['type']=='reply_to_contact' else 'proactive_dm' if action['type']=='initiate_dm' else 'group_post'
+                target_id=action.get('binding_id')
+                native=self.store.db.execute('SELECT app,peer FROM social_bindings WHERE id=? AND device=?',(target_id,self.config.serial)).fetchone() if target_id else None
+                if self.voice_inbox and native and native[0]=='com.tencent.mobileqq' and native[1].isdigit():
+                    from .voice import QQVoiceAgent
+                    return await QQVoiceAgent(self,self.voice_inbox).run_target(target_id,kind)
                 result=await SocialAgent(self,ui).run(kind,event=reply_event,binding_id=action.get('binding_id'))
                 if reply_event:
                     self.store.event('inbound_social_result',{'event_id':reply_event['event_id'],**result,

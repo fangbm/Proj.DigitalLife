@@ -25,6 +25,8 @@ class QQVoiceSender:
                 raise ValueError()
             endpoint(value['endpoint'])
             if not isinstance(value['access_token'],str) or not 16<=len(value['access_token'])<=512:raise ValueError()
+            if 'reply_formats' in value and (not isinstance(value['reply_formats'],list) or not value['reply_formats']
+                    or any(f not in ('text','voice') for f in value['reply_formats'])):raise ValueError()
             return value
         except (ValueError,KeyError,TypeError,OSError):raise Blocked('QQ_VOICE_NOT_CONFIGURED') from None
 
@@ -129,3 +131,37 @@ class QQVoiceSender:
         self.social.reconcile_native_record(outbound_id,evidence)
         self.social.record_exchange(row[6],row[7],outbound_id,'own_outgoing_native_record_observed_not_read_receipt')
         return {'outcome':'sent_observed','outbound_id':outbound_id,'trigger_id':row[8],'additional_messages_sent':0,**evidence}
+
+    async def send_text(self,text,*,target,target_kind='dm',intent,kind='auto_reply',sources=(),motive):
+        """Native text shares the voice outbox and incoming-intent identity."""
+        settings=self.settings();binding=await self.binding(target,target_kind)
+        if target_kind=='group':kind='group_post'
+        bid=self.social.bind(binding)
+        oid=self.social.prepare(self.policy,binding,kind,intent,text,motive,[*sources,'native:qq-text'])
+        try:
+            self.social.transition(oid,'prepared','text_ready',{'text_sha256':hashlib.sha256(text.encode()).hexdigest()})
+            if self.settings()!=settings:raise Blocked('QQ_VOICE_CONFIGURATION_CHANGED')
+            self.social.before_send(self.policy,binding,oid)
+            if self.store.state['dispatched']>=self.config.max_actions:raise Blocked('VOICE_ACTION_BUDGET_EXHAUSTED')
+            payload={'message':[{'type':'text','data':{'text':text}}],'timeout':45000,
+                'group_id' if target_kind=='group' else 'user_id':int(binding.peer)}
+            self.social.transition(oid,'text_ready','dispatch_attempted',{'transport':'napcat_text'})
+            self.store.update(dispatched=self.store.state['dispatched']+1)
+            result=await self.api('send_group_msg' if target_kind=='group' else 'send_private_msg',payload,settings,timeout=60)
+            mid=result.get('message_id') if isinstance(result,dict) else None
+            if type(mid)is not int:raise Blocked('QQ_NATIVE_TEXT_MESSAGE_ID_MISSING')
+            actual=await self.api('get_msg',{'message_id':mid},settings)
+            valid=(isinstance(actual,dict) and actual.get('message_id')==mid
+                and str(actual.get('sender',{}).get('user_id'))==binding.account
+                and (target_kind=='dm' or str(actual.get('group_id'))==binding.peer)
+                and ''.join(p.get('data',{}).get('text','') for p in actual.get('message',[]) if isinstance(p,dict) and p.get('type')=='text')==text)
+            evidence={'message_id':mid,'transport':'napcat_text','client_text_observed':valid,'read_receipt':False,
+                'speaker_used':False,'microphone_used':False,'reply_format':'text'}
+            status='sent_observed' if valid else 'delivery_unknown';self.social.transition(oid,'dispatch_attempted',status,evidence)
+            if valid:self.social.record_exchange(bid,kind,oid,'own_outgoing_native_text_observed_not_read_receipt')
+            return {'outbound_id':oid,'outcome':status,**evidence}
+        except BaseException:
+            state=self.store.db.execute('SELECT status FROM social_outbox WHERE id=?',(oid,)).fetchone()[0]
+            if state=='dispatch_attempted':self.social.transition(oid,state,'delivery_unknown',{'transport':'napcat_text','reason':'no_retry_after_uncertain_send'})
+            elif state in {'prepared','text_ready'}:self.social.transition(oid,state,'cancelled_before_send')
+            raise

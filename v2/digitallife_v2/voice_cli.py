@@ -39,9 +39,9 @@ async def convert_or_send(config,args):
         if args.command=='reconcile':
             if not args.outbound_id or args.message_id is None:raise ValueError('VOICE_RECONCILIATION_REFERENCES_REQUIRED')
             result=await sender.reconcile(args.outbound_id,args.message_id)
-            if result['trigger_id'].startswith('qq-voice:'):
+            if result['trigger_id'].startswith(('qq-voice:','qq-message:')):
                 from .voice import QQVoiceInbox
-                QQVoiceInbox(config,store).finish(result['trigger_id'][9:],'sent_observed',outbound_id=args.outbound_id,reconciled_read_only=True)
+                QQVoiceInbox(config,store).finish(result['trigger_id'].split(':',1)[1],'sent_observed',outbound_id=args.outbound_id,reconciled_read_only=True)
             write_json(directory/'VOICE_RESULT.json',result);store.finish('completed','LATE_NATIVE_VOICE_CONFIRMED_NO_RESEND');return result
         if args.command=='send':await sender.status()
         if bool(args.speech_ref)==bool(args.text):raise ValueError('EXACTLY_ONE_VOICE_TEXT_OR_SPEECH_REF_REQUIRED')

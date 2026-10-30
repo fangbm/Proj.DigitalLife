@@ -29,7 +29,10 @@ if (Test-Path -LiteralPath $npPrivate) {
 } else {
     $npToken = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLowerInvariant()
 }
-$npVoice = @{ version=1; serial=$npPolicy.serial; enabled=$true; provider='napcat'; endpoint="http://127.0.0.1:$Port"; access_token=$npToken; incoming=@{enabled=$true;events_endpoint="http://127.0.0.1:$EventsPort";language='zh-CN'} }
+$npFormats=@('text','voice');$npHandleText=$true
+if ($npExisting -and $npExisting.PSObject.Properties.Name -contains 'reply_formats') {$npFormats=$npExisting.reply_formats}
+if ($npExisting -and $npExisting.incoming -and $npExisting.incoming.PSObject.Properties.Name -contains 'handle_text') {$npHandleText=$npExisting.incoming.handle_text}
+$npVoice = @{ version=1; serial=$npPolicy.serial; enabled=$true; provider='napcat'; endpoint="http://127.0.0.1:$Port"; access_token=$npToken; reply_formats=$npFormats; incoming=@{enabled=$true;events_endpoint="http://127.0.0.1:$EventsPort";language='zh-CN';handle_text=$npHandleText} }
 $npVoice | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $npPrivate -Encoding utf8
 $npNetwork = @{ network=@{httpServers=@(@{name='digitallife-voice';enable=$true;host='127.0.0.1';port=$Port;token=$npToken;enableCors=$false;enableWebsocket=$false;messagePostFormat='array';debug=$false});httpSseServers=@(@{name='digitallife-voice-events';enable=$true;host='127.0.0.1';port=$EventsPort;token=$npToken;enableCors=$false;messagePostFormat='array';debug=$false});httpClients=@();websocketServers=@();websocketClients=@()}; enableLocalFile2Url=$false; parseMultMsg=$false }
 $npConfig = Join-Path $npRuntime 'config'
