@@ -1,6 +1,7 @@
 """Small cancellable HTTP client for local inference and client bridges only."""
 import asyncio
 import json
+from contextlib import suppress
 from urllib.parse import urlsplit
 from .safety import Blocked
 
@@ -70,3 +71,48 @@ async def json_request(base,path,payload,**options):
     raw,_=await request(base,path,payload,**options)
     try:return json.loads(raw)
     except (ValueError,UnicodeError):raise Blocked('LOCAL_HTTP_JSON_INVALID') from None
+
+
+async def events(base,token,ready,*,idle_seconds=None,max_event_bytes=131072):
+    """Authenticated SSE from the separate local QQ event server; no redirects/replay."""
+    host,port=endpoint(base)
+    if any(c in token for c in '\r\n') or not token.isascii():raise Blocked('LOCAL_HTTP_REQUEST_INVALID')
+    reader,writer=await asyncio.wait_for(asyncio.open_connection(host,port,limit=max_event_bytes+65536),10)
+    try:
+        authority=f'[{host}]:{port}' if ':' in host else f'{host}:{port}'
+        writer.write((f'GET /_events HTTP/1.1\r\nHost: {authority}\r\nAuthorization: Bearer {token}\r\nAccept: text/event-stream\r\nConnection: close\r\n\r\n').encode('ascii'))
+        await writer.drain()
+        raw=await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'),10)
+        lines=raw.decode('latin1').split('\r\n')
+        fields={k.strip().lower():v.strip().lower() for line in lines[1:] if ':' in line for k,v in [line.split(':',1)]}
+        if len(raw)>32768 or int(lines[0].split()[1])!=200 or 'text/event-stream' not in fields.get('content-type',''):
+            raise Blocked('LOCAL_SSE_REFUSED')
+        transfer=fields.get('transfer-encoding','')
+        if transfer not in {'','chunked'}:raise Blocked('LOCAL_HTTP_TRANSFER_UNSUPPORTED')
+        ready.set();buffer=bytearray();frame=[];frame_size=0
+        while True:
+            if transfer=='chunked':
+                size=int((await asyncio.wait_for(reader.readuntil(b'\r\n'),idle_seconds)).split(b';',1)[0],16)
+                if size==0:return
+                if not 0<size<=max_event_bytes:raise Blocked('LOCAL_SSE_EVENT_LIMIT')
+                part=await asyncio.wait_for(reader.readexactly(size),idle_seconds)
+                if await reader.readexactly(2)!=b'\r\n':raise Blocked('LOCAL_SSE_CHUNK_INVALID')
+            else:
+                part=await asyncio.wait_for(reader.read(8192),idle_seconds)
+                if not part:return
+            buffer.extend(part)
+            while b'\n' in buffer:
+                raw_line,_,remaining=buffer.partition(b'\n');buffer=bytearray(remaining)
+                line=raw_line.rstrip(b'\r')
+                if line.startswith(b'data:'):
+                    frame.append(line[5:].lstrip(b' '));frame_size+=len(line)
+                elif not line and frame:
+                    try:value=json.loads(b'\n'.join(frame))
+                    except (ValueError,UnicodeError):raise Blocked('LOCAL_SSE_JSON_INVALID') from None
+                    frame=[];frame_size=0
+                    if isinstance(value,dict):yield value
+                if frame_size+len(buffer)>max_event_bytes:raise Blocked('LOCAL_SSE_EVENT_LIMIT')
+            if frame_size+len(buffer)>max_event_bytes:raise Blocked('LOCAL_SSE_EVENT_LIMIT')
+    finally:
+        writer.close()
+        with suppress(OSError):await writer.wait_closed()

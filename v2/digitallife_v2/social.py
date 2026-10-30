@@ -197,10 +197,10 @@ class SocialStore:
         except (ValueError,TypeError,KeyError,OSError):
             raise Blocked('SOCIAL_PUBLIC_SOURCE_UNVERIFIED') from None
 
-    def record_exchange(self,binding_id,kind,outbound_id):
+    def record_exchange(self,binding_id,kind,outbound_id,evidence_kind='own_outgoing_UI_observed_not_read_receipt'):
         # A compact, target-local relationship fact, without copying other chats.
         summary=json.dumps({'last_outbound_id':outbound_id,'last_kind':kind,
-            'state':'own_outgoing_UI_observed_not_read_receipt'},ensure_ascii=False)
+            'state':evidence_kind},ensure_ascii=False)
         self.db.execute('INSERT INTO social_relations VALUES(?,0,?,?) ON CONFLICT(binding_id) DO UPDATE SET summary=excluded.summary,updated=excluded.updated',
             (binding_id,summary,time.time()))
         self.db.commit()

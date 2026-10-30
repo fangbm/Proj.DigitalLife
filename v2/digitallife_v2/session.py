@@ -38,9 +38,14 @@ class SessionLoop:
         self.last_result_event = None
         self.bridge = None
         self.hub = None
+        self.voice_inbox = None
+        self.speech = None
         self.inbound_wake = asyncio.Event()
 
     async def poll_notifications(self):
+        if self.voice_inbox:
+            if self.voice_inbox.poll():self.inbound_wake.set()
+            if self.voice_inbox.error:self.store.update(voice_event_error=self.voice_inbox.error)
         if self.bridge:
             try:
                 if await self.bridge.poll(self.hub):self.inbound_wake.set()
@@ -153,6 +158,15 @@ class SessionLoop:
         return after, result
 
     async def step(self):
+        if self.voice_inbox:
+            from .voice import QQVoiceAgent
+            self.voice_inbox.poll()
+            item=self.voice_inbox.next()
+            if item:
+                try:return await QQVoiceAgent(self,self.voice_inbox).run(item)
+                except Blocked as error:
+                    self.store.event('voice_unavailable',{'voice_event_id':item['event_id'],'reason':str(error)})
+                    return {'outcome':'voice_unavailable','reason':str(error)}
         self.action_ids = []
         before = await self.guarded(self.phone.observe())
         self.observed(before)
@@ -160,6 +174,11 @@ class SessionLoop:
         reading_source = 'v2_autonomous' if self.run_kind == 'autonomous' else 'live_scripted' if self.run_kind == 'scripted' else 'fixture'
         self.store.reading_context = ReadingStore(self.store, reading_source).context(before.foreground.split('/')[0])
         self.store.inbound_context = self.hub.next() if self.hub else None
+        if (self.voice_inbox and self.store.inbound_context and self.store.inbound_context.get('source_app')=='com.tencent.mobileqq'
+                and any(label in self.store.inbound_context.get('preview','') for label in ('[语音]','[语音消息]','发来一条语音'))):
+            self.hub.resolve(self.store.inbound_context,{'event_id':self.store.inbound_context['event_id'],
+                'decision':'read_only','note':'Native voice stream owns this event; notification is not a transcript'})
+            self.store.inbound_context=None
         policy=SocialPolicy(self.config).read()
         social_enabled=policy.get('enabled') is True
         self.store.social_context={'enabled':social_enabled,
@@ -313,6 +332,21 @@ class SessionLoop:
             status, reason = "stopped", "INTERRUPTED"
             try:
                 self.hub = EventHub(self.store,self.config.notification_packages)
+                if (self.config.data/'voice.private.json').exists() and self.run_kind!='fixture':
+                    from .voice import QQVoiceInbox
+                    from .speech import SpeechEngine
+                    voice=QQVoiceInbox(self.config,self.store,self.inbound_wake)
+                    try:voice.settings()
+                    except Blocked:pass
+                    else:
+                        self.speech=SpeechEngine(self.config,self.store);self.speech.cleanup()
+                        try:
+                            await self.guarded(voice.start());self.voice_inbox=voice
+                            self.store.update(voice_events='connected')
+                        except (Blocked,OSError,ValueError,asyncio.TimeoutError):
+                            await voice.close();self.store.update(voice_events='unavailable')
+                        except BaseException:
+                            await voice.close();raise
                 if (self.config.data/'notification-bridge.private.json').exists() and self.run_kind!='fixture':
                     bridge=NotificationBridge(self.config,self.phone)
                     try:
@@ -383,6 +417,9 @@ class SessionLoop:
                     'location':{'file':Path(trace[-1].filename).name,'function':trace[-1].name,'line':trace[-1].lineno} if trace else None})
                 self.store.update(last_error=reason)
             finally:
+                if self.voice_inbox:await self.voice_inbox.close()
+                if self.speech:
+                    await self.speech.cancel();self.speech.cleanup()
                 if hasattr(self.phone,'close'):
                     with suppress(OSError,ValueError,asyncio.TimeoutError):
                         await self.phone.close()

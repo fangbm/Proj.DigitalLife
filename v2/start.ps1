@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceListen','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -25,7 +25,8 @@ param(
     [string]$VoiceRef='',
     [string]$VoiceTarget='self',
     [ValidateSet('dm','group')][string]$VoiceTargetKind='dm',
-    [string]$VoiceIntent=''
+    [string]$VoiceIntent='',
+    [double]$VoiceOpenedAfter=0
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
@@ -34,7 +35,7 @@ if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 if ($ResumeOutbound -and ($Command -notin @('M4Probe','M5Probe') -or $ResumeOutbound -notmatch '^[a-f0-9]{32}$')) { throw 'ResumeOutbound requires M4Probe/M5Probe and an exact known-unsent outbound ID.' }
 if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires M4Probe/M4Listen/M5Probe and a verified binding ID.' }
-if ($Command -in @('VoiceSynthesize','VoiceSend') -and -not $Session) { throw 'Voice conversion/send requires a new Session.' }
+if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceListen') -and -not $Session) { throw 'Voice conversion/send/listen requires a new Session.' }
 if ($Command -eq 'VoiceSend' -and -not $VoiceIntent) { throw 'VoiceSend requires a stable VoiceIntent; unknown sends are never replayed.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
 if ($Command -in @('VoiceStatus','VoiceSynthesize','VoiceSend')) {
@@ -56,6 +57,8 @@ if ($Command -eq 'SocialReceive') { $v2Args = @('-u','-m','acceptance.social_rec
 if ($Command -eq 'AudioProbe') { $v2Args = @('-u','-m','acceptance.audio_probe') }
 if ($Command -eq 'SpeechProbe') { $v2Args = @('-u','-m','acceptance.speech_probe','--microphone-source',$MicrophoneSource) }
 if ($Command -eq 'NativeVoiceProbe') { $v2Args = @('-u','-m','acceptance.native_voice_probe') }
+if ($Command -eq 'VoiceListen') { $v2Args = @('-u','-m','acceptance.voice_reply_listen','--profile',$Profile,'--minutes',$Minutes.ToString([Globalization.CultureInfo]::InvariantCulture)) }
+if ($Command -eq 'VoiceListen' -and $VoiceOpenedAfter -gt 0) { $v2Args += @('--opened-after',$VoiceOpenedAfter.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKind) }
@@ -82,7 +85,7 @@ try {
     $env:PYTHONPATH = $PSScriptRoot
     $env:PYTHONUTF8 = '1'
     # Only an explicitly authorized Run may decrypt the existing credential. No secret file is modified.
-    if ($Command -in @('Run','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $env:DIGITALLIFE_V2_API_KEY -and -not $env:PHONE_LIFE_API_KEY) {
+    if ($Command -in @('Run','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect','VoiceListen') -and -not $env:DIGITALLIFE_V2_API_KEY -and -not $env:PHONE_LIFE_API_KEY) {
         $v2SecretPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'data/deepseek.key.dpapi'
         if (Test-Path -LiteralPath $v2SecretPath) {
             $v2Secure = (Get-Content -LiteralPath $v2SecretPath -Raw).Trim() | ConvertTo-SecureString

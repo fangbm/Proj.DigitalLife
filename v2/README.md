@@ -1,6 +1,6 @@
 # DigitalLife V2 · M5 视频社交增量
 
-当前版本 **2.0.0a18**，分支 `codex/v2-m6`。新增 QQ 静默原生语音入口与本地 GPT-SoVITS 角色音色适配器，见 [静默语音与角色 TTS](M6-SILENT-VOICE.md)。小酒狐角色音色已选用，真实中文合成及完整转写核验通过；源码和 wheel 各 318 项回归通过。QQ 已通过手机摄像头扫码登录，自发原生语音及 QQ 读回音频完整转写核验通过；中英混合语音仍待修。M6 仍在开发，正常自主语音选择、真人入站语音和微信静默通道未完成。[a16 声学路径证据](M6-SPEECH-DELIVERY.md) 保留。M5 本机功能完成与 a15 简化行为保持，见 [M5 验收](M5-FINAL-ACCEPTANCE.md) 和 [流程简化](SIMPLIFIED-FLOWS.md)。
+当前版本 **2.0.0a19**，分支 `codex/v2-m6`。QQ 实时入站语音 → 本地 ASR → LifeBrain → 静默原生语音回复已接入正常会话循环，见 [QQ 语音回复](M6-QQ-VOICE-REPLY.md)。源码和 wheel 各 329 项通过，35 个运行模块一致；真人来信闭环正在验收。小酒狐中文合成和 QQ 自发语音/读回核验保持通过，见 [a18 静默语音与角色 TTS](M6-SILENT-VOICE.md)。微信静默、中英混合新音色和普通文字社交中的格式自主选择未完成，M6 仍在开发。[a16 声学路径](M6-SPEECH-DELIVERY.md)、[M5 验收](M5-FINAL-ACCEPTANCE.md) 与 [流程简化](SIMPLIFIED-FLOWS.md) 保留。
 
 M4 本机阶段验收保持完成：QQ / 主微信真实通知自动进入正确会话、现场身份核对及模型单次回复均已通过，主动联系、真人续聊及两端群 @ 回复证据齐全。见 [M4 最终验收](M4-FINAL-DELIVERY.md) · [M4 使用](M4.md)。按 v2.4 路线，M6 为 ASR/TTS 与语音消息，M7 为双向通话，M8 为长期运行。
 

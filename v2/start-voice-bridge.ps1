@@ -1,9 +1,11 @@
+#requires -Version 7.0
 param(
     [Parameter(Mandatory=$true)][string]$QQPath,
     [Parameter(Mandatory=$true)][string]$QQPackagePath,
     [string]$Runtime = "$PSScriptRoot/data/voice-runtime/napcat-4.18.41",
     [ValidateRange(1024,65535)][int]$Port = 31071,
-    [ValidateRange(1024,65535)][int]$WebPort = 31072
+    [ValidateRange(1024,65535)][int]$WebPort = 31072,
+    [ValidateRange(1024,65535)][int]$EventsPort = 31074
 )
 $ErrorActionPreference = 'Stop'
 $npRuntime = (Resolve-Path -LiteralPath $Runtime).Path
@@ -12,7 +14,7 @@ $npPackage = Get-Content -LiteralPath $QQPackagePath -Raw | ConvertFrom-Json
 $npPolicy = Get-Content -LiteralPath "$PSScriptRoot/data/social.private.json" -Raw | ConvertFrom-Json
 $npAccount = $npPolicy.accounts.'com.tencent.mobileqq'
 if ($npAccount -notmatch '^[1-9][0-9]{4,19}$') { throw 'Bound QQ account is required.' }
-if (Get-NetTCPConnection -State Listen -LocalPort $Port,$WebPort -ErrorAction SilentlyContinue) { throw 'Voice bridge port is already occupied.' }
+if (Get-NetTCPConnection -State Listen -LocalPort $Port,$WebPort,$EventsPort -ErrorAction SilentlyContinue) { throw 'Voice bridge port is already occupied.' }
 foreach ($npRequired in @('NapCatWinBootMain.exe','NapCatWinBootHook.dll','loadNapCat.js','napcat.mjs')) {
     if (-not (Test-Path -LiteralPath (Join-Path $npRuntime $npRequired))) { throw "Missing official NapCat runtime: $npRequired" }
 }
@@ -27,9 +29,9 @@ if (Test-Path -LiteralPath $npPrivate) {
 } else {
     $npToken = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLowerInvariant()
 }
-$npVoice = @{ version=1; serial=$npPolicy.serial; enabled=$true; provider='napcat'; endpoint="http://127.0.0.1:$Port"; access_token=$npToken }
-$npVoice | ConvertTo-Json | Set-Content -LiteralPath $npPrivate -Encoding utf8
-$npNetwork = @{ network=@{httpServers=@(@{name='digitallife-voice';enable=$true;host='127.0.0.1';port=$Port;token=$npToken;enableCors=$false;enableWebsocket=$false;messagePostFormat='array';debug=$false});httpClients=@();websocketServers=@();websocketClients=@()}; enableLocalFile2Url=$false; parseMultMsg=$false }
+$npVoice = @{ version=1; serial=$npPolicy.serial; enabled=$true; provider='napcat'; endpoint="http://127.0.0.1:$Port"; access_token=$npToken; incoming=@{enabled=$true;events_endpoint="http://127.0.0.1:$EventsPort";language='zh-CN'} }
+$npVoice | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $npPrivate -Encoding utf8
+$npNetwork = @{ network=@{httpServers=@(@{name='digitallife-voice';enable=$true;host='127.0.0.1';port=$Port;token=$npToken;enableCors=$false;enableWebsocket=$false;messagePostFormat='array';debug=$false});httpSseServers=@(@{name='digitallife-voice-events';enable=$true;host='127.0.0.1';port=$EventsPort;token=$npToken;enableCors=$false;messagePostFormat='array';debug=$false});httpClients=@();websocketServers=@();websocketClients=@()}; enableLocalFile2Url=$false; parseMultMsg=$false }
 $npConfig = Join-Path $npRuntime 'config'
 New-Item -ItemType Directory -Path $npConfig -Force | Out-Null
 $npNetwork | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $npConfig "onebot11_$npAccount.json") -Encoding utf8
