@@ -39,4 +39,4 @@ Windows 微信按用户选择仅测试文件传输助手，未向其他联系人
 
 私有证据为 `data/sessions/m6-a21-format-text-20261031-01/FORMAT_READY.json`、`data/sessions/m6-a21-format-voice-20261031-01/FORMAT_READY.json` 和 `data/sessions/m6-a21-format-audio-readback-20261031-01/AUDIO_READBACK.json`。初次未登录失败记录保持原样。两次发送会话均正常停止，事件接收和手机音频观察已释放，音量无待恢复项；没有启动常驻回复循环，没有播放实体扬声器或使用实体麦克风。
 
-仍待完成：微信静默原生语音的可靠通道及实际自测、中英混合新音色验收。角色语音的逐字 ASR 偏差继续保留，不用格式通过覆盖。
+仍待完成：微信静默原生语音的可靠通道及实际自测、中英混合新音色验收。角色语音的逐字 ASR 偏差继续保留，不用格式通过覆盖。后续小缓冲复测、Windows 麦克风授权阻塞与新混合样本记录见 [微信和混合音色诊断](M6-WECHAT-MIXED-DIAGNOSTIC.md)。
