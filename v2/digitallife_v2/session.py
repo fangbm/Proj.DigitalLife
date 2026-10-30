@@ -390,6 +390,10 @@ class SessionLoop:
                     inactive=await self.bridge.close()
                     self.store.update(notification_collection_inactive=inactive,
                                       audio_projection_released=getattr(self.bridge,'audio_projection_released',None))
+                    if hasattr(self.bridge,'speech_playback_released'):
+                        self.store.update(speech_playback_released=self.bridge.speech_playback_released,
+                                          speech_audio_stopped=self.bridge.speech_audio_stopped,
+                                          audio_volume_restore_pending=self.bridge.audio_volume_restore_pending)
                 if self.lock.pending.exists():
                     status = "unknown"
                 self.store.event("session_ended", {"status": status, "reason": reason})

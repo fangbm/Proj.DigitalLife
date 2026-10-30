@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -19,10 +19,11 @@ param(
     [switch]$RequestedNow,
     [ValidateSet('watch','comment','share','link','review','reply','native')][string]$MediaKind='watch',
     [string]$SourceId='',
-    [string]$ThreadId=''
+    [string]$ThreadId='',
+    [ValidateSet('mic','voice_communication')][string]$MicrophoneSource='voice_communication'
 )
 $ErrorActionPreference = 'Stop'
-if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
+if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
 if ($Emergency -and $Command -ne 'Stop') { throw 'Emergency applies only to Stop.' }
 if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to M3Probe.' }
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
@@ -40,6 +41,8 @@ if ($Command -eq 'M5Listen') { $v2Args = @('-u','-m','acceptance.media_reply_lis
 if ($Command -eq 'GroupProbe') { $v2Args = @('-u','-m','acceptance.group_probe') }
 if ($Command -eq 'SocialReceive') { $v2Args = @('-u','-m','acceptance.social_receive') }
 if ($Command -eq 'AudioProbe') { $v2Args = @('-u','-m','acceptance.audio_probe') }
+if ($Command -eq 'SpeechProbe') { $v2Args = @('-u','-m','acceptance.speech_probe','--microphone-source',$MicrophoneSource) }
+if ($Command -eq 'NativeVoiceProbe') { $v2Args = @('-u','-m','acceptance.native_voice_probe') }
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKind) }
@@ -51,7 +54,7 @@ if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($
 if ($Command -eq 'SocialInspect' -and $RouteMarker) { $v2Args += @('--read-marker',$RouteMarker) }
 if ($ResumeOutbound) { $v2Args += @('--resume-outbound',$ResumeOutbound) }
 if ($SocialBinding) { $v2Args += @('--binding-id',$SocialBinding) }
-if ($Command -in @('Run','Doctor','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')) { $v2Args += @('--profile',$Profile) }
+if ($Command -in @('Run','Doctor','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')) { $v2Args += @('--profile',$Profile) }
 if ($Session) {
     if (-not [IO.Path]::IsPathRooted($Session)) { $Session = Join-Path $PSScriptRoot $Session }
     $v2Args += @('--session',$Session)

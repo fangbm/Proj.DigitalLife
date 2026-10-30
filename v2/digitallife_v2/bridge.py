@@ -69,6 +69,10 @@ class NotificationBridge:
                 inactive=True
                 state=await self.request('GET','/status')
                 self.audio_projection_released=not state['audio_authorized'] if 'audio_authorized' in state else None
+                if 'speech_playback_service' in state:
+                    self.speech_playback_released=not state['speech_playback_service'].get('active',True)
+                    self.speech_audio_stopped=state.get('speech',{}).get('state') not in {'playing','starting_playback','synthesizing'}
+                    self.audio_volume_restore_pending=state['speech_playback_service'].get('volume_restore_pending',False)
             except (OSError,ValueError,asyncio.TimeoutError,EOFError):pass
             try:await self.phone._adb('forward','--remove',f'tcp:{self.port}')
             except (OSError,ValueError,asyncio.TimeoutError):pass

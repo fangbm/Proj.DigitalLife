@@ -10,7 +10,7 @@ import android.widget.*;
 public class MainActivity extends Activity {
     private static volatile boolean resumed;
     static boolean isForeground(){return resumed;}
-    @Override protected void onResume(){super.onResume();resumed=true;}
+    @Override protected void onResume(){super.onResume();resumed=true;SpeechPlaybackService.restorePending(this);}
     @Override protected void onPause(){resumed=false;super.onPause();}
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -29,6 +29,9 @@ public class MainActivity extends Activity {
             startActivityForResult(intent,73);
         });box.addView(audio);
         Button speech = new Button(this); speech.setText("播放语音验收材料"); speech.setOnClickListener(v -> startActivity(new Intent(this,SpeechActivity.class))); box.addView(speech);
+        Button calibration=new Button(this);calibration.setText("本机声音路径测试");calibration.setOnClickListener(v -> startActivity(new Intent(this,CalibrationActivity.class)));box.addView(calibration);
+        Button playback=new Button(this);playback.setText("开启本机语音播放服务");playback.setOnClickListener(v -> {if(BridgeListener.sessionActive())startForegroundService(new Intent(this,SpeechPlaybackService.class));});box.addView(playback);
+        Button stopPlayback=new Button(this);stopPlayback.setText("停止播放并恢复音量");stopPlayback.setOnClickListener(v -> {SpeechAudio.stop();SpeechPlaybackService.stopAll();SpeechPlaybackService.restorePending(this);});box.addView(stopPlayback);
         Button input = new Button(this); input.setText("测试中文输入"); input.setOnClickListener(v -> startActivity(new Intent(this,InputActivity.class))); box.addView(input);
         Button settings = new Button(this); settings.setText("打开系统通知监听设置");
         settings.setOnClickListener(v -> startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))); box.addView(settings);

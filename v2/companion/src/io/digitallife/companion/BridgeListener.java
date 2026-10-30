@@ -37,7 +37,7 @@ public class BridgeListener extends NotificationListenerService {
     @Override public void onListenerConnected() { ready=true; }
     @Override public synchronized void onListenerDisconnected() {ready=false;clear();}
     @Override public synchronized void onDestroy() { clear();try {if(server!=null)server.close();}catch(IOException ignored){} super.onDestroy(); }
-    private void clear(){activeUntil=0;queue.clear();routes.clear();routeSources.clear();attemptedRoutes.clear();packages.clear();publicShare=null;BridgeIme.invalidate();AudioCaptureService.stopAll();}
+    private void clear(){activeUntil=0;queue.clear();routes.clear();routeSources.clear();attemptedRoutes.clear();packages.clear();publicShare=null;BridgeIme.invalidate();AudioCaptureService.stopAll();SpeechAudio.stop();CalibrationActivity.stopAll();SpeechPlaybackService.stopAll();}
     public static void acceptPublicShare(String text,String subject,String referrer){
         BridgeListener s=current;if(s==null)return;
         synchronized(s){
@@ -116,7 +116,7 @@ public class BridgeListener extends NotificationListenerService {
         try{token=new String(Files.readAllBytes(new File(getFilesDir(),"bridge.token").toPath()),StandardCharsets.US_ASCII).trim();}catch(IOException ignored){}
         String auth=headers.getOrDefault("authorization","");
         if(!token.matches("[a-f0-9]{64}") || !MessageDigest.isEqual(("Bearer "+token).getBytes(StandardCharsets.US_ASCII),auth.getBytes(StandardCharsets.US_ASCII))){respond(socket,401,new JSONObject().put("error","unauthorized"));return;}
-        int length=Integer.parseInt(headers.getOrDefault("content-length","0"));if(length<0 || length>16384)return;
+        int length=Integer.parseInt(headers.getOrDefault("content-length","0"));if(length<0 || length>("/speech/import".equals(request[1])?900000:16384))return;
         byte[] body=new byte[length];int read=0;while(read<length){int n=in.read(body,read,length-read);if(n<0)return;read+=n;}
         JSONObject data=length==0?new JSONObject():new JSONObject(new String(body,StandardCharsets.UTF_8));
         JSONObject response=new JSONObject();int status=200;
@@ -161,7 +161,14 @@ public class BridgeListener extends NotificationListenerService {
             case "POST /share/ack":
                 if(publicShare!=null && publicShare.getString("receipt_id").equals(data.getString("receipt_id")))publicShare=null;
                 response.put("cleared",publicShare==null);break;
-            case "GET /status":response.put("listener_ready",ready).put("active",activeUntil>0).put("queued",queue.size()).put("audio_authorized",AudioCaptureService.available()).put("ime_active",BridgeIme.available());break;
+            case "GET /status":response.put("listener_ready",ready).put("active",activeUntil>0).put("queued",queue.size()).put("audio_authorized",AudioCaptureService.available()).put("ime_active",BridgeIme.available()).put("speech",SpeechAudio.status(false)).put("speech_playback_service",SpeechPlaybackService.status(this));break;
+            case "POST /speech/init":if(!active()){status=409;response.put("error","inactive");}else response=SpeechAudio.initialize(this);break;
+            case "POST /speech/synthesize":if(!active()){status=409;response.put("error","inactive");}else response=SpeechAudio.synthesize(this,data);break;
+            case "POST /speech/status":if(!active()){status=409;response.put("error","inactive");}else response=SpeechAudio.status(data.optBoolean("fetch",false));break;
+            case "POST /speech/play":if(!active()){status=409;response.put("error","inactive");}else response=SpeechAudio.play(data);break;
+            case "POST /speech/import":if(!active()){status=409;response.put("error","inactive");}else response=SpeechAudio.importAsset(this,data);break;
+            case "POST /speech/stop":SpeechAudio.stop();response.put("stopped",true);break;
+            case "POST /speech/calibration":if(!active()){status=409;response.put("error","inactive");}else response=CalibrationActivity.result(data.optBoolean("fetch",false));break;
             case "POST /session":
                 clear();int ttl=data.getInt("ttl_seconds");if(ttl<1||ttl>600)throw new IllegalArgumentException();
                 JSONArray allowed=data.getJSONArray("packages");if(allowed.length()>20)throw new IllegalArgumentException();
