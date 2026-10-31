@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe','WechatTimedSelfProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -31,7 +31,8 @@ param(
     [string]$VoiceMessageId='',
     [ValidateSet('text','voice')][string]$ReplyScenario='text',
     [string]$VoiceWav='',
-    [string]$FFmpegExe=''
+    [string]$FFmpegExe='',
+    [switch]$PrepareOnly
 )
 $ErrorActionPreference = 'Stop'
 if ($Command -in @('Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect') -and -not $Session) { throw 'Session is required.' }
@@ -48,6 +49,8 @@ if ($Command -eq 'VirtualCableProbe') {
 }
 if ($Command -eq 'VoiceReconcile' -and ($VoiceOutbound -notmatch '^[a-f0-9]{32}$' -or $VoiceMessageId -notmatch '^-?\d+$')) { throw 'VoiceReconcile requires the original outbound ID and an actually observed native message ID.' }
 if ($Command -eq 'VoiceSend' -and -not $VoiceIntent) { throw 'VoiceSend requires a stable VoiceIntent; unknown sends are never replayed.' }
+if ($PrepareOnly -and $Command -ne 'WechatTimedSelfProbe') { throw 'PrepareOnly applies only to WechatTimedSelfProbe.' }
+if ($Command -eq 'WechatTimedSelfProbe' -and (-not $Session -or -not $VoiceIntent -or -not $VoiceText)) { throw 'WechatTimedSelfProbe requires Session, VoiceIntent and VoiceText.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
 if ($Command -in @('VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile')) {
     $v2Args = @('-u','-m','digitallife_v2.voice_cli',@{VoiceStatus='status';VoiceSynthesize='synthesize';VoiceSend='send';VoiceReconcile='reconcile'}[$Command],'--profile',$Profile)
@@ -72,6 +75,10 @@ if ($Command -eq 'NativeVoiceProbe') { $v2Args = @('-u','-m','acceptance.native_
 if ($Command -eq 'VoiceListen') { $v2Args = @('-u','-m','acceptance.voice_reply_listen','--profile',$Profile,'--minutes',$Minutes.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($Command -eq 'ReplyFormatProbe') { $v2Args = @('-u','-m','acceptance.reply_format_probe','--profile',$Profile,'--scenario',$ReplyScenario) }
 if ($Command -eq 'VirtualCableProbe') { $v2Args = @('-u','-m','acceptance.virtual_cable_probe','--source',$VoiceWav,'--ffmpeg',$FFmpegExe) }
+if ($Command -eq 'WechatTimedSelfProbe') {
+    $v2Args = @('-u','-m','acceptance.windows_wechat_timed_probe','--profile',$Profile,'--intent',$VoiceIntent,'--text',$VoiceText)
+    if ($PrepareOnly) { $v2Args += '--prepare-only' }
+}
 if ($Command -eq 'VoiceListen' -and $VoiceOpenedAfter -gt 0) { $v2Args += @('--opened-after',$VoiceOpenedAfter.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
