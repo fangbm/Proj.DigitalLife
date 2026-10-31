@@ -51,6 +51,8 @@
 
 现装版本为 `4.1.12.55`。[微软 WinGet 清单](https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/WeChat/Universal/4.1.15.56/Tencent.WeChat.Universal.installer.yaml) 记录了 2026-10-19 发布的 `4.1.15.56`，安装包来自腾讯域名 `dldir1v6.qq.com`。已下载并核验腾讯 Authenticode 签名和清单 SHA-256：`4422bad98617dd095005c7879b2190f188ffa9ad6abf79e075358cf981a3d9e4`。安装器外壳文件版本为 `4.1.15.1000`，不能拿它替代安装后实际客户端版本核对。
 
-当前程序的 31 个文件已复制到忽略目录并逐一比较哈希通过。仅完成安装包准备和程序备份，尚未升级、关闭当前微信或改动聊天数据库。机器级安装需要管理员权限，当前会话没有管理员权限；已向用户请求是否升级后复测，Windows 管理员确认须由用户本人完成。获准后计划先正常退出微信、备份配置和数据库，再执行官方升级，并继续只在文件传输助手验证。升级是否解决录音失败仍需实测。
+当前程序的 31 个文件已复制到忽略目录并逐一比较哈希通过。用户明确同意「开始升级并复测」后，已关闭窗口并结束仍驻留后台的微信进程；在所有微信进程退出后，离线复制 3291 个配置、数据库及附属文件，共 15,611,332,836 字节，逐文件哈希与原件一致。复制包含数据库目录中的 WAL 等文件；加密数据库没有进行内容或语义校验。没有清除聊天数据，也没有把复制成功写成数据库完整性验收。
 
-私有准备记录：`data/voice-runtime/WECHAT_UPGRADE_READY.json`；程序备份：`data/voice-runtime/wechat-before-upgrade-4.1.12.55-20261031-01/MANIFEST.json`。这不是微信录音或安装验收通过记录。
+已按授权尝试启动官方安装器。第一次启动请求超时，观察到管理员确认进程，随后窗口关闭而未出现安装界面，用户反馈没有看到确认窗口。第二次已通过资源管理器打开安装包，仍停在需要用户手动处理 Windows 管理员确认的阶段。当前安装目录和客户端仍为 `4.1.12.55`，没有观察到安装完成。现有会话未提权，不自动操作系统授权窗口。升级后的录音复测尚未进行，不能宣称新版已经修复问题。
+
+私有准备记录：`data/voice-runtime/WECHAT_UPGRADE_READY.json`；程序备份：`data/voice-runtime/wechat-before-upgrade-4.1.12.55-20261031-01/MANIFEST.json`；离线用户状态备份：`data/voice-runtime/wechat-user-state-before-4.1.15.56-20261031-01/MANIFEST.json`。这不是微信录音或安装验收通过记录。
