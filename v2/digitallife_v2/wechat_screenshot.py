@@ -172,17 +172,20 @@ class WechatScreenshotUI(WechatDesktopUI):
                    and b<=x['bounds'][1]+5 and x['bounds'][3]-5<=d]
             text=''.join(x['text'] for x in sorted(lines,key=lambda x:(x['bounds'][1],x['bounds'][0])))
             if not text:continue
-            if bubble['kind']=='transcript_gray':
+            # Desktop WeChat also paints received voice bubbles light gray.
+            # Recognize the visible duration before treating gray as a transcript.
+            voice=re.fullmatch(r'[()（）]{0,3}\s*(\d{1,2})\s*["″”′’]+\s*[()（）]{0,3}',text)
+            gray_voice=bubble['kind']=='transcript_gray' and voice and a<image.width*.7
+            if bubble['kind']=='transcript_gray' and not gray_voice:
                 if (result and result[-1]['kind']=='voice' and 0<=b-result[-1]['bounds'][3]<120
                         and min(abs(a-result[-1]['bounds'][0]),abs(c-result[-1]['bounds'][2]))<30):
                     result[-1]['text']=text
                 continue
-            incoming=bubble['kind']=='incoming_neutral'
+            incoming=bubble['kind']=='incoming_neutral' or bool(gray_voice)
             if incoming and a>image.width*.7:continue
             times=[x['text'] for x in value['lines'] if x['bounds'][3]<b and re.fullmatch(r'\d{1,2}:\d{2}',x['text'])]
             if times:stamp=times[-1]
             # OCR can include one of the adjacent voice-wave strokes as '(' or ')'.
-            voice=re.fullmatch(r'[()（）]{0,3}\s*(\d{1,2})\s*["″”′’]+\s*[()（）]{0,3}',text)
             kind='voice' if voice else 'text'
             key=hashlib.sha256((self.account+'|'+self.title+'|'+stamp+'|'+str(len(result))+'|'+image_hash(image,bubble['bounds'])).encode()).hexdigest()
             result.append({'message_key':key,'direction':'incoming' if incoming else 'outgoing','kind':kind,

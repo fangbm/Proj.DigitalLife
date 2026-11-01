@@ -59,7 +59,8 @@ class DesktopWechatTransport:
                     if not isinstance(body,dict):raise Blocked('WECHAT_WORKER_RESULT_INVALID')
                     if body.get('outcome')=='worker_failed':raise Blocked(body.get('reason','WECHAT_WORKER_FAILED'))
                     return body
-                first=await receive(25)
+                # Local OCR initialization/transcription is outside recording time.
+                first=await receive(45)
                 if payload['operation'] in {'send','self_send'}:
                     if (first.get('phase')!='ready' or first.get('target_verified') is not True
                             or first.get('account')!=payload['account'] or first.get('title')!=payload['title']):
@@ -67,7 +68,9 @@ class DesktopWechatTransport:
                     if before_dispatch is None:raise Blocked('WECHAT_DISPATCH_CALLBACK_REQUIRED')
                     await before_dispatch()
                     process.stdin.write(b'GO\n');await process.stdin.drain()
-                    first=await receive(payload.get('seconds',0)+15)
+                    # Include device setup, native readback and endpoint restoration.
+                    # The recorder still enforces its own source-duration + 3s limit.
+                    first=await receive(payload.get('seconds',0)+35)
                 await asyncio.wait_for(process.wait(),5)
                 if process.returncode:raise Blocked('WECHAT_WORKER_FAILED')
                 return first

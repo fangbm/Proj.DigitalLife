@@ -65,6 +65,22 @@ class ScreenshotWechatTests(unittest.TestCase):
         ui,image,value=self.make_ui();value['lines']=[]
         self.assertEqual(ui.inspect()['outcome'],'no_unanswered_incoming')
 
+    def test_gray_received_voice_is_not_discarded_as_a_transcript(self):
+        ui,image,value=self.make_ui()
+        value['desktop_bubbles'][0]['kind']='transcript_gray'
+        value['lines'][0]['text']=') 5"'
+        row=ui.rows()[0]
+        self.assertEqual((row['kind'],row['direction'],row['seconds']),('voice','incoming',5))
+        value['desktop_bubbles'].append({'kind':'transcript_gray','bounds':[400,250,680,310]})
+        value['lines'].append({'text':'请用语音回复','bounds':[415,260,660,290],'confidence':.99})
+        self.assertEqual(ui.rows()[0]['text'],'请用语音回复')
+
+    def test_right_side_gray_duration_cannot_become_incoming(self):
+        ui,image,value=self.make_ui()
+        value['desktop_bubbles'][0]={'kind':'transcript_gray','bounds':[800,180,900,240]}
+        value['lines'][0]['bounds']=[835,195,870,220]
+        self.assertEqual(ui.rows(),[])
+
     def test_model_text_control_sequences_remain_literal_characters(self):
         text='不要执行{ENTER}，1+1=2 (测试) 50% ^ ~'
         escaped=literal_keys(text)

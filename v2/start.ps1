@@ -40,7 +40,7 @@ if ($Emergency -and $Command -ne 'Stop') { throw 'Emergency applies only to Stop
 if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to M3Probe.' }
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 if ($ResumeOutbound -and ($Command -notin @('M4Probe','M5Probe') -or $ResumeOutbound -notmatch '^[a-f0-9]{32}$')) { throw 'ResumeOutbound requires M4Probe/M5Probe and an exact known-unsent outbound ID.' }
-if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires M4Probe/M4Listen/M5Probe and a verified binding ID.' }
+if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe','WechatVoiceListen') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires a supported probe/listen command and an existing binding ID.' }
 if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe') -and -not $Session) { throw 'Voice conversion/send/reconcile/listen/probe requires a new Session.' }
 if ($Command -eq 'VirtualCableProbe') {
     if (-not $VoiceWav -or -not $FFmpegExe) { throw 'VirtualCableProbe requires VoiceWav and FFmpegExe; select the local audio environment with Python.' }
@@ -82,7 +82,7 @@ if ($Command -eq 'WechatTimedSelfProbe') {
     $v2Args = @('-u','-m','acceptance.windows_wechat_timed_probe','--profile',$Profile,'--intent',$VoiceIntent,'--text',$VoiceText)
     if ($PrepareOnly) { $v2Args += '--prepare-only' }
 }
-if ($Command -eq 'VoiceListen' -and $VoiceOpenedAfter -gt 0) { $v2Args += @('--opened-after',$VoiceOpenedAfter.ToString([Globalization.CultureInfo]::InvariantCulture)) }
+if ($Command -in @('VoiceListen','WechatVoiceListen') -and $VoiceOpenedAfter -gt 0) { $v2Args += @('--opened-after',$VoiceOpenedAfter.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($EventsOnly) { $v2Args += '--events-only' }
 if ($ResumeProjection) { $v2Args += '--resume-projection-prompt' }
 if ($Command -eq 'M4Probe') { $v2Args += @('--app',$SocialApp,'--kind',$SocialKind) }
