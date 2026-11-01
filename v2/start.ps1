@@ -90,6 +90,7 @@ if ($Command -eq 'M4Listen') { $v2Args += @('--app',$SocialApp); if ($RouteMarke
 if ($Command -eq 'M5Probe') { $v2Args += @('--kind',$MediaKind); if ($SourceId) { $v2Args += @('--source-id',$SourceId) } }
 if ($Command -eq 'M5Probe' -and $ThreadId) { $v2Args += @('--thread-id',$ThreadId) }
 if ($Command -eq 'GroupProbe') { $v2Args += @('--app',$SocialApp); if ($GroupHint) { $v2Args += @('--route-hint',$GroupHint) }; if ($GroupReceipt) { $v2Args += @('--receipt',$GroupReceipt) }; if ($RequestedNow) { $v2Args += '--requested-now' } }
+if ($Command -eq 'WechatVoiceListen' -and $GroupHint) { $v2Args += @('--route-hint',$GroupHint) }
 if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($v2Step in $InspectStep) { $v2Args += @('--step',$v2Step) }; if ($InspectCurrent) { $v2Args += '--current' } }
 if ($Command -eq 'SocialInspect' -and $RouteMarker) { $v2Args += @('--read-marker',$RouteMarker) }
 if ($ResumeOutbound) { $v2Args += @('--resume-outbound',$ResumeOutbound) }

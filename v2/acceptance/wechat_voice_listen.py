@@ -15,13 +15,27 @@ from digitallife_v2.wechat_voice import DesktopWechatTransport,WechatVoiceAgent,
 from digitallife_v2.safety import Blocked
 
 
-def eligible_voice(item,opened):
+def eligible_voice(item,opened,route_hint=None):
     return (item['source_app']=='com.tencent.mm' and item['posted_at']>=opened
-            and any(s in item.get('preview','') for s in ('[语音','发来一条语音')))
+            and any(s in item.get('preview','') for s in ('[语音','发来一条语音'))
+            and (route_hint is None or item.get('preview','').startswith(route_hint+' ')))
+
+
+class WindowSocialUI(AndroidSocialUI):
+    """Keep an operator acceptance window on its requested conversation."""
+    def __init__(self,loop,route_hint):
+        super().__init__(loop,'com.tencent.mm');self.route_hint=route_hint
+
+    async def resolve(self,**kwargs):
+        result=await super().resolve(**kwargs)
+        if self.route_hint is not None:
+            from digitallife_v2.wechat_voice import re_title
+            if re_title(result[0].route_hint)!=self.route_hint:raise Blocked('WECHAT_WINDOW_OTHER_CONVERSATION')
+        return result
 
 
 class WechatVoiceWindow(SessionLoop):
-    def __init__(self,config,directory,minutes,opened_after=None,confirmed_binding_id=None):
+    def __init__(self,config,directory,minutes,opened_after=None,confirmed_binding_id=None,route_hint=None):
         if opened_after is not None and (not math.isfinite(opened_after) or not 0<=time.time()-opened_after<=3600):
             raise ValueError('WECHAT_RECOVERY_REQUIRES_A_CONFIRMED_RECENT_WINDOW')
         config.notification_packages=('com.tencent.mm',)
@@ -31,6 +45,10 @@ class WechatVoiceWindow(SessionLoop):
         if confirmed_binding_id is not None and not re.fullmatch('[a-f0-9]{64}',confirmed_binding_id):
             raise ValueError('CONFIRMED_EXISTING_WECHAT_BINDING_REQUIRED')
         self.confirmed_binding_id=confirmed_binding_id
+        if route_hint is not None and (not isinstance(route_hint,str) or not route_hint.strip()
+                or len(route_hint)>100 or any(ord(c)<32 for c in route_hint)):
+            raise ValueError('WECHAT_WINDOW_CONVERSATION_NAME_REQUIRED')
+        self.route_hint=route_hint
 
     async def step(self):
         if self.handled:raise SessionStopped('WECHAT_VOICE_SINGLE_INPUT_WINDOW_CLOSED')
@@ -45,7 +63,7 @@ class WechatVoiceWindow(SessionLoop):
             await AndroidSocialUI(self,'com.tencent.mm').act({'type':'home'})
             write_json(self.directory/'WINDOW_READY.json',{'opened_at':self.opened,'deadline':self.store.state['deadline'],
                 'source':'human_confirmed_existing_bound_voice' if self.confirmed_binding_id else 'new_real_wechat_voice_notification',
-                'maximum_outgoing':1,'private_or_group':True,
+                'maximum_outgoing':1,'private_or_group':True,'requested_conversation':self.route_hint,
                 'pipeline':'production_WechatVoiceAgent','incoming_source':'official_WeChat_platform_transcription'})
             if self.opened_after is not None:
                 self.store.event('wechat_confirmed_window_recovery',{'opened_after':self.opened_after,
@@ -55,12 +73,12 @@ class WechatVoiceWindow(SessionLoop):
             item=self.hub.next()
             if not item:
                 self.inbound_wake.clear();await self.guarded(self.wait_for_event(10));return {'outcome':'waiting_for_wechat_voice'}
-            if not eligible_voice(item,self.opened):
+            if not eligible_voice(item,self.opened,self.route_hint):
                 self.hub.resolve(item,{'event_id':item['event_id'],'decision':'read_only','note':'Outside this bounded voice window'})
                 return {'outcome':'non_voice_notification_observed'}
             self.hub.resolve(item,{'event_id':item['event_id'],'decision':'reply_now','note':'Human-authorized single voice acceptance'})
         self.handled=True
-        try:result=await WechatVoiceAgent(self,AndroidSocialUI(self,'com.tencent.mm')).run('auto_reply',event=item,binding_id=self.confirmed_binding_id)
+        try:result=await WechatVoiceAgent(self,WindowSocialUI(self,self.route_hint)).run('auto_reply',event=item,binding_id=self.confirmed_binding_id)
         except BaseException as error:
             detail=str(error) or type(error).__name__
             write_json(self.directory/'WECHAT_VOICE_FAILURE.json',{'reason':detail[:300],
@@ -91,7 +109,8 @@ def main():
     parser.add_argument('--profile',default='find-x6');parser.add_argument('--minutes',type=float,default=10)
     parser.add_argument('--opened-after',type=float)
     parser.add_argument('--binding-id')
-    args=parser.parse_args();result=asyncio.run(WechatVoiceWindow(Config.load(args.profile),args.session,args.minutes,args.opened_after,args.binding_id).run())
+    parser.add_argument('--route-hint')
+    args=parser.parse_args();result=asyncio.run(WechatVoiceWindow(Config.load(args.profile),args.session,args.minutes,args.opened_after,args.binding_id,args.route_hint).run())
     print(json.dumps(result,ensure_ascii=False));return 0 if result['reason']=='WECHAT_VOICE_ACCEPTANCE_PASSED' else 2
 
 
