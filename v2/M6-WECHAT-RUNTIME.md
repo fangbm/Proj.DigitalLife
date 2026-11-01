@@ -79,8 +79,28 @@ QQ 真人语音与混合音色试听的既有结论保留。微信私信已完�
 
 窗口过期后用户确认的通知可以用 `-VoiceOpenedAfter <原窗口时间戳>` 恢复（最多一小时）；无通知而桌面仍有原消息时，操作员可指定已有 `-SocialBinding <绑定ID>` 单次读取。后一模式明确记录 `human_confirmed_existing_bound_voice`、`notification_route_used=false`，不能计为通知自动路由验收；目标仍取自持久绑定，模型不能指定新收件人。
 
-待完成：微信真实通知自动触发、群语音、实际发送中停止/断连。历史 QQ 与混合音色结论不变，M6 未整体完成。
+待完成：微信真实通知自动触发和群语音；录音中停止、父进程断开已完成下述实测。历史 QQ 与混合音色结论不变，M6 未整体完成。
 
 等待预算修复后的独立文件传输助手测试正常返回 `sent_observed`、`accepted=true`：4.38 秒源音，6 秒原生消息，录音计时 7.110 秒，没有父进程超时。三个默认输入角色和虚拟端静音恢复，看门狗退出。该自测没有独立全文读回，仅证明发送结果正常返回和资源恢复；记录为 `data/sessions/m6-wx-a25-result-wait-20261101-01/WINDOWS_SELF_VOICE_RESULT.json`。
 
 a25 源码与独立安装 wheel 各 **382 项回归通过**，40 个运行模块逐字节一致。新增回归覆盖浅灰来信语音及转写关联、右侧灰色时长不能被当作来信、过期确认窗口的原始时间边界。Wheel 为 `digitallife_v2-2.0.0a25-py3-none-any.whl`，SHA-256：`f8315d06a8f59d2a4b174b06a24a3af3dd3817f163ee0bc56587a9315854d5e5`。
+
+## a25 录音中停止与父进程断开实测
+
+2026-11-01 晚间，仅在文件传输助手进行两个真实录音中断测试。两轮均使用 8.62 秒合成音源，观察原生录音启动后约 0.8 秒中断；没有发出测试消息，前后实际可见发出消息键列表一致。录音面板已关闭，三个默认输入角色与虚拟端静音恢复，看门狗正常退出。
+
+| 场景 | 原生结果 | 资源恢复 | 私有记录 |
+|---|---|---|---|
+| 主进程主动取消任务，经生产 transport 发送 CANCEL | `failed_before_send`、`DESKTOP_JOB_CANCELLED`、`cancelled_before_send=true`；零新增消息 | 默认设备、静音恢复，watchdog finished | `data/sessions/m6-wx-live-cancel-20261101-02/CANCEL_RESULT.json` |
+| 仅终止本轮拥有的父驱动，子进程监听 stdin EOF | 同上；零新增消息 | 同上 | `data/sessions/m6-wx-live-parent-exit-20261101-01/CANCEL_RESULT.json` |
+
+这两个结果证明实际 Windows 录音/虚拟声卡的取消与父管道断开恢复，不等同于联系人收发或通话网络断线。首次预检因窗口从 1342×971 变为 1341×971 明确拒绝，未开始录音；恢复到已有校准尺寸后使用新测试意图运行，没有放宽图标匹配或重置失败意图。
+
+可复现入口为操作员脚本，目标固定文件传输助手；每次必须提供新的 session 与 intent，不会由普通运行自动启动：
+
+```powershell
+python -m acceptance.windows_wechat_cancel_probe --mode cancel --intent NEW-CANCEL --session data/sessions/NEW-CANCEL
+python -m acceptance.windows_wechat_cancel_probe --mode parent_exit --intent NEW-EOF --session data/sessions/NEW-EOF
+```
+
+本轮只新增验收脚本和记录，运行 wheel 保持 a25。源码 382 项和独立 wheel 382 项是前述运行修复的回归结论，本节两个结果来自真实录音实测。主微信系统通知权限允许、消息通知渠道 importance=4、通知监听器已启用；当时无保留微信通知，尚不能据此断定真实来信能够触发通知链路。

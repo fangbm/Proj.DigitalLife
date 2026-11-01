@@ -1,6 +1,6 @@
 # Proj.DigitalLife V2
 
-当前为 **2.0.0a25**，分支 `codex/v2-m6`。已读取测试联系人真实 5 秒微信语音，由模型生成并静默发送一条 11 秒原生语音，微信全文转写与生成正文一致。本轮从用户确认的既有会话恢复，手机通知未触发；父进程回读超时与随后只读核对分别保留，没有重发。M6 仍待微信通知触发、群语音和实际停止/断连验收。见 [a25 微信运行接入](v2/M6-WECHAT-RUNTIME.md)、[a23 自测](v2/M6-WECHAT-MIXED-DIAGNOSTIC.md)、[QQ 闭环](v2/M6-QQ-VOICE-REPLY.md) 与 [格式选择](v2/M6-REPLY-FORMATS.md)。不导入 V1 数据。 下方 V1 历史逐字节保留。
+当前为 **2.0.0a25**，分支 `codex/v2-m6`。已读取测试联系人真实 5 秒微信语音，由模型生成并静默发送一条 11 秒原生语音，微信全文转写与生成正文一致。本轮从用户确认的既有会话恢复，手机通知未触发；父进程回读超时与随后只读核对分别保留，没有重发。录音中停止与父进程断开也已真实验证，M6 仍待微信通知触发和群语音验收。见 [a25 微信运行接入](v2/M6-WECHAT-RUNTIME.md)、[a23 自测](v2/M6-WECHAT-MIXED-DIAGNOSTIC.md)、[QQ 闭环](v2/M6-QQ-VOICE-REPLY.md) 与 [格式选择](v2/M6-REPLY-FORMATS.md)。不导入 V1 数据。 下方 V1 历史逐字节保留。
 
 # Proj.DigitalLife v0.2.3 — Find X6 全 App 自主探索
 
