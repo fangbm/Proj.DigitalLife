@@ -243,6 +243,16 @@ class SessionLoop:
                 if self.voice_inbox and native and native[0]=='com.tencent.mobileqq' and native[1].isdigit():
                     from .voice import QQVoiceAgent
                     return await QQVoiceAgent(self,self.voice_inbox).run_target(target_id,kind)
+                if ((reply_event and reply_event['source_app']=='com.tencent.mm' or native and native[0]=='com.tencent.mm')
+                        and (self.config.data/'wechat-voice.private.json').exists()):
+                    from .wechat_voice import WechatVoicePolicy,WechatVoiceAgent
+                    voice_event=reply_event and any(s in reply_event.get('preview','') for s in ('[语音','发来一条语音'))
+                    try:value=WechatVoicePolicy(self.config).read()
+                    except Blocked:
+                        if voice_event:raise
+                        value={}
+                    if voice_event or value.get('handle_text',False):
+                        return await WechatVoiceAgent(self,ui).run(kind,event=reply_event,binding_id=target_id)
                 result=await SocialAgent(self,ui).run(kind,event=reply_event,binding_id=action.get('binding_id'))
                 if reply_event:
                     self.store.event('inbound_social_result',{'event_id':reply_event['event_id'],**result,
@@ -337,7 +347,7 @@ class SessionLoop:
             status, reason = "stopped", "INTERRUPTED"
             try:
                 self.hub = EventHub(self.store,self.config.notification_packages)
-                if (self.config.data/'voice.private.json').exists() and self.run_kind!='fixture':
+                if (self.config.data/'voice.private.json').exists() and self.run_kind!='fixture' and not getattr(self,'disable_qq_voice',False):
                     from .voice import QQVoiceInbox
                     from .speech import SpeechEngine
                     voice=QQVoiceInbox(self.config,self.store,self.inbound_wake)

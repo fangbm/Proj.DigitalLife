@@ -14,25 +14,33 @@ async def run(args):
     directory = Path(args.session).resolve(); directory.mkdir(parents=True, exist_ok=False)
     store = LifeStore(config.data, str(directory), config.serial, 'scripted')
     speech = SpeechEngine(config, store)
+    worker_started=False
     try:
         asset = await speech.synthesize(args.text)
         if not .25 <= asset['seconds'] <= 20:
             raise ValueError('Windows self voice requires a source between .25 and 20 seconds')
         payload = {'source':asset['path'], 'sha256':asset['sha256'], 'directory':str(directory),
                    'data':str(config.data), 'intent':args.intent}
+        from digitallife_v2.social import SocialPolicy
+        payload.update(account=SocialPolicy(config).read().get('accounts',{}).get('com.tencent.mm','').split('@')[0],
+                       ocr_python=str(config.ocr_python) if config.ocr_python else None)
         write_json(directory/'PREPARED.json', {'target':'文件传输助手', 'asset':asset,
             'operator_only':True, 'maximum_outgoing':1, 'gui_executed':False})
         if args.prepare_only:
             store.finish('completed', 'WINDOWS_SELF_VOICE_PREPARED_NO_GUI')
             return {'outcome':'prepared_only', 'messages_sent':0, 'gui_executed':False}
-        result = await run_worker([str(config.data/'tts-env/Scripts/python.exe'),
-            '-m', 'acceptance.windows_wechat_timed_worker'], payload, timeout=asset['seconds']+25)
+        from digitallife_v2.wechat_voice import DesktopWechatTransport
+        worker_started=True
+        async def ready():
+            store.event('wechat_self_voice_ready',{'target':'文件传输助手','maximum_outgoing':1})
+        result=await DesktopWechatTransport(config,store).call({**payload,'operation':'self_send',
+            'title':'文件传输助手','format':'voice','text':args.text,'seconds':asset['seconds']},ready)
         write_json(directory/'WINDOWS_SELF_VOICE_RESULT.json', result)
         store.finish('completed', 'WINDOWS_SELF_VOICE_ACCEPTED' if result.get('accepted') else 'WINDOWS_SELF_VOICE_PARTIAL')
         return result
     except BaseException as error:
         write_json(directory/'FAILURE.json', {'reason':str(error)[:1000],
-            'automatic_retry':False, 'delivery_may_be_unknown':not args.prepare_only})
+            'automatic_retry':False, 'worker_started':worker_started, 'delivery_may_be_unknown':worker_started})
         store.finish('stopped', 'WINDOWS_SELF_VOICE_FAILED_NO_AUTOMATIC_RETRY')
         raise
     finally:

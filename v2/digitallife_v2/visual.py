@@ -212,7 +212,9 @@ def worker():
             if len(raw)>32768:raise ValueError()
             request=json.loads(raw);data=Path(request['png']).read_bytes()
             if len(data)>24000000 or hashlib.sha256(data).hexdigest()!=request['sha256']:raise ValueError()
-            with contextlib.redirect_stdout(sys.stderr):result,_=engine(request['png'])
+            if request.get('templates_only'):result=None
+            else:
+                with contextlib.redirect_stdout(sys.stderr):result,_=engine(request['png'])
             lines=[]
             with Image.open(request['png']) as source:
                 rgb=np.array(source.convert('RGB'));height,width=rgb.shape[:2]
@@ -255,7 +257,9 @@ def worker():
                         if template_source.size!=(width,height):continue
                         template=np.array(template_source.convert('RGB').crop(item['bounds']))
                     if template.std()<5:continue
-                    if item['role']=='tab_me':x0,y0,x3,y3=int(width*.7),int(height*.85),width,height
+                    if item['role'] in {'windows_record','windows_voice_send','windows_voice_cancel'}:x0,y0,x3,y3=int(width*.6),int(height*.7),width,height
+                    elif item['role']=='windows_more':x0,y0,x3,y3=0,int(height*.65),int(width*.15),height
+                    elif item['role']=='tab_me':x0,y0,x3,y3=int(width*.7),int(height*.85),width,height
                     else:x0,y0,x3,y3=int(width*.75),int(height*.04),width,int(height*.17)
                     region=rgb[y0:y3,x0:x3];th,tw=template.shape[:2]
                     if region.shape[0]<th or region.shape[1]<tw:continue
@@ -266,7 +270,19 @@ def worker():
                     x,y=int(xs[0])+x0,int(ys[0])+y0
                     matches.append({'role':item['role'],'bounds':[x,y,x+tw,y+th],'confidence':min(1.0,float(scores[ys[0],xs[0]]))})
                 except (ValueError,OSError,KeyError):continue
-            print(json.dumps({'sha256':request['sha256'],'lines':lines,'templates':matches},ensure_ascii=True),flush=True)
+            desktop=[]
+            if request.get('desktop_region'):
+                a,b,c,d=request['desktop_region'];region=colors[b:d,a:c]
+                canvas=float(np.median(region.mean(axis=2)))
+                masks={'outgoing_green':green_mask[b:d,a:c],
+                    'incoming_neutral':(region.max(axis=2)-region.min(axis=2)<12)&(region.mean(axis=2)>max(250,canvas+2)),
+                    'transcript_gray':(region.max(axis=2)-region.min(axis=2)<12)&(region.mean(axis=2)>180)&(region.mean(axis=2)<canvas-3)}
+                for name,mask in masks.items():
+                    _,_,stats,_=cv2.connectedComponentsWithStats(mask.astype(np.uint8),8)
+                    for x,y,w,h,area in stats[1:]:
+                        if w>=40 and h>=20 and area>=600 and area<(c-a)*(d-b)*.5:
+                            desktop.append({'kind':name,'bounds':[int(x+a),int(y+b),int(x+w+a),int(y+h+b)]})
+            print(json.dumps({'sha256':request['sha256'],'lines':lines,'templates':matches,'desktop_bubbles':desktop},ensure_ascii=True),flush=True)
         except Exception:print('{"error":"OCR_FAILED"}',flush=True)
 
 

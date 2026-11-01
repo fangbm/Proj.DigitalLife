@@ -283,10 +283,10 @@ class SocialStore:
             raise Blocked('SOCIAL_STATE_TRANSITION_INVALID')
         if 'voice_ready' in (expected,status):
             payload=self.db.execute('SELECT sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
-            if not payload or 'native:qq-record' not in json.loads(payload[0]):raise Blocked('SOCIAL_VOICE_PAYLOAD_REQUIRED')
+            if not payload or not {'native:qq-record','native:wechat-record'} & set(json.loads(payload[0])):raise Blocked('SOCIAL_VOICE_PAYLOAD_REQUIRED')
         if 'text_ready' in (expected,status):
             payload=self.db.execute('SELECT sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
-            if not payload or 'native:qq-text' not in json.loads(payload[0]):raise Blocked('SOCIAL_NATIVE_TEXT_PAYLOAD_REQUIRED')
+            if not payload or not {'native:qq-text','native:wechat-text'} & set(json.loads(payload[0])):raise Blocked('SOCIAL_NATIVE_TEXT_PAYLOAD_REQUIRED')
         if 'card_ready' in (expected,status):
             payload=self.db.execute('SELECT kind,sources FROM social_outbox WHERE id=? AND device=?',(outbound_id,self.store.serial)).fetchone()
             if not payload or payload[0]!='group_video_share' or 'native:official-share-card' not in json.loads(payload[1]):raise Blocked('SOCIAL_NATIVE_CARD_PAYLOAD_REQUIRED')

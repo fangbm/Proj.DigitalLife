@@ -11,7 +11,7 @@ class Clock:
 
 class UI:
     def __init__(self):self.calls=[];self.changed=False;self.fail_send=False;self.observed=5;self.cancelled_with_audio_active=False
-    def require_self_chat(self):
+    def require_target(self):
         if self.changed:raise Blocked('SELF_CHAT_CHANGED')
     def voice_ids(self):return {1}
     def start_recording(self):self.calls.append('record')

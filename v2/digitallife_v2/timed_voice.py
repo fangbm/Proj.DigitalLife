@@ -1,4 +1,4 @@
-"""One bounded native self-voice action; GUI and audio are injected adapters."""
+"""One bounded native voice action; GUI and audio are injected adapters."""
 import hashlib
 import json
 import math
@@ -9,13 +9,13 @@ from .safety import Blocked
 
 
 class VoiceIntent:
-    def __init__(self, data, intent):
+    def __init__(self, data, intent, *, target='文件传输助手'):
         if not isinstance(intent, str) or not 1 <= len(intent) <= 160:
             raise Blocked('DESKTOP_VOICE_INTENT_REQUIRED')
         directory = Path(data)/'windows_wechat_intents'
         directory.mkdir(parents=True, exist_ok=True)
         self.path = directory/(hashlib.sha256(intent.encode()).hexdigest()+'.json')
-        self.body = {'intent': intent, 'target': '文件传输助手', 'state': 'prepared'}
+        self.body = {'intent': intent, 'target': target, 'state': 'prepared'}
         try:
             with self.path.open('x', encoding='utf8') as f:
                 json.dump(self.body, f, ensure_ascii=False)
@@ -29,19 +29,19 @@ class VoiceIntent:
         temporary.replace(self.path)
 
 
-def send_timed_self_voice(ui, audio, seconds, intent, *, clock=time.monotonic):
+def send_timed_voice(ui, audio, seconds, intent, *, clock=time.monotonic):
     if not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or not .25 <= seconds <= 20:
         raise Blocked('DESKTOP_VOICE_DURATION_INVALID')
     attempted = False
     recording = False
     cancelled = False
     try:
-        ui.require_self_chat()
+        ui.require_target()
         before = ui.voice_ids()
         with audio:
             try:
                 # All loading, resampling and device setup happens before recording.
-                ui.require_self_chat()
+                ui.require_target()
                 started = clock()
                 recording = True
                 ui.start_recording()
@@ -50,7 +50,7 @@ def send_timed_self_voice(ui, audio, seconds, intent, *, clock=time.monotonic):
                 elapsed = clock()-started
                 if elapsed > seconds+3:
                     raise Blocked('DESKTOP_VOICE_RECORDING_DEADLINE')
-                ui.require_self_chat()
+                ui.require_target()
                 intent.update('dispatch_attempted', recorded_seconds=elapsed)
                 attempted = True
                 ui.send_recording()
@@ -79,3 +79,6 @@ def send_timed_self_voice(ui, audio, seconds, intent, *, clock=time.monotonic):
         intent.update(state,
                       reason=str(error)[:200], cancelled_before_send=cancelled)
         raise
+
+
+send_timed_self_voice = send_timed_voice

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe','WechatTimedSelfProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
+    [ValidateSet('Doctor','Run','Status','Stop','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SpeechProbe','NativeVoiceProbe','VoiceStatus','VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe','WechatTimedSelfProbe','WechatVoiceStatus','WechatVoiceListen','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect')][string]$Command = 'Run',
     [string]$Session = '',
     [ValidateRange(0.01,10)][double]$Minutes = 10,
     [string]$Profile = 'find-x6',
@@ -49,6 +49,7 @@ if ($Command -eq 'VirtualCableProbe') {
 }
 if ($Command -eq 'VoiceReconcile' -and ($VoiceOutbound -notmatch '^[a-f0-9]{32}$' -or $VoiceMessageId -notmatch '^-?\d+$')) { throw 'VoiceReconcile requires the original outbound ID and an actually observed native message ID.' }
 if ($Command -eq 'VoiceSend' -and -not $VoiceIntent) { throw 'VoiceSend requires a stable VoiceIntent; unknown sends are never replayed.' }
+if ($Command -in @('WechatVoiceStatus','WechatVoiceListen') -and -not $Session) { throw 'WeChat voice status/listen requires a new Session.' }
 if ($PrepareOnly -and $Command -ne 'WechatTimedSelfProbe') { throw 'PrepareOnly applies only to WechatTimedSelfProbe.' }
 if ($Command -eq 'WechatTimedSelfProbe' -and (-not $Session -or -not $VoiceIntent -or -not $VoiceText)) { throw 'WechatTimedSelfProbe requires Session, VoiceIntent and VoiceText.' }
 $v2Args = @('-u','-m','digitallife_v2',$Command.ToLowerInvariant())
@@ -74,6 +75,8 @@ if ($Command -eq 'SpeechProbe') { $v2Args = @('-u','-m','acceptance.speech_probe
 if ($Command -eq 'NativeVoiceProbe') { $v2Args = @('-u','-m','acceptance.native_voice_probe') }
 if ($Command -eq 'VoiceListen') { $v2Args = @('-u','-m','acceptance.voice_reply_listen','--profile',$Profile,'--minutes',$Minutes.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($Command -eq 'ReplyFormatProbe') { $v2Args = @('-u','-m','acceptance.reply_format_probe','--profile',$Profile,'--scenario',$ReplyScenario) }
+if ($Command -eq 'WechatVoiceStatus') { $v2Args = @('-u','-m','acceptance.wechat_voice_status','--profile',$Profile) }
+if ($Command -eq 'WechatVoiceListen') { $v2Args = @('-u','-m','acceptance.wechat_voice_listen','--profile',$Profile,'--minutes',$Minutes.ToString([Globalization.CultureInfo]::InvariantCulture)) }
 if ($Command -eq 'VirtualCableProbe') { $v2Args = @('-u','-m','acceptance.virtual_cable_probe','--source',$VoiceWav,'--ffmpeg',$FFmpegExe) }
 if ($Command -eq 'WechatTimedSelfProbe') {
     $v2Args = @('-u','-m','acceptance.windows_wechat_timed_probe','--profile',$Profile,'--intent',$VoiceIntent,'--text',$VoiceText)
@@ -106,7 +109,7 @@ try {
     $env:PYTHONPATH = $PSScriptRoot
     $env:PYTHONUTF8 = '1'
     # Only an explicitly authorized Run may decrypt the existing credential. No secret file is modified.
-    if ($Command -in @('Run','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect','VoiceListen','ReplyFormatProbe') -and -not $env:DIGITALLIFE_V2_API_KEY -and -not $env:PHONE_LIFE_API_KEY) {
+    if ($Command -in @('Run','VisionProbe','M3Probe','ReadingProbe','AudioProbe','SocialReceive','M4Probe','M4Listen','M5Probe','M5Listen','GroupProbe','SocialInspect','VoiceListen','ReplyFormatProbe','WechatVoiceListen') -and -not $env:DIGITALLIFE_V2_API_KEY -and -not $env:PHONE_LIFE_API_KEY) {
         $v2SecretPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'data/deepseek.key.dpapi'
         if (Test-Path -LiteralPath $v2SecretPath) {
             $v2Secure = (Get-Content -LiteralPath $v2SecretPath -Raw).Trim() | ConvertTo-SecureString
