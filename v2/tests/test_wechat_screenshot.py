@@ -3,13 +3,23 @@ import tempfile
 import threading
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock,patch
 from PIL import Image,ImageDraw
 from digitallife_v2.safety import Blocked
 from digitallife_v2.wechat_screenshot import Hit,WechatScreenshotUI,ink_hash,literal_keys
 
 
 class ScreenshotWechatTests(unittest.TestCase):
+    def test_open_waits_for_header_without_repeating_the_thread_click(self):
+        ui=WechatScreenshotUI.__new__(WechatScreenshotUI)
+        ui.title='test';ui.authorized=True;ui.check_stop=lambda:None
+        ui.current_title=Mock(side_effect=[None,None,'test'])
+        click=Mock();ui.text_hit=Mock(return_value=SimpleNamespace(click_input=click))
+        ui.read=lambda:(Image.new('RGB',(1000,700)),{'lines':[]})
+        ui.require_target=Mock();ui.template_hit=Mock()
+        with patch('digitallife_v2.wechat_screenshot.time.sleep'):ui.open_target()
+        click.assert_called_once();ui.require_target.assert_called_once()
+
     def test_changed_control_pixels_are_rejected_before_input(self):
         before=Image.new('RGB',(200,100),'white');after=before.copy()
         ImageDraw.Draw(after).rectangle((20,20,30,30),fill='black')
@@ -32,6 +42,14 @@ class ScreenshotWechatTests(unittest.TestCase):
         ImageDraw.Draw(dim).rectangle((30,10,40,25),fill='black')
         self.assertNotEqual(ink_hash(image,(0,0,100,40)),ink_hash(dim,(0,0,100,40)))
 
+    def test_exact_header_at_observed_ocr_confidence_still_requires_correct_name(self):
+        ui,image,value=self.make_ui();ui.title='方便面'
+        line={'text':'方便面','bounds':[500,40,560,65],'confidence':.617}
+        value['lines'].append(line)
+        self.assertEqual(ui.current_title(),'方便面')
+        line['text']='其他人'
+        self.assertIsNone(ui.current_title())
+
     def make_ui(self):
         ui=WechatScreenshotUI.__new__(WechatScreenshotUI)
         ui.account='fixture';ui.title='测试对象';ui.require_target=lambda:None
@@ -51,6 +69,22 @@ class ScreenshotWechatTests(unittest.TestCase):
         self.assertEqual(len(after),1);self.assertEqual(after[0]['message_key'],before['message_key'])
         self.assertEqual(after[0]['text'],'今天散步怎么样？')
 
+    def test_transcription_scrolling_an_unrelated_old_row_preserves_latest_key(self):
+        ui,image,value=self.make_ui()
+        value['desktop_bubbles'].insert(0,{'kind':'outgoing_green','bounds':[800,70,900,120]})
+        value['lines'].insert(0,{'text':'9"','bounds':[830,80,870,110],'confidence':.99})
+        before=ui.rows()[-1]['message_key']
+        value['desktop_bubbles'].pop(0);value['lines'].pop(0)
+        self.assertEqual(ui.rows()[-1]['message_key'],before)
+
+    def test_identical_visible_voice_bubbles_keep_separate_occurrences(self):
+        ui,image,value=self.make_ui()
+        ImageDraw.Draw(image).rectangle((400,350,500,410),fill='white')
+        value['desktop_bubbles'].append({'kind':'incoming_neutral','bounds':[400,350,500,410]})
+        value['lines'].append({'text':'3"','bounds':[445,365,470,390],'confidence':.99})
+        rows=ui.rows();self.assertEqual(len(rows),2)
+        self.assertNotEqual(rows[0]['message_key'],rows[1]['message_key'])
+
     def test_outgoing_voice_is_never_an_incoming_transcript(self):
         ui,image,value=self.make_ui();value['desktop_bubbles'][0]['kind']='outgoing_green'
         self.assertEqual(ui.inspect()['outcome'],'no_unanswered_incoming')
@@ -64,6 +98,13 @@ class ScreenshotWechatTests(unittest.TestCase):
     def test_unknown_empty_component_cannot_become_a_voice(self):
         ui,image,value=self.make_ui();value['lines']=[]
         self.assertEqual(ui.inspect()['outcome'],'no_unanswered_incoming')
+
+    def test_short_duration_ocr_can_be_weak_without_accepting_weak_message_body(self):
+        ui,image,value=self.make_ui();value['desktop_bubbles'][0]['kind']='transcript_gray'
+        value['lines'][0].update(text=' 5"',confidence=.55)
+        self.assertEqual(ui.rows()[0]['seconds'],5)
+        value['lines'][0]['text']='不确定的正文'
+        self.assertEqual(ui.rows(),[])
 
     def test_gray_received_voice_is_not_discarded_as_a_transcript(self):
         ui,image,value=self.make_ui()

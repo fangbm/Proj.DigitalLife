@@ -16,7 +16,7 @@ from digitallife_v2.speech import SpeechEngine,inspect_wav
 from digitallife_v2.store import LifeStore
 from digitallife_v2.session import SessionLoop
 from digitallife_v2.wechat_voice import WechatVoiceAgent,DesktopWechatTransport,WechatVoicePolicy
-from digitallife_v2.wechat_desktop_worker import direction_from_image,normalized_title
+from digitallife_v2.wechat_desktop_worker import WechatDesktopUI,direction_from_image,normalized_title
 from test_m1 import config,observation
 from test_speech import audio
 
@@ -91,6 +91,25 @@ class WechatVoiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.store.db.execute('SELECT status FROM social_outbox').fetchone()[0],'delivery_unknown')
         self.selected='text'
         with self.assertRaises(Blocked):await self.agent.run('auto_reply')
+        self.assertEqual(len(self.before_go),1)
+
+    async def test_verified_late_readback_resolves_unknown_without_resending(self):
+        self.drop=True
+        with self.assertRaises(Blocked):await self.agent.run('auto_reply')
+        oid=self.store.db.execute('SELECT id FROM social_outbox').fetchone()[0]
+        evidence={'outbound_id':oid,'outcome':'outgoing_observed','engine_id':'wechat_platform_transcription',
+            'account':'wx_fixture','title':'测试对象','additional_messages_sent':0,'reconciled_read_only':True,
+            'outgoing':{'message_key':'b'*64,'direction':'outgoing','kind':'voice','seconds':2,'text':'先喝杯水休息一下吧！'}}
+        for invalid in ({**evidence,'title':'另一对象'}, {**evidence,'outgoing':{**evidence['outgoing'],'text':'不同内容'}},
+                        {**evidence,'reconciled_read_only':False}):
+            with self.assertRaisesRegex(Blocked,'LATE_WECHAT_RECORD_UNVERIFIED'):
+                self.agent.social.reconcile_wechat_record(oid,invalid)
+        self.agent.social.reconcile_wechat_record(oid,evidence)
+        self.assertEqual(self.store.db.execute('SELECT status FROM social_outbox').fetchone()[0],'sent_observed')
+        self.assertEqual(len(self.before_go),1)
+        # The original trigger remains deduplicated; reconciliation creates no second attempt.
+        self.agent.social.check_thread=lambda *args:None
+        self.assertEqual((await self.agent.run('auto_reply'))['outcome'],'incoming_already_recorded')
         self.assertEqual(len(self.before_go),1)
 
     async def test_missing_voice_body_does_not_guess_notification_content(self):
@@ -182,6 +201,17 @@ class WechatVoiceTests(unittest.IsolatedAsyncioTestCase):
         image=Image.new('RGB',(600,90),(245,245,245));ImageDraw.Draw(image).rectangle((80,30,98,50),fill=(30,30,30))
         self.assertEqual(direction_from_image(image,rect,rect),'incoming')
         self.assertEqual(normalized_title('测试群(3)'),'测试群')
+
+    def test_scrolled_old_voice_identity_is_not_counted_as_an_extra_send(self):
+        ui=WechatDesktopUI.__new__(WechatDesktopUI)
+        ui.voices=lambda:{'moved-old-key':{'seconds':11},'new-key':{'seconds':9}}
+        self.assertEqual(ui.observe_new_voice({'old-key':{'seconds':11}}),{'seconds':9})
+
+    def test_changed_identity_without_an_added_voice_stays_unknown(self):
+        ui=WechatDesktopUI.__new__(WechatDesktopUI);ui.voices=lambda:{'moved-key':{'seconds':11}}
+        with patch('digitallife_v2.wechat_desktop_worker.time.monotonic',side_effect=[0,1,5]), \
+                patch('digitallife_v2.wechat_desktop_worker.time.sleep'):
+            self.assertIsNone(ui.observe_new_voice({'old-key':{'seconds':11}}))
 
     async def test_transport_cancel_before_go_does_not_send_go(self):
         script=self.root/'worker.py'

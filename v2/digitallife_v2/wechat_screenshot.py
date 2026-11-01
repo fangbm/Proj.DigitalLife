@@ -11,6 +11,8 @@ import time
 from .safety import Blocked
 from .wechat_desktop_worker import PROGRAM,WechatDesktopUI,normalized_title
 
+VOICE_DURATION=re.compile(r'[()（）]{0,3}\s*(\d{1,2})\s*["″”′’]+\s*[()（）]{0,3}')
+
 
 def image_hash(image,box):
     crop=image.crop(box).convert('RGB')
@@ -135,7 +137,7 @@ class WechatScreenshotUI(WechatDesktopUI):
     def current_title(self):
         image,value=self.read()
         names=[x for x in value['lines'] if x['bounds'][0]>image.width*.34 and x['bounds'][3]<image.height*.12
-               and x['confidence']>=.65 and normalized_title(x['text'])==self.title]
+               and x['confidence']>=.6 and normalized_title(x['text'])==self.title]
         if len(names)==1:
             self.header=(names[0]['bounds'],ink_hash(image,names[0]['bounds']));return self.title
         return None
@@ -145,7 +147,10 @@ class WechatScreenshotUI(WechatDesktopUI):
         if not self.authorized:raise Blocked('WECHAT_ACCOUNT_NOT_VERIFIED')
         if self.current_title()!=self.title:
             self.text_hit(self.title,area=lambda b,size:b[2]<size[0]*.35 and b[1]>size[1]*.12).click_input()
-            if self.current_title()!=self.title:raise Blocked('WECHAT_VISUAL_CHAT_NOT_OPEN')
+            until=time.monotonic()+2
+            while self.current_title()!=self.title:
+                if time.monotonic()>=until:raise Blocked('WECHAT_VISUAL_CHAT_NOT_OPEN')
+                self.check_stop();time.sleep(.1)
         image,value=self.read()
         markers=[x for x in value['lines'] if re.fullmatch(r'[↓↧]?\s*\d+条新消息',x['text'])
                  and x['bounds'][0]>image.width*.65 and image.height*.3<x['bounds'][1]<self.calibration['editor'][1]]
@@ -164,17 +169,18 @@ class WechatScreenshotUI(WechatDesktopUI):
             if dark>5:raise Blocked('EMPTY_WECHAT_DRAFT_REQUIRED')
 
     def rows(self):
-        self.require_target();image,value=self.read();stamp='';result=[]
+        self.require_target();image,value=self.read();stamp='';result=[];occurrences={}
         bubbles=sorted(value.get('desktop_bubbles',[]),key=lambda b:b['bounds'][1])
         for bubble in bubbles:
             a,b,c,d=bubble['bounds']
-            lines=[x for x in value['lines'] if x['confidence']>=.6 and a<=x['bounds'][0]+5 and x['bounds'][2]-5<=c
+            lines=[x for x in value['lines'] if (x['confidence']>=.6 or
+                   x['confidence']>=.5 and VOICE_DURATION.fullmatch(x['text'])) and a<=x['bounds'][0]+5 and x['bounds'][2]-5<=c
                    and b<=x['bounds'][1]+5 and x['bounds'][3]-5<=d]
             text=''.join(x['text'] for x in sorted(lines,key=lambda x:(x['bounds'][1],x['bounds'][0])))
             if not text:continue
             # Desktop WeChat also paints received voice bubbles light gray.
             # Recognize the visible duration before treating gray as a transcript.
-            voice=re.fullmatch(r'[()（）]{0,3}\s*(\d{1,2})\s*["″”′’]+\s*[()（）]{0,3}',text)
+            voice=VOICE_DURATION.fullmatch(text)
             gray_voice=bubble['kind']=='transcript_gray' and voice and a<image.width*.7
             if bubble['kind']=='transcript_gray' and not gray_voice:
                 if (result and result[-1]['kind']=='voice' and 0<=b-result[-1]['bounds'][3]<120
@@ -187,7 +193,11 @@ class WechatScreenshotUI(WechatDesktopUI):
             if times:stamp=times[-1]
             # OCR can include one of the adjacent voice-wave strokes as '(' or ')'.
             kind='voice' if voice else 'text'
-            key=hashlib.sha256((self.account+'|'+self.title+'|'+stamp+'|'+str(len(result))+'|'+image_hash(image,bubble['bounds'])).encode()).hexdigest()
+            # Transcription can scroll unrelated older rows out of the viewport.
+            # Number only identical visible bubbles, not every preceding message.
+            visual=stamp+'|'+str(incoming)+'|'+kind+'|'+image_hash(image,bubble['bounds'])
+            occurrence=occurrences.get(visual,0);occurrences[visual]=occurrence+1
+            key=hashlib.sha256((self.account+'|'+self.title+'|'+visual+'|'+str(occurrence)).encode()).hexdigest()
             result.append({'message_key':key,'direction':'incoming' if incoming else 'outgoing','kind':kind,
                 'seconds':int(voice[1]) if voice else None,'text':'' if voice else text,'time_label':stamp,
                 'bounds':bubble['bounds'],'row_id':key})

@@ -325,6 +325,33 @@ class SocialStore:
         self.store.event('social_late_native_record_observed',{'outbound_id':outbound_id,'evidence':evidence,'additional_send_attempts':0,
             'delivery_claim':'own_QQ_client_record_observed_not_read_receipt'})
 
+    def reconcile_wechat_record(self,outbound_id,evidence):
+        """Resolve an unknown send from actual outgoing readback, never resend."""
+        row=self.db.execute('SELECT o.status,o.sources,o.text,o.evidence,b.app,b.account,b.body FROM social_outbox o '
+            'JOIN social_bindings b ON b.id=o.binding_id WHERE o.id=? AND o.device=?',
+            (outbound_id,self.store.serial)).fetchone()
+        outgoing=evidence.get('outgoing',{})
+        normalize=lambda text:''.join(c for c in text.casefold() if c.isalnum())
+        title=lambda text:re.sub(r'[（(]\d+人?[）)]$','',text).strip()
+        if (not row or row[0]!='delivery_unknown' or 'native:wechat-record' not in json.loads(row[1])
+                or row[4]!='com.tencent.mm' or evidence.get('outbound_id')!=outbound_id
+                or evidence.get('reconciled_read_only') is not True or evidence.get('additional_messages_sent')!=0
+                or evidence.get('outcome')!='outgoing_observed' or evidence.get('engine_id')!='wechat_platform_transcription'
+                or evidence.get('account')!=row[5].split('@')[0]
+                or title(evidence.get('title',''))!=title(json.loads(row[6])['route_hint'])
+                or outgoing.get('direction')!='outgoing' or outgoing.get('kind')!='voice'
+                or not re.fullmatch('[a-f0-9]{64}',str(outgoing.get('message_key','')))
+                or type(outgoing.get('seconds')) is not int or not 1<=outgoing['seconds']<=60
+                or not isinstance(outgoing.get('text'),str) or not normalize(row[2])
+                or normalize(outgoing['text'])!=normalize(row[2])):
+            raise Blocked('SOCIAL_LATE_WECHAT_RECORD_UNVERIFIED')
+        combined={**evidence,'previous_unknown_evidence':json.loads(row[3] or '{}')}
+        cursor=self.db.execute("UPDATE social_outbox SET status='sent_observed',observed=?,evidence=? WHERE id=? AND device=? AND status='delivery_unknown'",
+            (time.time(),json.dumps(combined),outbound_id,self.store.serial));self.db.commit()
+        if cursor.rowcount!=1:raise Blocked('SOCIAL_LATE_RECORD_STATE_CHANGED')
+        self.store.event('social_late_wechat_record_observed',{'outbound_id':outbound_id,'evidence':combined,
+            'additional_send_attempts':0,'delivery_claim':'own_desktop_wechat_native_message_observed_not_read_receipt'})
+
     def resume_pre_send(self,policy,binding,outbound_id,observation_id):
         """Operator recovery only: no send was ever attempted for this draft."""
         now=time.time()

@@ -27,6 +27,7 @@ param(
     [ValidateSet('dm','group')][string]$VoiceTargetKind='dm',
     [string]$VoiceIntent='',
     [double]$VoiceOpenedAfter=0,
+    [switch]$ConfirmedVoiceRoute,
     [string]$VoiceOutbound='',
     [string]$VoiceMessageId='',
     [ValidateSet('text','voice')][string]$ReplyScenario='text',
@@ -41,6 +42,7 @@ if ($EventsOnly -and $Command -ne 'M3Probe') { throw 'EventsOnly applies only to
 if ($ResumeProjection -and $Command -ne 'AudioProbe') { throw 'ResumeProjection applies only to AudioProbe after explicit observation review.' }
 if ($ResumeOutbound -and ($Command -notin @('M4Probe','M5Probe') -or $ResumeOutbound -notmatch '^[a-f0-9]{32}$')) { throw 'ResumeOutbound requires M4Probe/M5Probe and an exact known-unsent outbound ID.' }
 if ($SocialBinding -and ($Command -notin @('M4Probe','M4Listen','M5Probe','WechatVoiceListen') -or $SocialBinding -notmatch '^[a-f0-9]{64}$')) { throw 'SocialBinding requires a supported probe/listen command and an existing binding ID.' }
+if ($ConfirmedVoiceRoute -and ($Command -ne 'WechatVoiceListen' -or -not $GroupHint -or $SocialBinding)) { throw 'ConfirmedVoiceRoute requires WechatVoiceListen and GroupHint without SocialBinding.' }
 if ($Command -in @('VoiceSynthesize','VoiceSend','VoiceReconcile','VoiceListen','ReplyFormatProbe','VirtualCableProbe') -and -not $Session) { throw 'Voice conversion/send/reconcile/listen/probe requires a new Session.' }
 if ($Command -eq 'VirtualCableProbe') {
     if (-not $VoiceWav -or -not $FFmpegExe) { throw 'VirtualCableProbe requires VoiceWav and FFmpegExe; select the local audio environment with Python.' }
@@ -91,6 +93,7 @@ if ($Command -eq 'M5Probe') { $v2Args += @('--kind',$MediaKind); if ($SourceId) 
 if ($Command -eq 'M5Probe' -and $ThreadId) { $v2Args += @('--thread-id',$ThreadId) }
 if ($Command -eq 'GroupProbe') { $v2Args += @('--app',$SocialApp); if ($GroupHint) { $v2Args += @('--route-hint',$GroupHint) }; if ($GroupReceipt) { $v2Args += @('--receipt',$GroupReceipt) }; if ($RequestedNow) { $v2Args += '--requested-now' } }
 if ($Command -eq 'WechatVoiceListen' -and $GroupHint) { $v2Args += @('--route-hint',$GroupHint) }
+if ($ConfirmedVoiceRoute) { $v2Args += '--confirmed-existing-route' }
 if ($Command -eq 'SocialInspect') { $v2Args += @('--app',$SocialApp); foreach ($v2Step in $InspectStep) { $v2Args += @('--step',$v2Step) }; if ($InspectCurrent) { $v2Args += '--current' } }
 if ($Command -eq 'SocialInspect' -and $RouteMarker) { $v2Args += @('--read-marker',$RouteMarker) }
 if ($ResumeOutbound) { $v2Args += @('--resume-outbound',$ResumeOutbound) }

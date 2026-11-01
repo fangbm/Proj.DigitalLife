@@ -1,5 +1,6 @@
 """Public Windows UIA adapter. No private databases, audio APIs or login input."""
 from contextlib import suppress
+from collections import Counter
 import hashlib
 import json
 import os
@@ -213,12 +214,21 @@ class WechatDesktopUI:
     def voices(self):
         return {r['message_key']:{'seconds':r['seconds']} for r in self.rows() if r['kind']=='voice' and r['direction']=='outgoing'}
 
-    def voice_ids(self):return set(self.voices())
+    def voice_ids(self):return self.voices()
 
     def observe_new_voice(self,before):
         until=time.monotonic()+4
         while time.monotonic()<until:
-            rows=[v for k,v in self.voices().items() if k not in before]
+            current=self.voices()
+            if isinstance(before,dict):
+                # A new bubble can scroll old rows and change OCR row indexes.
+                # Compare visible duration counts as well as the current UI,
+                # rather than misclassifying a moved old bubble as a second send.
+                added=Counter(v['seconds'] for v in current.values())-Counter(v['seconds'] for v in before.values())
+                if sum(added.values())==1:return {'seconds':next(iter(added))}
+                if sum(added.values())>1:return None
+                time.sleep(.1);continue
+            rows=[v for k,v in current.items() if k not in before]
             if len(rows)==1:return rows[0]
             if len(rows)>1:return None
             time.sleep(.1)
