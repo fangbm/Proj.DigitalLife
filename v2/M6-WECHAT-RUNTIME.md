@@ -132,3 +132,11 @@ python -m acceptance.wechat_voice_reconcile --outbound-id EXISTING_32_HEX_ID --s
 发送观察修复后的独立文件传输助手自测正常返回 `sent_observed`、`accepted=true`：4.02 秒源音、6 秒原生消息、录音计时 6.593 秒，默认输入与虚拟端静音恢复、看门狗退出。该自测只验证本次发送观察与设备恢复，不替代前述联系人/群的全文核对。记录为 `data/sessions/m6-wx-a26-observe-count-20261101-01/WINDOWS_SELF_VOICE_RESULT.json`。本轮结束后手机已回桌面，没有遗留微信录音子进程或自动回复窗口。
 
 a26 最终源码与独立安装 wheel 各 **395 项回归通过**，40 个运行模块逐字节一致。新增回归覆盖：滚动后消息键保持、相同可见气泡的出现次数、短时长弱 OCR 与正文阈值区分、完整会话名匹配、会话切换等待、只读晚到确认、原触发去重、读回失败保留发送证据，以及显式可见会话恢复不伪造通知。Wheel 为 `digitallife_v2-2.0.0a26-py3-none-any.whl`，最终 SHA-256：`6bc401796c45f79e221047cfa4667c6ec1eeb3c80934afb1570fe49d06cc5187`。私有核验为 `data/m6-a26-source-complete.log`、`data/m6-a26-installed-tests.log`、`data/m6-a26-wheel-evidence.json`；之前同版本的开发中间包不作为本次交付。
+
+## 2026-11-02 微信通知恢复与续验
+
+本机系统测试通知能经 Companion 实时回调，通知监听器与敏感通知权限均正常；该结果只证明基础传输，不是微信来信验收。手机微信列表实际显示「已登录Windows电脑，手机通知已关闭」。进入该已登录设备页面，关闭绿色选中的「手机静音」后，列表提示变为「已登录Windows电脑」，电脑登录保留。电脑重新登录后若再次出现关闭提示，可在手机微信顶部已登录设备入口关闭「手机静音」，无需改动系统安全设置、重新授权联系人或安装组件。
+
+恢复后已经收到真实微信 `callback`，并自动执行原通知的 PendingIntent 打开会话。第一轮因操作员过早发出 Stop，打断打开后的页面确认；模型请求和回复均为零。原未知导航会话、失败、通知来源及动作记录完整保留，检查当前实际会话和零外发后，将准确的导航屏障归档，不重放通知路由。该轮不能认定为完整自动回复通过，已另开有界窗口续验。
+
+私有诊断：`data/sessions/m6-wx-notification-transport-20261102-01/TRANSPORT_RESULT.json`、同目录 `ROOT_CAUSE.json`、`data/sessions/m6-wx-notification-navigation-review-20261102-01/REVIEW.json`。本次为应用通知状态恢复和实测记录，运行代码及 a26 wheel 不变。
